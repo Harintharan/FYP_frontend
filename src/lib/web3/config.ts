@@ -9,7 +9,7 @@ const chainId = Number(import.meta.env.VITE_CHAIN_ID) || 11155111;
 const isFakeMode = import.meta.env.VITE_FAKE_MODE === 'true';
 
 // Select chain based on environment
-const chains = chainId === 1 ? [mainnet] : [sepolia] as const;
+const chains = [chainId === 1 ? mainnet : sepolia] as const;
 
 export const config = createConfig({
   chains,
