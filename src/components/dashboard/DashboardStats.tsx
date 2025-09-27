@@ -28,8 +28,8 @@ export function DashboardStats() {
       bgColor: 'bg-destructive/10'
     },
     {
-      title: 'Delivered Today',
-      value: products.filter(p => p.status === 'DELIVERED').length,
+      title: 'Doses Administered',
+      value: products.filter(p => p.status === 'ADMINISTERED').length,
       icon: CheckCircle,
       color: 'text-secondary',
       bgColor: 'bg-secondary/10'

@@ -32,15 +32,15 @@ export function Sidebar({ className, activeTab, onTabChange }: SidebarProps) {
 
     // Add role-specific items
     if (user?.role === 'MANUFACTURER') {
-      baseItems.splice(2, 0, { id: 'create', label: 'Create Product', icon: Package });
+      baseItems.splice(2, 0, { id: 'create', label: 'Create Vaccine', icon: Package });
     }
 
-    if (user?.role === 'SUPPLIER') {
-      baseItems.splice(2, 0, { id: 'supply', label: 'Supply Materials', icon: Truck });
+    if (user?.role === 'DISTRIBUTOR') {
+      baseItems.splice(2, 0, { id: 'distribute', label: 'Distribution', icon: Truck });
     }
 
-    if (user?.role === 'TRANSPORTER') {
-      baseItems.splice(2, 0, { id: 'shipments', label: 'Shipments', icon: Truck });
+    if (user?.role === 'HEALTHCARE_PROVIDER') {
+      baseItems.splice(2, 0, { id: 'administer', label: 'Administer', icon: Package });
     }
 
     baseItems.push(

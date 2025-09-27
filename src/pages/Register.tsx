@@ -13,21 +13,33 @@ import { UserPlus, Mail, Lock, Building, User, Factory, Truck, Store } from 'luc
 const roleOptions: { value: Role; label: string; description: string; icon: any }[] = [
   {
     value: 'MANUFACTURER',
-    label: 'Manufacturer',
-    description: 'Create and manage products',
+    label: 'Vaccine Manufacturer',
+    description: 'Produce and quality control vaccines',
     icon: Factory
   },
   {
-    value: 'SUPPLIER',
-    label: 'Supplier',
-    description: 'Supply raw materials and components',
+    value: 'DISTRIBUTOR',
+    label: 'Distributor',
+    description: 'Cold chain distribution and logistics',
     icon: Truck
   },
   {
-    value: 'WHOLESALER',
-    label: 'Wholesaler',
-    description: 'Distribute products in bulk',
+    value: 'HEALTHCARE_PROVIDER',
+    label: 'Healthcare Provider',
+    description: 'Hospitals and medical facilities',
     icon: Store
+  },
+  {
+    value: 'VACCINATION_CENTER',
+    label: 'Vaccination Center',
+    description: 'Mass vaccination and immunization sites',
+    icon: Building
+  },
+  {
+    value: 'COLD_STORAGE',
+    label: 'Cold Storage Facility',
+    description: 'Temperature-controlled storage',
+    icon: Factory
   }
 ];
 
@@ -35,7 +47,8 @@ export default function Register() {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
-    company: '',
+    organization: '',
+    licenseNumber: '',
     password: '',
     confirmPassword: '',
     role: '' as Role
@@ -73,13 +86,14 @@ export default function Register() {
       role: formData.role,
       displayName: formData.displayName,
       email: formData.email,
-      company: formData.company
+      organization: formData.organization,
+      licenseNumber: formData.licenseNumber
     };
 
     setUser(newUser);
     toast({
       title: "Registration successful!",
-      description: `Welcome to TrackChain, ${formData.displayName}`,
+      description: `Welcome to VaccineChain, ${formData.displayName}`,
     });
     navigate('/');
     setLoading(false);
@@ -92,9 +106,9 @@ export default function Register() {
           <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
             <UserPlus className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+          <CardTitle className="text-2xl font-bold">Join VaccineChain</CardTitle>
           <CardDescription>
-            Join the supply chain network and start tracking
+            Register to participate in the global vaccine supply chain network
           </CardDescription>
         </CardHeader>
 
@@ -117,14 +131,14 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+                <Label htmlFor="organization">Organization</Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="company"
-                    placeholder="Company name"
-                    value={formData.company}
-                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    id="organization"
+                    placeholder="Healthcare organization"
+                    value={formData.organization}
+                    onChange={(e) => handleInputChange('organization', e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -149,10 +163,25 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label htmlFor="licenseNumber">License Number</Label>
+              <div className="relative">
+                <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="licenseNumber"
+                  placeholder="Professional license number"
+                  value={formData.licenseNumber}
+                  onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Organization Type</Label>
               <Select value={formData.role} onValueChange={(value: Role) => handleInputChange('role', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
+                  <SelectValue placeholder="Select organization type" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border border-border">
                   {roleOptions.map((role) => {

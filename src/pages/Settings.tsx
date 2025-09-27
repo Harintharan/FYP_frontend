@@ -25,7 +25,8 @@ const Settings = () => {
   const [localSettings, setLocalSettings] = useState({
     displayName: user?.displayName || '',
     email: user?.email || '',
-    company: user?.company || '',
+    organization: user?.organization || '',
+    licenseNumber: user?.licenseNumber || '',
     rpcUrl: 'https://sepolia.infura.io/v3/demo',
     wsUrl: 'wss://ws.example.com/telemetry',
     mqttUrl: 'wss://mqtt.example.com:8083/mqtt',
@@ -37,7 +38,8 @@ const Settings = () => {
         ...user,
         displayName: localSettings.displayName,
         email: localSettings.email,
-        company: localSettings.company,
+        organization: localSettings.organization,
+        licenseNumber: localSettings.licenseNumber,
       });
       toast({
         title: "Profile Updated",
@@ -101,12 +103,12 @@ const Settings = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
+              <Label htmlFor="organization">Organization</Label>
               <Input
-                id="company"
-                value={localSettings.company}
-                onChange={(e) => setLocalSettings(prev => ({ ...prev, company: e.target.value }))}
-                placeholder="Enter your company name"
+                id="organization"
+                value={localSettings.organization}
+                onChange={(e) => setLocalSettings(prev => ({ ...prev, organization: e.target.value }))}
+                placeholder="Enter your organization name"
               />
             </div>
 

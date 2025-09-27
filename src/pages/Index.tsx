@@ -78,7 +78,7 @@ const Index = () => {
                       <div key={product.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                         <div>
                           <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.sku}</p>
+                          <p className="text-sm text-muted-foreground">{product.batchNumber}</p>
                         </div>
                         <Button size="sm" onClick={() => handleProductSelect(product)}>
                           View

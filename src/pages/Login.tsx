@@ -25,29 +25,35 @@ export default function Login() {
 
     // Mock login - in real app, this would be an API call
     const mockUsers = {
-      'manufacturer@example.com': {
+      'manufacturer@vaccine.com': {
         id: '1',
         address: '0x1234567890123456789012345678901234567890' as const,
         role: 'MANUFACTURER' as const,
-        displayName: 'John Manufacturing',
-        email: 'manufacturer@example.com',
-        company: 'ABC Manufacturing Co.'
+        displayName: 'Pfizer Vaccine Division',
+        email: 'manufacturer@vaccine.com',
+        organization: 'Pfizer Pharmaceuticals',
+        licenseNumber: 'MFG-001-2024',
+        certifications: ['WHO-GMP', 'FDA-Approved']
       },
-      'supplier@example.com': {
+      'distributor@vaccine.com': {
         id: '2',
         address: '0x2345678901234567890123456789012345678901' as const,
-        role: 'SUPPLIER' as const,
-        displayName: 'Sarah Supply Chain',
-        email: 'supplier@example.com',
-        company: 'XYZ Suppliers Ltd.'
+        role: 'DISTRIBUTOR' as const,
+        displayName: 'VaccineDist Global',
+        email: 'distributor@vaccine.com',
+        organization: 'Global Vaccine Distribution Corp',
+        licenseNumber: 'DIST-002-2024',
+        certifications: ['Cold-Chain-Certified', 'WHO-Logistics']
       },
-      'wholesaler@example.com': {
+      'healthcare@vaccine.com': {
         id: '3',
         address: '0x3456789012345678901234567890123456789012' as const,
-        role: 'WHOLESALER' as const,
-        displayName: 'Mike Wholesale',
-        email: 'wholesaler@example.com',
-        company: 'Global Wholesale Inc.'
+        role: 'HEALTHCARE_PROVIDER' as const,
+        displayName: 'City Health Center',
+        email: 'healthcare@vaccine.com',
+        organization: 'Metropolitan Health Network',
+        licenseNumber: 'HCP-003-2024',
+        certifications: ['Immunization-Provider', 'Cold-Storage-Certified']
       }
     };
 
@@ -63,7 +69,7 @@ export default function Login() {
     } else {
       toast({
         title: "Login failed",
-        description: "Invalid credentials. Try manufacturer@example.com / demo123",
+        description: "Invalid credentials. Try manufacturer@vaccine.com / demo123",
         variant: "destructive"
       });
     }
@@ -78,9 +84,9 @@ export default function Login() {
           <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
             <LogIn className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-bold">VaccineChain Login</CardTitle>
           <CardDescription>
-            Sign in to your TrackChain account to continue
+            Sign in to your VaccineChain account to manage the vaccine supply chain
           </CardDescription>
         </CardHeader>
 
@@ -121,9 +127,9 @@ export default function Login() {
             <div className="bg-muted/50 p-3 rounded-lg text-sm">
               <p className="font-medium mb-2">Demo Credentials:</p>
               <div className="space-y-1 text-xs text-muted-foreground">
-                <p>• manufacturer@example.com / demo123</p>
-                <p>• supplier@example.com / demo123</p>
-                <p>• wholesaler@example.com / demo123</p>
+                <p>• manufacturer@vaccine.com / demo123</p>
+                <p>• distributor@vaccine.com / demo123</p>
+                <p>• healthcare@vaccine.com / demo123</p>
               </div>
             </div>
           </CardContent>

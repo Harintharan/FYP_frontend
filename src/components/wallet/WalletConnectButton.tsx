@@ -35,7 +35,7 @@ export const WalletConnectButton = () => {
             role: 'MANUFACTURER',
             displayName: 'John Manufacturer',
             email: 'john@example.com',
-            company: 'Demo Manufacturing Co.'
+            organization: 'Demo Manufacturing Co.'
           });
         }
         

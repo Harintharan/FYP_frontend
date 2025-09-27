@@ -156,7 +156,7 @@ export const HandoverForm = ({ onSubmit, className }: HandoverFormProps) => {
                     <h4 className="font-medium">{selectedProduct.name}</h4>
                     <Badge variant="secondary">{selectedProduct.status}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">SKU: {selectedProduct.sku}</p>
+                  <p className="text-sm text-muted-foreground">Batch: {selectedProduct.batchNumber}</p>
                   {selectedProduct.currentHolder && (
                     <p className="text-sm text-muted-foreground">
                       Current Holder: {selectedProduct.currentHolder.slice(0, 8)}...

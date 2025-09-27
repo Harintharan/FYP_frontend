@@ -2,22 +2,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { QrCode, MapPin, Thermometer, Clock } from 'lucide-react';
-import type { ProductMeta } from '@/types';
+import type { VaccineProduct } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
-  product: ProductMeta;
-  onViewDetails: (product: ProductMeta) => void;
-  onGenerateQR?: (product: ProductMeta) => void;
+  product: VaccineProduct;
+  onViewDetails: (product: VaccineProduct) => void;
+  onGenerateQR?: (product: VaccineProduct) => void;
 }
 
 export function ProductCard({ product, onViewDetails, onGenerateQR }: ProductCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CREATED': return 'bg-muted text-muted-foreground';
+      case 'MANUFACTURED': return 'bg-muted text-muted-foreground';
+      case 'IN_COLD_STORAGE': return 'bg-primary/10 text-primary border-primary/20';
       case 'IN_TRANSIT': return 'bg-warning/10 text-warning border-warning/20';
-      case 'DELIVERED': return 'status-ok';
-      case 'VERIFIED': return 'status-ok';
+      case 'AT_FACILITY': return 'status-ok';
+      case 'ADMINISTERED': return 'status-ok';
+      case 'EXPIRED': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'RECALLED': return 'bg-destructive/10 text-destructive border-destructive/20';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -41,7 +44,7 @@ export function ProductCard({ product, onViewDetails, onGenerateQR }: ProductCar
               {product.name}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              SKU: {product.sku || 'N/A'}
+              Batch: {product.batchNumber}
             </p>
           </div>
           <Badge className={cn("text-xs", getStatusColor(product.status))}>
@@ -55,8 +58,8 @@ export function ProductCard({ product, onViewDetails, onGenerateQR }: ProductCar
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted-foreground" />
             <div>
-              <p className="text-muted-foreground">Mfg Date</p>
-              <p className="font-medium">{formatDate(product.mfgDate)}</p>
+              <p className="text-muted-foreground">Exp Date</p>
+              <p className="font-medium">{formatDate(product.expirationDate)}</p>
             </div>
           </div>
           
@@ -69,15 +72,13 @@ export function ProductCard({ product, onViewDetails, onGenerateQR }: ProductCar
           </div>
         </div>
 
-        {product.batch && (
-          <div className="flex items-center gap-2 text-sm">
-            <Thermometer className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground">Batch</p>
-              <p className="font-medium">{product.batch}</p>
-            </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Thermometer className="w-4 h-4 text-muted-foreground" />
+          <div>
+            <p className="text-muted-foreground">Storage</p>
+            <p className="font-medium">{product.temperatureRange.min}°{product.temperatureRange.unit} to {product.temperatureRange.max}°{product.temperatureRange.unit}</p>
           </div>
-        )}
+        </div>
 
         <div className="flex gap-2 pt-2">
           <Button 

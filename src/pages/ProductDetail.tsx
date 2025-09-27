@@ -198,13 +198,16 @@ const ProductDetail = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium">SKU:</span> {product.sku || 'N/A'}
+              <span className="font-medium">Batch Number:</span> {product.batchNumber}
             </div>
             <div>
-              <span className="font-medium">Batch:</span> {product.batch || 'N/A'}
+              <span className="font-medium">Lot Number:</span> {product.lotNumber || 'N/A'}
             </div>
             <div>
-              <span className="font-medium">Manufacturing Date:</span> {product.mfgDate || 'N/A'}
+              <span className="font-medium">Production Date:</span> {product.productionDate}
+            </div>
+            <div>
+              <span className="font-medium">Expiration Date:</span> {product.expirationDate}
             </div>
             <div>
               <span className="font-medium">Creator:</span> {product.creator.slice(0, 12)}...
