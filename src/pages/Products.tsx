@@ -46,8 +46,10 @@ const Products = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-background">
       {/* Header */}
+      <div className="flex">
+      <main className="flex-1 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Products</h1>
@@ -167,6 +169,8 @@ const Products = () => {
           </div>
         </div>
       )}
+      </main>
+      </div>
     </div>
   );
 };

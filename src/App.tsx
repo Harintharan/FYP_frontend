@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthGuard } from "./components/auth/AuthGuard";
+
+// import { DashboardLayout } from "./layouts/DashboardLayout";
+
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -14,6 +17,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import { DashboardLayout } from "./components/layout/DashboardLayout";
 
 const queryClient = new QueryClient();
 
@@ -24,55 +28,44 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={
-            <AuthGuard requireAuth={false}>
-              <Login />
-            </AuthGuard>
-          } />
-          <Route path="/register" element={
-            <AuthGuard requireAuth={false}>
-              <Register />
-            </AuthGuard>
-          } />
+          {/* --- Public routes --- */}
+          <Route
+            path="/login"
+            element={
+              <AuthGuard requireAuth={false}>
+                <Login />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthGuard requireAuth={false}>
+                <Register />
+              </AuthGuard>
+            }
+          />
+
+          {/* --- Protected routes with layout --- */}
+          <Route
+            path="/"
+            element={
+              <AuthGuard>
+                <DashboardLayout />
+              </AuthGuard>
+            }
+          >
+            <Route index element={<Index />} />
+            <Route path="products" element={<Products />} />
+            <Route path="products/create" element={<CreateProduct />} />
+            <Route path="products/:id" element={<ProductDetail />} />
+            <Route path="handover" element={<Handover />} />
+            <Route path="alerts" element={<Alerts />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
           
-          {/* Protected routes */}
-          <Route path="/" element={
-            <AuthGuard>
-              <Index />
-            </AuthGuard>
-          } />
-          <Route path="/products" element={
-            <AuthGuard>
-              <Products />
-            </AuthGuard>
-          } />
-          <Route path="/products/create" element={
-            <AuthGuard>
-              <CreateProduct />
-            </AuthGuard>
-          } />
-          <Route path="/products/:id" element={
-            <AuthGuard>
-              <ProductDetail />
-            </AuthGuard>
-          } />
-          <Route path="/handover" element={
-            <AuthGuard>
-              <Handover />
-            </AuthGuard>
-          } />
-          <Route path="/alerts" element={
-            <AuthGuard>
-              <Alerts />
-            </AuthGuard>
-          } />
-          <Route path="/settings" element={
-            <AuthGuard>
-              <Settings />
-            </AuthGuard>
-          } />
-          
+
+          {/* --- 404 fallback --- */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

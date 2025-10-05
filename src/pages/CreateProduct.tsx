@@ -128,13 +128,10 @@ const CreateProduct = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {/* <Header /> */}
       
       <div className="flex">
-        <Sidebar activeTab="products" onTabChange={(tab) => {
-          if (tab === 'products') navigate('/products');
-          else if (tab === 'dashboard') navigate('/');
-        }} />
+        {/* <Sidebar  /> */}
         
         <main className="flex-1 p-8">
           <div className="space-y-6">
@@ -302,7 +299,7 @@ const CreateProduct = () => {
                             <Popover>
                               <PopoverTrigger asChild>
                                 <FormControl>
-                                  <Button
+                                  <Button 
                                     variant="outline"
                                     className={cn(
                                       "w-full pl-3 text-left font-normal",
