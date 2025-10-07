@@ -52,10 +52,10 @@ export default function ManageUsers() {
     });
 
     // 🔹 Fetch single user details
-    const handleView = async (client_uuid: string) => {
+    const handleView = async (registrationId: string) => {
         try {
             const res = await axios.get(
-                `http://localhost:5000/api/registrations/${client_uuid}`,
+                `http://localhost:5000/api/registrations/${registrationId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setSelected(res.data);
@@ -66,9 +66,9 @@ export default function ManageUsers() {
 
     // 🔹 Approve user
     const approveMutation = useMutation({
-        mutationFn: async (client_uuid: string) => {
+        mutationFn: async (registrationId: string) => {
             await axios.patch(
-                `http://localhost:5000/api/registrations/${client_uuid}/approve`,
+                `http://localhost:5000/api/registrations/${registrationId}/approve`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -110,13 +110,13 @@ export default function ManageUsers() {
                                         <CardTitle>{user.reg_type}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-2 text-sm">
-                                        <p><b>Client UUID:</b> {user.client_uuid}</p>
+                                        <p><b>Registration ID:</b> {user.id}</p>
                                         <p><b>Tx Hash:</b> {user.tx_hash?.slice(0, 12)}...</p>
                                         <p><b>Created:</b> {new Date(user.created_at).toLocaleString()}</p>
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => handleView(user.client_uuid)}
+                                            onClick={() => handleView(user.id)}
                                         >
                                             View
                                         </Button>
@@ -146,7 +146,7 @@ export default function ManageUsers() {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-2 text-sm">
-                                        <p><b>Client UUID:</b> {item.client_uuid}</p>
+                                        <p><b>Registration ID:</b> {item.id}</p>
                                         <p><b>Tx Hash:</b> {item.tx_hash?.slice(0, 12)}...</p>
                                         <p><b>Created:</b> {new Date(item.created_at).toLocaleString()}</p>
 
@@ -154,13 +154,13 @@ export default function ManageUsers() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => handleView(item.client_uuid)}
+                                                onClick={() => handleView(item.id)}
                                             >
                                                 View
                                             </Button>
                                             <Button
                                                 size="sm"
-                                                onClick={() => approveMutation.mutate(item.client_uuid)}
+                                                onClick={() => approveMutation.mutate(item.id)}
                                                 disabled={approveMutation.isPending}
                                             >
                                                 {approveMutation.isPending ? (
@@ -224,7 +224,7 @@ export default function ManageUsers() {
                             {selected.status === "PENDING" && (
                                 <div className="flex justify-end pt-4">
                                     <Button
-                                        onClick={() => approveMutation.mutate(selected.client_uuid)}
+                                        onClick={() => approveMutation.mutate(selected.id)}
                                         disabled={approveMutation.isPending}
                                     >
                                         {approveMutation.isPending ? (
