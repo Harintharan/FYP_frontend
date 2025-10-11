@@ -21,7 +21,13 @@ export const productRegistryService = {
         originFacilityAddr: string;
         status: number;
     }) {
-        const res = await api.post("/product-registry", data);
+        const res = await api.post("/api/product-registry", data);
         return res.data;
     },
+
+    // Fetch all products
+    async getAllProducts(uuid: string) {
+        const res = await api.get(`/api/product-registry/manufacturer/${uuid}`);
+        return res.data;
+    }
 };

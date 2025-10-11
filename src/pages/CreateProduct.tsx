@@ -5,12 +5,7 @@ import { productRegistryService } from "@/services/productRegistryService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardHeader,
@@ -43,6 +38,8 @@ const isValidISODate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 export default function CreateProduct() {
   const queryClient = useQueryClient();
   const [selectedBatch, setSelectedBatch] = useState<string>("");
+  const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   const { uuid } = useAppStore();
   const [batchForm, setBatchForm] = useState({
@@ -74,14 +71,13 @@ export default function CreateProduct() {
   // ============================
   const { data: batches, isLoading: loadingBatches } = useQuery({
     queryKey: ["batches"],
-    queryFn: batchService.getAllBatches,
+    queryFn: () => batchService.getAllBatches(uuid),
   });
 
   const { data: products, isLoading: loadingProducts } = useQuery({
     queryKey: ["products"],
-    queryFn: async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/product-registry`);
-      return res.json();
+    queryFn: () => {
+      return productRegistryService.getAllProducts(uuid);
     },
   });
 
@@ -102,6 +98,7 @@ export default function CreateProduct() {
         quantityProduced: "",
         releaseStatus: "",
       });
+      setIsBatchDialogOpen(false); // ✅ close dialog
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create batch");
@@ -127,6 +124,7 @@ export default function CreateProduct() {
         originFacilityAddr: "",
       });
       setSelectedBatch("");
+      setIsProductDialogOpen(false); // ✅ close dialog
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create product");
@@ -139,22 +137,32 @@ export default function CreateProduct() {
   const handleBatchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setBatchForm({ ...batchForm, [e.target.name]: e.target.value });
 
-  const handleProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setProductForm({ ...productForm, [e.target.name]: e.target.value });
+  const handleProductChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => setProductForm({ ...productForm, [e.target.name]: e.target.value });
 
   // ============================
   // 🔹 Validations
   // ============================
   const validateBatchForm = () => {
-    const { facility, productionStart, productionEnd, quantityProduced, releaseStatus } = batchForm;
+    const {
+      facility,
+      productionStart,
+      productionEnd,
+      quantityProduced,
+      releaseStatus,
+    } = batchForm;
 
     if (!facility.trim()) return "Facility name is required.";
-    if (!productionStart || !isValidISODate(productionStart)) return "Production start date is required (YYYY-MM-DD).";
-    if (!productionEnd || !isValidISODate(productionEnd)) return "Production end date is required (YYYY-MM-DD).";
+    if (!productionStart || !isValidISODate(productionStart))
+      return "Production start date is required (YYYY-MM-DD).";
+    if (!productionEnd || !isValidISODate(productionEnd))
+      return "Production end date is required (YYYY-MM-DD).";
 
     const start = new Date(productionStart);
     const end = new Date(productionEnd);
-    if (start > end) return "Production start date must be before or equal to end date.";
+    if (start > end)
+      return "Production start date must be before or equal to end date.";
 
     if (!quantityProduced.trim() || isNaN(Number(quantityProduced)))
       return "Quantity produced must be a valid number.";
@@ -169,18 +177,24 @@ export default function CreateProduct() {
 
     if (!selectedBatch) return "Select a batch first.";
     if (!f.productName.trim()) return "Product name is required.";
-    if (!f.requiredStorageTemp.trim()) return "Required storage temperature is required.";
-    if (!f.handlingInstructions.trim()) return "Handling instructions are required.";
+    if (!f.requiredStorageTemp.trim())
+      return "Required storage temperature is required.";
+    if (!f.handlingInstructions.trim())
+      return "Handling instructions are required.";
     if (!f.expiryDate.trim() || !isValidISODate(f.expiryDate))
       return "Expiry date must be in valid format YYYY-MM-DD.";
     if (!f.sensorDeviceUUID.trim()) return "Sensor Device UUID is required.";
-    if (!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.microprocessorMac.trim()))
+    if (
+      !/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.microprocessorMac.trim())
+    )
       return "Microprocessor MAC must be in format 00:1A:2B:3C:4D:5E.";
-    if (!f.sensorTypes.trim()) return "Sensor types (e.g., GPS,Temperature) required.";
+    if (!f.sensorTypes.trim())
+      return "Sensor types (e.g., GPS,Temperature) required.";
     if (!f.qrId.trim()) return "QR ID is required.";
     if (!f.wifiSSID.trim()) return "Wi-Fi SSID is required.";
     if (!f.wifiPassword.trim()) return "Wi-Fi Password is required.";
-    if (!f.originFacilityAddr.trim()) return "Origin facility address is required.";
+    if (!f.originFacilityAddr.trim())
+      return "Origin facility address is required.";
 
     return null;
   };
@@ -250,11 +264,16 @@ export default function CreateProduct() {
             <CardHeader className="flex justify-between items-center">
               <div className="flex flex-col justify-center mr-auto">
                 <CardTitle>All Products</CardTitle>
-                <CardDescription>Manage vaccine product registry</CardDescription>
+                <CardDescription>
+                  Manage vaccine product registry
+                </CardDescription>
               </div>
 
               {/* ➕ Create Product Button */}
-              <Dialog>
+              <Dialog
+                open={isProductDialogOpen}
+                onOpenChange={setIsProductDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button className="ml-auto">
                     <Plus className="w-4 h-4 mr-1" /> Create Product
@@ -263,7 +282,9 @@ export default function CreateProduct() {
 
                 <DialogContent className="max-w-3xl mx-auto p-6">
                   <DialogHeader>
-                    <DialogTitle className="text-xl font-semibold">Create New Product</DialogTitle>
+                    <DialogTitle className="text-xl font-semibold">
+                      Create New Product
+                    </DialogTitle>
                     <DialogDescription>
                       Link a new product to an existing batch.
                     </DialogDescription>
@@ -276,14 +297,20 @@ export default function CreateProduct() {
                     {/* 🧩 Left Column */}
                     <div className="space-y-3">
                       <div>
-                        <label htmlFor="select-batch" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="select-batch"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Select Batch
                         </label>
                         <Select
                           value={selectedBatch}
                           onValueChange={(v) => setSelectedBatch(v)}
                         >
-                          <SelectTrigger id="select-batch" aria-label="Select Batch">
+                          <SelectTrigger
+                            id="select-batch"
+                            aria-label="Select Batch"
+                          >
                             <SelectValue placeholder="Choose batch" />
                           </SelectTrigger>
                           <SelectContent>
@@ -297,7 +324,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="productName" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="productName"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Product Name
                         </label>
                         <Input
@@ -310,7 +340,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="requiredStorageTemp" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="requiredStorageTemp"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Required Storage Temperature
                         </label>
                         <Input
@@ -323,7 +356,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="expiryDate" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="expiryDate"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Expiry Date
                         </label>
                         <Input
@@ -336,7 +372,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="sensorDeviceUUID" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="sensorDeviceUUID"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Sensor Device UUID
                         </label>
                         <Input
@@ -349,7 +388,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="microprocessorMac" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="microprocessorMac"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Microprocessor MAC Address
                         </label>
                         <Input
@@ -365,7 +407,10 @@ export default function CreateProduct() {
                     {/* 🧩 Right Column */}
                     <div className="space-y-3">
                       <div>
-                        <label htmlFor="handlingInstructions" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="handlingInstructions"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Handling Instructions
                         </label>
                         <Textarea
@@ -379,7 +424,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="sensorTypes" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="sensorTypes"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Sensor Types
                         </label>
                         <Input
@@ -392,7 +440,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="qrId" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="qrId"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           QR ID
                         </label>
                         <Input
@@ -405,7 +456,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="wifiSSID" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="wifiSSID"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Wi-Fi SSID
                         </label>
                         <Input
@@ -418,7 +472,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="wifiPassword" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="wifiPassword"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Wi-Fi Password
                         </label>
                         <Input
@@ -431,7 +488,10 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
-                        <label htmlFor="originFacilityAddr" className="font-medium text-sm mb-1 block">
+                        <label
+                          htmlFor="originFacilityAddr"
+                          className="font-medium text-sm mb-1 block"
+                        >
                           Origin Facility Address
                         </label>
                         <Input
@@ -453,7 +513,8 @@ export default function CreateProduct() {
                       >
                         {createProductMutation.isPending ? (
                           <>
-                            <Loader2 className="animate-spin w-4 h-4 mr-2" /> Creating...
+                            <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
+                            Creating...
                           </>
                         ) : (
                           "Create Product"
@@ -512,7 +573,10 @@ export default function CreateProduct() {
               </div>
 
               {/* ➕ Create Batch Button */}
-              <Dialog>
+              <Dialog
+                open={isBatchDialogOpen}
+                onOpenChange={setIsBatchDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button className="ml-auto">
                     <Plus className="w-4 h-4 mr-1" /> Create Batch
@@ -528,7 +592,10 @@ export default function CreateProduct() {
 
                   <form onSubmit={handleCreateBatch} className="space-y-3 mt-4">
                     <div>
-                      <label htmlFor="facility" className="font-medium text-sm mb-1 block">
+                      <label
+                        htmlFor="facility"
+                        className="font-medium text-sm mb-1 block"
+                      >
                         Facility Name
                       </label>
                       <Input
@@ -542,7 +609,9 @@ export default function CreateProduct() {
 
                     {/* Production Window: start + end date pickers */}
                     <div>
-                      <label className="font-medium text-sm mb-1 block">Production Window</label>
+                      <label className="font-medium text-sm mb-1 block">
+                        Production Window
+                      </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Input
                           id="productionStart"
@@ -566,7 +635,10 @@ export default function CreateProduct() {
                     </div>
 
                     <div>
-                      <label htmlFor="quantityProduced" className="font-medium text-sm mb-1 block">
+                      <label
+                        htmlFor="quantityProduced"
+                        className="font-medium text-sm mb-1 block"
+                      >
                         Quantity Produced
                       </label>
                       <Input
@@ -579,7 +651,10 @@ export default function CreateProduct() {
                     </div>
 
                     <div>
-                      <label htmlFor="releaseStatus" className="font-medium text-sm mb-1 block">
+                      <label
+                        htmlFor="releaseStatus"
+                        className="font-medium text-sm mb-1 block"
+                      >
                         Release Date
                       </label>
                       <Input
@@ -598,7 +673,8 @@ export default function CreateProduct() {
                     >
                       {createBatchMutation.isPending ? (
                         <>
-                          <Loader2 className="animate-spin w-4 h-4 mr-2" /> Creating...
+                          <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
+                          Creating...
                         </>
                       ) : (
                         "Create Batch"
@@ -624,7 +700,9 @@ export default function CreateProduct() {
                         <th className="p-2 border text-left">ID</th>
                         <th className="p-2 border text-left">Facility</th>
                         <th className="p-2 border text-left">Quantity</th>
-                        <th className="p-2 border text-left">Production Window</th>
+                        <th className="p-2 border text-left">
+                          Production Window
+                        </th>
                         <th className="p-2 border text-left">Release Status</th>
                       </tr>
                     </thead>
@@ -633,9 +711,9 @@ export default function CreateProduct() {
                         <tr key={b.id} className="hover:bg-muted/30">
                           <td className="p-2 border">{b.id}</td>
                           <td className="p-2 border">{b.facility}</td>
-                          <td className="p-2 border">{b.quantityProduced}</td>
-                          <td className="p-2 border">{b.productionWindow}</td>
-                          <td className="p-2 border">{b.releaseStatus}</td>
+                          <td className="p-2 border">{b.quantity_produced}</td>
+                          <td className="p-2 border">{b.production_window}</td>
+                          <td className="p-2 border">{b.release_status}</td>
                         </tr>
                       ))}
                     </tbody>
