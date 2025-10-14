@@ -13,6 +13,7 @@ import {
   X,
   Users,
   Warehouse,
+  MapPin,
   UserPlus,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -45,7 +46,7 @@ export function Sidebar({
           { path: "/", label: "Dashboard", icon: LayoutDashboard },
           { path: "/products", label: "Products", icon: Package },
           { path: "/products/create", label: "Create Product", icon: PlusCircle },
-          { path: "/handover", label: "Distribute", icon: Truck },
+          { path: "/handover", label: "Shipments", icon: Truck },
           { path: "/analytics", label: "Analytics", icon: BarChart3 },
           { path: "/settings", label: "Settings", icon: Settings },
           { path: "/register", label: "Register", icon: UserPlus },
@@ -64,6 +65,7 @@ export function Sidebar({
         return [
           { path: "/", label: "Dashboard", icon: LayoutDashboard },
           { path: "/inventory", label: "Inventory", icon: Warehouse },
+          { path: "/checkpoints", label: "Checkpoints", icon: MapPin },
           { path: "/handover", label: "Receive / Dispatch", icon: Truck },
           { path: "/settings", label: "Settings", icon: Settings },
           { path: "/register", label: "Register", icon: UserPlus },

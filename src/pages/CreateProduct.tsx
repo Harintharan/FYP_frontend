@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { batchService } from "@/services/batchService";
-import { productRegistryService } from "@/services/productRegistryService";
+import { productRegistryService } from "@/services/productService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore } from "@/lib/store";
+// import { VaccineProductStatus } from "@/types";
 
 // 🔹 Utility — Simple ISO Date Validator
 const isValidISODate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -42,29 +43,44 @@ export default function CreateProduct() {
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   const { uuid } = useAppStore();
+  const statusOptions: string[] = [
+    "PENDING_QC",
+    "READY TO SHIPMENT",
+    "IN_TRANSIT",
+    "DELIVERED",
+    "EXPIRED",
+    "RECALLED",
+  ];
   const [batchForm, setBatchForm] = useState({
-    productCategory: "vaccine",
+    productCategory: "",
     manufacturerUUID: uuid,
     facility: "",
     productionStart: "",
     productionEnd: "",
     quantityProduced: "",
     releaseStatus: "",
+    expiryDate: "",
+    handlingInstructions: "",
+    requiredStartTemp: "",
+    requiredEndTemp: "",
   });
 
   const [productForm, setProductForm] = useState({
+    productCategory: "IoT",
     productName: "",
+    microprocessorMac: "",
+    sensorTypes: "",
+    wifiSSID: "",
+    wifiPassword: "",
+    status: "READY TO SHIPMENT" as string,
+    // legacy fields kept for UI compatibility; not sent to backend
     requiredStorageTemp: "",
     handlingInstructions: "",
     expiryDate: "",
-    sensorDeviceUUID: "",
-    microprocessorMac: "",
-    sensorTypes: "",
-    qrId: "",
-    wifiSSID: "",
-    wifiPassword: "",
     originFacilityAddr: "",
+    transportRoutePlanId: "",
   });
+
 
   // ============================
   // 🔹 Fetch Data
@@ -90,13 +106,17 @@ export default function CreateProduct() {
       toast.success("✅ Batch created successfully!");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
       setBatchForm({
-        productCategory: "vaccine",
+        productCategory: "",
         manufacturerUUID: uuid,
         facility: "",
         productionStart: "",
         productionEnd: "",
         quantityProduced: "",
         releaseStatus: "",
+        expiryDate: "",
+        handlingInstructions: "",
+        requiredStartTemp: "",
+        requiredEndTemp: "",
       });
       setIsBatchDialogOpen(false); // ✅ close dialog
     },
@@ -111,17 +131,18 @@ export default function CreateProduct() {
       toast.success("✅ Product created successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setProductForm({
+        productCategory: "IoT",
         productName: "",
+        microprocessorMac: "",
+        sensorTypes: "",
+        wifiSSID: "",
+        wifiPassword: "",
+        status: "READY TO SHIPMENT",
         requiredStorageTemp: "",
         handlingInstructions: "",
         expiryDate: "",
-        sensorDeviceUUID: "",
-        microprocessorMac: "",
-        sensorTypes: "",
-        qrId: "",
-        wifiSSID: "",
-        wifiPassword: "",
         originFacilityAddr: "",
+        transportRoutePlanId: "",
       });
       setSelectedBatch("");
       setIsProductDialogOpen(false); // ✅ close dialog
@@ -146,13 +167,19 @@ export default function CreateProduct() {
   // ============================
   const validateBatchForm = () => {
     const {
+      productCategory,
       facility,
       productionStart,
       productionEnd,
       quantityProduced,
       releaseStatus,
+      expiryDate,
+      handlingInstructions,
+      requiredStartTemp,
+      requiredEndTemp,
     } = batchForm;
 
+    if (!productCategory.trim()) return "Product category is required.";
     if (!facility.trim()) return "Facility name is required.";
     if (!productionStart || !isValidISODate(productionStart))
       return "Production start date is required (YYYY-MM-DD).";
@@ -166,8 +193,22 @@ export default function CreateProduct() {
 
     if (!quantityProduced.trim() || isNaN(Number(quantityProduced)))
       return "Quantity produced must be a valid number.";
-    if (!releaseStatus.trim() || !isValidISODate(releaseStatus))
-      return "Release date must be a valid date (YYYY-MM-DD).";
+
+    if (!releaseStatus.trim())
+      return "Release status is required (e.g., QA_PASSED).";
+
+    if (!expiryDate.trim() || !isValidISODate(expiryDate))
+      return "Expiry date must be YYYY-MM-DD.";
+
+    if (!handlingInstructions.trim())
+      return "Handling instructions are required.";
+
+    if (!requiredStartTemp.trim() || isNaN(Number(requiredStartTemp)))
+      return "Required start temperature must be a number.";
+    if (!requiredEndTemp.trim() || isNaN(Number(requiredEndTemp)))
+      return "Required end temperature must be a number.";
+    if (Number(requiredStartTemp) > Number(requiredEndTemp))
+      return "Start temperature cannot exceed end temperature.";
 
     return null;
   };
@@ -176,28 +217,17 @@ export default function CreateProduct() {
     const f = productForm;
 
     if (!selectedBatch) return "Select a batch first.";
+    if (!f.productCategory.trim()) return "Product category is required.";
     if (!f.productName.trim()) return "Product name is required.";
-    if (!f.requiredStorageTemp.trim())
-      return "Required storage temperature is required.";
-    if (!f.handlingInstructions.trim())
-      return "Handling instructions are required.";
-    if (!f.expiryDate.trim() || !isValidISODate(f.expiryDate))
-      return "Expiry date must be in valid format YYYY-MM-DD.";
-    if (!f.sensorDeviceUUID.trim()) return "Sensor Device UUID is required.";
-    if (
-      !/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.microprocessorMac.trim())
-    )
-      return "Microprocessor MAC must be in format 00:1A:2B:3C:4D:5E.";
-    if (!f.sensorTypes.trim())
-      return "Sensor types (e.g., GPS,Temperature) required.";
-    if (!f.qrId.trim()) return "QR ID is required.";
+    if (!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.microprocessorMac.trim())) return "Microprocessor MAC must be in format 00:1A:2B:3C:4D:5E.";
+    if (!f.sensorTypes.trim()) return "Sensor types (e.g., temperature,humidity) required.";
     if (!f.wifiSSID.trim()) return "Wi-Fi SSID is required.";
     if (!f.wifiPassword.trim()) return "Wi-Fi Password is required.";
-    if (!f.originFacilityAddr.trim())
-      return "Origin facility address is required.";
+    if (!f.status) return "Status is required.";
 
     return null;
   };
+
 
   // ============================
   // 🔹 Form Submit Handlers
@@ -207,15 +237,19 @@ export default function CreateProduct() {
     const error = validateBatchForm();
     if (error) return toast.error(error);
 
-    const productionWindow = `${batchForm.productionStart} to ${batchForm.productionEnd}`;
+    const productionWindow = `${batchForm.productionStart}T00:00:00Z/${batchForm.productionEnd}T23:59:59Z`;
 
     createBatchMutation.mutate({
       productCategory: batchForm.productCategory.trim(),
       manufacturerUUID: batchForm.manufacturerUUID.trim(),
       facility: batchForm.facility.trim(),
-      productionWindow, // send as "YYYY-MM-DD to YYYY-MM-DD"
+      productionWindow, // ISO interval
       quantityProduced: batchForm.quantityProduced.trim(),
       releaseStatus: batchForm.releaseStatus.trim(),
+      expiryDate: batchForm.expiryDate.trim(),
+      handlingInstructions: batchForm.handlingInstructions.trim(),
+      requiredStartTemp: batchForm.requiredStartTemp.trim(),
+      requiredEndTemp: batchForm.requiredEndTemp.trim(),
     });
   };
 
@@ -225,25 +259,18 @@ export default function CreateProduct() {
     if (error) return toast.error(error);
 
     createProductMutation.mutate({
-      productUUID: `PROD-${Date.now()}`,
+      manufacturerUUID: uuid,
       productName: productForm.productName.trim(),
-      productCategory: "vaccine",
-      batchLotId: Number(selectedBatch),
-      requiredStorageTemp: productForm.requiredStorageTemp.trim(),
-      transportRoutePlanId: "ROUTE-001",
-      handlingInstructions: productForm.handlingInstructions.trim(),
-      expiryDate: productForm.expiryDate.trim(),
-      sensorDeviceUUID: productForm.sensorDeviceUUID.trim(),
+      productCategory: productForm.productCategory.trim(),
+      batchId: selectedBatch,
       microprocessorMac: productForm.microprocessorMac.trim().toUpperCase(),
       sensorTypes: productForm.sensorTypes.trim(),
-      qrId: productForm.qrId.trim(),
       wifiSSID: productForm.wifiSSID.trim(),
       wifiPassword: productForm.wifiPassword.trim(),
-      manufacturerUUID: "MF-001",
-      originFacilityAddr: productForm.originFacilityAddr.trim(),
-      status: 0,
+      status: productForm.status,
     });
   };
+
 
   // ============================
   // 🔹 UI
@@ -280,7 +307,7 @@ export default function CreateProduct() {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-w-3xl mx-auto p-6">
+                <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col mx-auto p-6">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-semibold">
                       Create New Product
@@ -292,10 +319,10 @@ export default function CreateProduct() {
 
                   <form
                     onSubmit={handleCreateProduct}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5"
                   >
                     {/* 🧩 Left Column */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 ">
                       <div>
                         <label
                           htmlFor="select-batch"
@@ -316,7 +343,7 @@ export default function CreateProduct() {
                           <SelectContent>
                             {batches?.map((b: any) => (
                               <SelectItem key={b.id} value={b.id.toString()}>
-                                #{b.id} — {b.facility}
+                                {b.facility} - {b.productionWindow}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -340,6 +367,19 @@ export default function CreateProduct() {
                       </div>
 
                       <div>
+                        <label htmlFor="productCategory" className="font-medium text-sm mb-1 block">
+                          Product Category
+                        </label>
+                        <Input
+                          id="productCategory"
+                          name="productCategory"
+                          placeholder="IoT"
+                          value={productForm.productCategory}
+                          onChange={handleProductChange}
+                        />
+                      </div>
+
+                      <div className="hidden">
                         <label
                           htmlFor="requiredStorageTemp"
                           className="font-medium text-sm mb-1 block"
@@ -355,7 +395,7 @@ export default function CreateProduct() {
                         />
                       </div>
 
-                      <div>
+                      <div className="hidden">
                         <label
                           htmlFor="expiryDate"
                           className="font-medium text-sm mb-1 block"
@@ -371,7 +411,7 @@ export default function CreateProduct() {
                         />
                       </div>
 
-                      <div>
+                      {/* <div>
                         <label
                           htmlFor="sensorDeviceUUID"
                           className="font-medium text-sm mb-1 block"
@@ -385,7 +425,7 @@ export default function CreateProduct() {
                           value={productForm.sensorDeviceUUID}
                           onChange={handleProductChange}
                         />
-                      </div>
+                      </div> */}
 
                       <div>
                         <label
@@ -402,11 +442,47 @@ export default function CreateProduct() {
                           onChange={handleProductChange}
                         />
                       </div>
+                      <div className="hidden">
+                        <label htmlFor="transportRoutePlanId" className="font-medium text-sm mb-1 block">
+                          Transport Route Plan ID
+                        </label>
+                        <Input
+                          id="transportRoutePlanId"
+                          name="transportRoutePlanId"
+                          placeholder="route-plan-2025-05"
+                          value={productForm.transportRoutePlanId}
+                          onChange={handleProductChange}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="status" className="font-medium text-sm mb-1 block">
+                          Status
+                        </label>
+                        <Select
+                          value={productForm.status}
+                          onValueChange={(v) =>
+                            setProductForm((f) => ({ ...f, status: v }))
+                          }
+                        >
+                          <SelectTrigger id="status" aria-label="Status">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status.replace(/_/g, " ")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                     </div>
 
                     {/* 🧩 Right Column */}
                     <div className="space-y-3">
-                      <div>
+                      <div className="hidden">
                         <label
                           htmlFor="handlingInstructions"
                           className="font-medium text-sm mb-1 block"
@@ -439,7 +515,7 @@ export default function CreateProduct() {
                         />
                       </div>
 
-                      <div>
+                      {/* <div>
                         <label
                           htmlFor="qrId"
                           className="font-medium text-sm mb-1 block"
@@ -453,7 +529,7 @@ export default function CreateProduct() {
                           value={productForm.qrId}
                           onChange={handleProductChange}
                         />
-                      </div>
+                      </div> */}
 
                       <div>
                         <label
@@ -487,7 +563,7 @@ export default function CreateProduct() {
                         />
                       </div>
 
-                      <div>
+                      <div className="hidden">
                         <label
                           htmlFor="originFacilityAddr"
                           className="font-medium text-sm mb-1 block"
@@ -540,18 +616,18 @@ export default function CreateProduct() {
                       <tr className="bg-muted">
                         <th className="p-2 border text-left">Product UUID</th>
                         <th className="p-2 border text-left">Name</th>
-                        <th className="p-2 border text-left">Batch</th>
-                        <th className="p-2 border text-left">Expiry Date</th>
+                        <th className="p-2 border text-left">Category</th>
+                        <th className="p-2 border text-left">Batch ID</th>
                         <th className="p-2 border text-left">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {products?.map((p: any) => (
                         <tr key={p.productUUID} className="hover:bg-muted/30">
-                          <td className="p-2 border">{p.productUUID}</td>
+                          <td className="p-2 border">{p.id}</td>
                           <td className="p-2 border">{p.productName}</td>
-                          <td className="p-2 border">{p.batchLotId}</td>
-                          <td className="p-2 border">{p.expiryDate}</td>
+                          <td className="p-2 border">{p.productCategory}</td>
+                          <td className="p-2 border">{p.batchId}</td>
                           <td className="p-2 border">{p.status}</td>
                         </tr>
                       ))}
@@ -582,7 +658,7 @@ export default function CreateProduct() {
                     <Plus className="w-4 h-4 mr-1" /> Create Batch
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col mx-auto p-6">
                   <DialogHeader>
                     <DialogTitle>Create New Batch</DialogTitle>
                     <DialogDescription>
@@ -590,7 +666,19 @@ export default function CreateProduct() {
                     </DialogDescription>
                   </DialogHeader>
 
-                  <form onSubmit={handleCreateBatch} className="space-y-3 mt-4">
+                  <form onSubmit={handleCreateBatch} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5">
+                    <div className="md:col-span-2">
+                      <label htmlFor="productCategory" className="font-medium text-sm mb-1 block">
+                        Product Category
+                      </label>
+                      <Input
+                        id="productCategory"
+                        name="productCategory"
+                        placeholder="COVID Test Kits"
+                        value={batchForm.productCategory}
+                        onChange={handleBatchChange}
+                      />
+                    </div>
                     <div>
                       <label
                         htmlFor="facility"
@@ -607,8 +695,8 @@ export default function CreateProduct() {
                       />
                     </div>
 
-                    {/* Production Window: start + end date pickers */}
-                    <div>
+                    {/* Production Window: start + end date pickers (will be sent as ISO interval) */}
+                    <div className="md:col-span-2">
                       <label className="font-medium text-sm mb-1 block">
                         Production Window
                       </label>
@@ -635,51 +723,95 @@ export default function CreateProduct() {
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="quantityProduced"
-                        className="font-medium text-sm mb-1 block"
-                      >
+                      <label htmlFor="quantityProduced" className="font-medium text-sm mb-1 block">
                         Quantity Produced
                       </label>
                       <Input
                         id="quantityProduced"
                         name="quantityProduced"
-                        placeholder="10020"
+                        placeholder="5000"
                         value={batchForm.quantityProduced}
                         onChange={handleBatchChange}
                       />
                     </div>
 
                     <div>
-                      <label
-                        htmlFor="releaseStatus"
-                        className="font-medium text-sm mb-1 block"
-                      >
-                        Release Date
+                      <label htmlFor="releaseStatus" className="font-medium text-sm mb-1 block">
+                        Release Status
                       </label>
                       <Input
                         id="releaseStatus"
                         name="releaseStatus"
-                        type="date"
+                        placeholder="QA_PASSED"
                         value={batchForm.releaseStatus}
                         onChange={handleBatchChange}
                       />
                     </div>
 
-                    <Button
-                      type="submit"
-                      disabled={createBatchMutation.isPending}
-                      className="w-full"
-                    >
-                      {createBatchMutation.isPending ? (
-                        <>
-                          <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
-                          Creating...
-                        </>
-                      ) : (
-                        "Create Batch"
-                      )}
-                    </Button>
+                    <div>
+                      <label htmlFor="expiryDate" className="font-medium text-sm mb-1 block">
+                        Batch Expiry Date
+                      </label>
+                      <Input
+                        id="expiryDate"
+                        name="expiryDate"
+                        type="date"
+                        value={batchForm.expiryDate}
+                        onChange={handleBatchChange}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label htmlFor="handlingInstructions" className="font-medium text-sm mb-1 block">
+                        Handling Instructions
+                      </label>
+                      <Textarea
+                        id="handlingInstructions"
+                        name="handlingInstructions"
+                        placeholder="Keep upright; avoid direct sunlight"
+                        value={batchForm.handlingInstructions}
+                        onChange={(e) => setBatchForm({ ...batchForm, handlingInstructions: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-medium text-sm mb-1 block">Required Temperature Range (°C)</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          id="requiredStartTemp"
+                          name="requiredStartTemp"
+                          type="number"
+                          placeholder="2"
+                          value={batchForm.requiredStartTemp}
+                          onChange={handleBatchChange}
+                        />
+                        <Input
+                          id="requiredEndTemp"
+                          name="requiredEndTemp"
+                          type="number"
+                          placeholder="8"
+                          value={batchForm.requiredEndTemp}
+                          onChange={handleBatchChange}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 pt-2">
+                      <Button
+                        type="submit"
+                        disabled={createBatchMutation.isPending}
+                        className="w-full"
+                      >
+                        {createBatchMutation.isPending ? (
+                          <>
+                            <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
+                            Creating...
+                          </>
+                        ) : (
+                          "Create Batch"
+                        )}
+                      </Button>
+                    </div>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -711,9 +843,9 @@ export default function CreateProduct() {
                         <tr key={b.id} className="hover:bg-muted/30">
                           <td className="p-2 border">{b.id}</td>
                           <td className="p-2 border">{b.facility}</td>
-                          <td className="p-2 border">{b.quantity_produced}</td>
-                          <td className="p-2 border">{b.production_window}</td>
-                          <td className="p-2 border">{b.release_status}</td>
+                          <td className="p-2 border">{b.quantityProduced}</td>
+                          <td className="p-2 border">{b.productionWindow}</td>
+                          <td className="p-2 border">{b.releaseStatus}</td>
                         </tr>
                       ))}
                     </tbody>

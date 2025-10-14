@@ -21,6 +21,7 @@ import LiveTracking from "./pages/LiveTracking";
 import Analytics from "./pages/Analytics";
 import QRScannerPage from "./pages/QRScannerPage";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
+import Checkpoints from "./pages/Checkpoints";
 
 // 🆕 (Optional placeholders for admin/supplier/warehouse)
 import ManageUsers from "./pages/ManageUsers"; // For ADMIN
@@ -101,6 +102,7 @@ const App = () => {
                   <Route index element={<Index />} />
                   <Route path="register" element={<Register />} />
                   {/* <Route path="inventory" element={<Inventory />} /> */}
+                  <Route path="checkpoints" element={<Checkpoints />} />
                   <Route path="handover" element={<Handover />} />
                   <Route path="settings" element={<Settings />} />
                 </>
@@ -122,6 +124,9 @@ const App = () => {
                   <Route path="register" element={<Register />} />
                 </>
               )}
+
+              {/* Ensure Checkpoints route is available regardless of initial role hydration */}
+              <Route path="checkpoints" element={<Checkpoints />} />
             </Route>
 
             {/* 404 fallback */}

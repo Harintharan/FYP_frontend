@@ -11,31 +11,57 @@ export interface UserProfile {
   certifications?: string[];
 }
 
+// src/types/product.ts (or wherever this lives)
+
+export type VaccineProductStatus =
+  | 'PENDING_QC'
+  | 'READY_FOR_SHIPMENT'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'EXPIRED'
+  | 'RECALLED';
+
 export interface VaccineProduct {
   id: string;
-  name: string;
-  manufacturer: string;
-  batchNumber: string;
-  lotNumber?: string;
-  productionDate: string;
-  expirationDate: string;
-  vaccineType: 'mRNA' | 'Viral Vector' | 'Protein Subunit' | 'Inactivated' | 'Live Attenuated';
-  dosesPerVial: number;
-  totalDoses: number;
-  remainingDoses: number;
-  qrUri: string;
-  ipfsCid?: string;
-  creator: `0x${string}`;
-  currentHolder?: `0x${string}`;
-  status: 'MANUFACTURED' | 'IN_COLD_STORAGE' | 'IN_TRANSIT' | 'AT_FACILITY' | 'ADMINISTERED' | 'EXPIRED' | 'RECALLED';
-  temperatureRange: {
-    min: number;
-    max: number;
-    unit: 'C' | 'F';
-  };
-  storageRequirements: string;
-  administrationInstructions?: string;
+
+  productName: string;
+  productCategory: 'vaccine';           // backend returns "vaccine"
+  manufacturerUUID: string;
+  batchId: string;
+
+  requiredStorageTemp: string;
+  transportRoutePlanId: string;
+  handlingInstructions: string;
+  expiryDate: string;
+
+  microprocessorMac: string;
+  sensorTypes: string;
+
+  wifiSSID: string;
+  originFacilityAddr: string;
+
+  status: VaccineProductStatus;
+
+  // blockchain / audit
+  productHash: string;
+  txHash: string;
+  createdBy: `0x${string}`;
+  createdAt: string;
+  updatedBy: string | null;
+  updatedAt: string | null;
+
+  // IPFS / Pinata
+  pinataCid: string;
+  pinataPinnedAt: string;
+
+  // (Optional fields your UI may use during creation; keep optional so
+  // reading existing products doesn't require them.)
+  sensorDeviceUUID?: string;
+  qrId?: string;
+  wifiPassword?: string;
 }
+
+
 
 export interface ColdChainPoint {
   ts: number;
