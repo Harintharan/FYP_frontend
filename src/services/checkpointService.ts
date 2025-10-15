@@ -28,6 +28,10 @@ export interface CreateCheckpointRequest {
 }
 
 export const checkpointService = {
+  async getAll(): Promise<Checkpoint[]> {
+    const res = await api.get('/api/checkpoints');
+    return res.data;
+  },
   async getByOwner(ownerUUID: string): Promise<Checkpoint[]> {
     const res = await api.get(`/api/checkpoints/owner/${ownerUUID}`);
     return res.data;
@@ -43,4 +47,3 @@ export const checkpointService = {
     return res.data;
   },
 };
-

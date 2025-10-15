@@ -46,6 +46,7 @@ export function Sidebar({
           { path: "/", label: "Dashboard", icon: LayoutDashboard },
           { path: "/products", label: "Products", icon: Package },
           { path: "/products/create", label: "Create Product", icon: PlusCircle },
+          // { path: "/checkpoints", label: "Checkpoints", icon: MapPin },
           { path: "/handover", label: "Shipments", icon: Truck },
           { path: "/analytics", label: "Analytics", icon: BarChart3 },
           { path: "/settings", label: "Settings", icon: Settings },
@@ -55,8 +56,8 @@ export function Sidebar({
       case "SUPPLIER":
         return [
           { path: "/", label: "Dashboard", icon: LayoutDashboard },
-          { path: "/handover", label: "Supply", icon: Truck },
-          { path: "/products", label: "Products", icon: Package },
+          { path: "/checkpoints", label: "Checkpoints", icon: MapPin },
+          { path: "/handover", label: "Incoming Shipments", icon: Truck },
           { path: "/settings", label: "Settings", icon: Settings },
           { path: "/register", label: "Register", icon: UserPlus },
         ];
