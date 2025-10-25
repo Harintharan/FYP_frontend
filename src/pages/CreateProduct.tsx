@@ -1,6 +1,6 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { batchService } from "@/services/batchService";
+import { batchService, type BatchPayload } from "@/services/batchService";
 import { productRegistryService } from "@/services/productService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ import {
 import { useAppStore } from "@/lib/store";
 // import { VaccineProductStatus } from "@/types";
 
-// 🔹 Utility — Simple ISO Date Validator
+// ðŸ”¹ Utility â€” Simple ISO Date Validator
 const isValidISODate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 export default function CreateProduct() {
@@ -41,6 +41,7 @@ export default function CreateProduct() {
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
 
   const { uuid } = useAppStore();
   const statusOptions: string[] = [
@@ -51,9 +52,10 @@ export default function CreateProduct() {
     "EXPIRED",
     "RECALLED",
   ];
-  const [batchForm, setBatchForm] = useState({
+
+  const createEmptyBatchForm = (manufacturerId: string | undefined) => ({
     productCategory: "",
-    manufacturerUUID: uuid,
+    manufacturerUUID: manufacturerId ?? "",
     facility: "",
     productionStart: "",
     productionEnd: "",
@@ -64,6 +66,19 @@ export default function CreateProduct() {
     requiredStartTemp: "",
     requiredEndTemp: "",
   });
+
+  const [batchForm, setBatchForm] = useState(() => createEmptyBatchForm(uuid));
+
+  useEffect(() => {
+    if (!editingBatchId) {
+      setBatchForm((prev) => ({
+        ...prev,
+        manufacturerUUID: uuid ?? "",
+      }));
+    }
+  }, [uuid, editingBatchId]);
+
+  const isEditingBatch = Boolean(editingBatchId);
 
   const [productForm, setProductForm] = useState({
     productCategory: "IoT",
@@ -83,7 +98,7 @@ export default function CreateProduct() {
 
 
   // ============================
-  // 🔹 Fetch Data
+  // ðŸ”¹ Fetch Data
   // ============================
   const { data: batches, isLoading: loadingBatches } = useQuery({
     queryKey: ["batches"],
@@ -98,37 +113,44 @@ export default function CreateProduct() {
   });
 
   // ============================
-  // 🔹 Mutations
+  // ðŸ”¹ Mutations
   // ============================
   const createBatchMutation = useMutation({
-    mutationFn: batchService.createBatch,
+    mutationFn: (payload: BatchPayload) => batchService.createBatch(payload),
     onSuccess: () => {
-      toast.success("✅ Batch created successfully!");
+      toast.success("Batch created successfully!");
       queryClient.invalidateQueries({ queryKey: ["batches"] });
-      setBatchForm({
-        productCategory: "",
-        manufacturerUUID: uuid,
-        facility: "",
-        productionStart: "",
-        productionEnd: "",
-        quantityProduced: "",
-        releaseStatus: "",
-        expiryDate: "",
-        handlingInstructions: "",
-        requiredStartTemp: "",
-        requiredEndTemp: "",
-      });
-      setIsBatchDialogOpen(false); // ✅ close dialog
+      setBatchForm(createEmptyBatchForm(uuid));
+      setEditingBatchId(null);
+      setIsBatchDialogOpen(false);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create batch");
     },
   });
 
+  const updateBatchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: BatchPayload }) =>
+      batchService.updateBatch(id, data),
+    onSuccess: () => {
+      toast.success("Batch updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["batches"] });
+      setBatchForm(createEmptyBatchForm(uuid));
+      setEditingBatchId(null);
+      setIsBatchDialogOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Failed to update batch");
+    },
+  });
+
+  const isSubmittingBatch =
+    createBatchMutation.isPending || updateBatchMutation.isPending;
+
   const createProductMutation = useMutation({
     mutationFn: productRegistryService.registerProduct,
     onSuccess: () => {
-      toast.success("✅ Product created successfully!");
+      toast.success("âœ… Product created successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setProductForm({
         productCategory: "IoT",
@@ -145,7 +167,7 @@ export default function CreateProduct() {
         transportRoutePlanId: "",
       });
       setSelectedBatch("");
-      setIsProductDialogOpen(false); // ✅ close dialog
+      setIsProductDialogOpen(false); // âœ… close dialog
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create product");
@@ -153,17 +175,72 @@ export default function CreateProduct() {
   });
 
   // ============================
-  // 🔹 Input Handlers
+  // ðŸ”¹ Input Handlers
   // ============================
   const handleBatchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setBatchForm({ ...batchForm, [e.target.name]: e.target.value });
+
+  const formatDatePart = (value: string | null | undefined) => {
+    if (!value) return "";
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    return trimmed.includes("T") ? trimmed.split("T")[0] : trimmed;
+  };
+
+  const safeString = (value: unknown) =>
+    value === null || value === undefined ? "" : String(value);
+
+  const handleOpenNewBatch = () => {
+    setEditingBatchId(null);
+    setBatchForm(createEmptyBatchForm(uuid));
+    setIsBatchDialogOpen(true);
+  };
+
+  const handleEditBatch = (batch: any) => {
+    if (!batch) return;
+
+    const productionWindowValue =
+      typeof batch.productionWindow === "string" ? batch.productionWindow : "";
+    const [windowStartRaw, windowEndRaw] = productionWindowValue.split("/");
+    const productionStart =
+      formatDatePart(windowStartRaw) ||
+      formatDatePart(batch.productionStart) ||
+      "";
+    const productionEnd =
+      formatDatePart(windowEndRaw) ||
+      formatDatePart(batch.productionEnd) ||
+      "";
+
+    const manufacturerId =
+      batch.manufacturerUUID ??
+      batchForm.manufacturerUUID ??
+      uuid ??
+      "";
+
+    setEditingBatchId(String(batch.id));
+    setBatchForm({
+      productCategory: safeString(batch.productCategory),
+      manufacturerUUID: safeString(manufacturerId),
+      facility: safeString(batch.facility),
+      productionStart,
+      productionEnd,
+      quantityProduced: safeString(batch.quantityProduced),
+      releaseStatus: safeString(batch.releaseStatus),
+      expiryDate:
+        formatDatePart(batch.expiryDate) || safeString(batch.expiryDate),
+      handlingInstructions: safeString(batch.handlingInstructions),
+      requiredStartTemp: safeString(batch.requiredStartTemp),
+      requiredEndTemp: safeString(batch.requiredEndTemp),
+    });
+    setIsBatchDialogOpen(true);
+  };
 
   const handleProductChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => setProductForm({ ...productForm, [e.target.name]: e.target.value });
 
   // ============================
-  // 🔹 Validations
+  // ðŸ”¹ Validations
   // ============================
   const validateBatchForm = () => {
     const {
@@ -230,18 +307,19 @@ export default function CreateProduct() {
 
 
   // ============================
-  // 🔹 Form Submit Handlers
+  // ðŸ”¹ Form Submit Handlers
   // ============================
-  const handleCreateBatch = (e: React.FormEvent) => {
+  const handleBatchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const error = validateBatchForm();
     if (error) return toast.error(error);
 
     const productionWindow = `${batchForm.productionStart}T00:00:00Z/${batchForm.productionEnd}T23:59:59Z`;
 
-    createBatchMutation.mutate({
+    const payload: BatchPayload = {
       productCategory: batchForm.productCategory.trim(),
-      manufacturerUUID: batchForm.manufacturerUUID.trim(),
+      manufacturerUUID:
+        batchForm.manufacturerUUID.trim() || (uuid ? uuid.trim() : ""),
       facility: batchForm.facility.trim(),
       productionWindow, // ISO interval
       quantityProduced: batchForm.quantityProduced.trim(),
@@ -250,7 +328,13 @@ export default function CreateProduct() {
       handlingInstructions: batchForm.handlingInstructions.trim(),
       requiredStartTemp: batchForm.requiredStartTemp.trim(),
       requiredEndTemp: batchForm.requiredEndTemp.trim(),
-    });
+    };
+
+    if (editingBatchId) {
+      updateBatchMutation.mutate({ id: editingBatchId, data: payload });
+    } else {
+      createBatchMutation.mutate(payload);
+    }
   };
 
   const handleCreateProduct = (e: React.FormEvent) => {
@@ -273,7 +357,7 @@ export default function CreateProduct() {
 
 
   // ============================
-  // 🔹 UI
+  // ðŸ”¹ UI
   // ============================
   return (
     <div className="p-8">
@@ -285,7 +369,7 @@ export default function CreateProduct() {
           <TabsTrigger value="batches">Batches</TabsTrigger>
         </TabsList>
 
-        {/* 🧾 Products Tab */}
+        {/* ðŸ§¾ Products Tab */}
         <TabsContent value="products">
           <Card>
             <CardHeader className="flex justify-between items-center">
@@ -296,7 +380,7 @@ export default function CreateProduct() {
                 </CardDescription>
               </div>
 
-              {/* ➕ Create Product Button */}
+              {/* âž• Create Product Button */}
               <Dialog
                 open={isProductDialogOpen}
                 onOpenChange={setIsProductDialogOpen}
@@ -321,7 +405,7 @@ export default function CreateProduct() {
                     onSubmit={handleCreateProduct}
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5"
                   >
-                    {/* 🧩 Left Column */}
+                    {/* ðŸ§© Left Column */}
                     <div className="space-y-3 ">
                       <div>
                         <label
@@ -389,7 +473,7 @@ export default function CreateProduct() {
                         <Input
                           id="requiredStorageTemp"
                           name="requiredStorageTemp"
-                          placeholder="2–8°C"
+                          placeholder="2â€“8Â°C"
                           value={productForm.requiredStorageTemp}
                           onChange={handleProductChange}
                         />
@@ -480,7 +564,7 @@ export default function CreateProduct() {
 
                     </div>
 
-                    {/* 🧩 Right Column */}
+                    {/* ðŸ§© Right Column */}
                     <div className="space-y-3">
                       <div className="hidden">
                         <label
@@ -580,7 +664,7 @@ export default function CreateProduct() {
                       </div>
                     </div>
 
-                    {/* 🧭 Full-width submit button */}
+                    {/* ðŸ§­ Full-width submit button */}
                     <div className="md:col-span-2 pt-2">
                       <Button
                         type="submit"
@@ -639,7 +723,7 @@ export default function CreateProduct() {
           </Card>
         </TabsContent>
 
-        {/* 🧱 Batches Tab */}
+        {/* ðŸ§± Batches Tab */}
         <TabsContent value="batches">
           <Card>
             <CardHeader className="flex justify-between items-center">
@@ -648,25 +732,38 @@ export default function CreateProduct() {
                 <CardDescription>Manage all production batches</CardDescription>
               </div>
 
-              {/* ➕ Create Batch Button */}
+              {/* âž• Create Batch Button */}
               <Dialog
                 open={isBatchDialogOpen}
-                onOpenChange={setIsBatchDialogOpen}
+                onOpenChange={(open) => {
+                  setIsBatchDialogOpen(open);
+                  if (!open) {
+                    setEditingBatchId(null);
+                    setBatchForm(createEmptyBatchForm(uuid));
+                  }
+                }}
               >
                 <DialogTrigger asChild>
-                  <Button className="ml-auto">
+                  <Button className="ml-auto" onClick={handleOpenNewBatch}>
                     <Plus className="w-4 h-4 mr-1" /> Create Batch
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col mx-auto p-6">
                   <DialogHeader>
-                    <DialogTitle>Create New Batch</DialogTitle>
+                    <DialogTitle>
+                      {isEditingBatch ? "Edit Batch" : "Create New Batch"}
+                    </DialogTitle>
                     <DialogDescription>
-                      Fill in details to create a new batch.
+                      {isEditingBatch
+                        ? "Update the batch details and save your changes."
+                        : "Fill in details to create a new batch."}
                     </DialogDescription>
                   </DialogHeader>
 
-                  <form onSubmit={handleCreateBatch} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5">
+                  <form
+                    onSubmit={handleBatchSubmit}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5"
+                  >
                     <div className="md:col-span-2">
                       <label htmlFor="productCategory" className="font-medium text-sm mb-1 block">
                         Product Category
@@ -775,7 +872,7 @@ export default function CreateProduct() {
                     </div>
 
                     <div>
-                      <label className="font-medium text-sm mb-1 block">Required Temperature Range (°C)</label>
+                      <label className="font-medium text-sm mb-1 block">Required Temperature Range (Â°C)</label>
                       <div className="grid grid-cols-2 gap-2">
                         <Input
                           id="requiredStartTemp"
@@ -799,14 +896,16 @@ export default function CreateProduct() {
                     <div className="md:col-span-2 pt-2">
                       <Button
                         type="submit"
-                        disabled={createBatchMutation.isPending}
+                        disabled={isSubmittingBatch}
                         className="w-full"
                       >
-                        {createBatchMutation.isPending ? (
+                        {isSubmittingBatch ? (
                           <>
-                            <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
-                            Creating...
+                            <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                            {isEditingBatch ? "Updating..." : "Creating..."}
                           </>
+                        ) : isEditingBatch ? (
+                          "Update Batch"
                         ) : (
                           "Create Batch"
                         )}
@@ -836,6 +935,7 @@ export default function CreateProduct() {
                           Production Window
                         </th>
                         <th className="p-2 border text-left">Release Status</th>
+                        <th className="p-2 border text-left">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -843,11 +943,22 @@ export default function CreateProduct() {
                         <tr key={b.id} className="hover:bg-muted/30">
                           <td className="p-2 border">{b.id}</td>
                           <td className="p-2 border">{b.facility}</td>
-                          <td className="p-2 border">{b.quantityProduced}</td>
-                          <td className="p-2 border">{b.productionWindow}</td>
-                          <td className="p-2 border">{b.releaseStatus}</td>
-                        </tr>
-                      ))}
+                      <td className="p-2 border">{b.quantityProduced}</td>
+                      <td className="p-2 border">{b.productionWindow}</td>
+                      <td className="p-2 border">{b.releaseStatus}</td>
+                      <td className="p-2 border">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => handleEditBatch(b)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
                     </tbody>
                   </table>
                 </div>
@@ -859,3 +970,5 @@ export default function CreateProduct() {
     </div>
   );
 }
+
+
