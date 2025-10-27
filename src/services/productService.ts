@@ -8,11 +8,12 @@ export interface CreateProductRequest {
     productName: string;
     productCategory: string; // e.g., "IoT"
     batchId: string; // UUID string
+    quantity?: number;
     microprocessorMac: string; // AA:BB:CC:DD:EE:FF
     sensorTypes: string; // temperature,humidity
     wifiSSID: string;
     wifiPassword: string;
-    status: string; // backend now accepts values like "READY TO SHIPMENT"
+    status: VaccineProductStatus;
 }
 
 /** Payload for updating an existing product (matches backend expectations) */
@@ -32,7 +33,8 @@ export interface UpdateProductRequest {
     wifiSSID?: string;
     wifiPassword?: string;
     originFacilityAddr?: string;
-    status?: string; // e.g., "READY TO SHIPMENT"
+    status?: VaccineProductStatus;
+    quantity?: number;
 }
 
 /** Service methods for product registry */

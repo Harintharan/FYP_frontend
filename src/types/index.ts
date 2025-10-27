@@ -14,12 +14,13 @@ export interface UserProfile {
 // src/types/product.ts (or wherever this lives)
 
 export type VaccineProductStatus =
-  | 'PENDING_QC'
-  | 'READY_FOR_SHIPMENT'
-  | 'IN_TRANSIT'
-  | 'DELIVERED'
-  | 'EXPIRED'
-  | 'RECALLED';
+  | 'PRODUCT_CREATED'
+  | 'PRODUCT_READY_FOR_SHIPMENT'
+  | 'PRODUCT_ALLOCATED'
+  | 'PRODUCT_IN_TRANSIT'
+  | 'PRODUCT_DELIVERED'
+  | 'PRODUCT_RETURNED'
+  | 'PRODUCT_CANCELLED';
 
 export interface VaccineProduct {
   id: string;
@@ -41,6 +42,7 @@ export interface VaccineProduct {
   originFacilityAddr: string;
 
   status: VaccineProductStatus;
+  quantity?: number;
 
   // blockchain / audit
   productHash: string;

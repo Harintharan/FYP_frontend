@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { batchService, type BatchPayload } from "@/services/batchService";
 import { productRegistryService } from "@/services/productService";
+import type { UpdateProductRequest } from "@/services/productService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore } from "@/lib/store";
-// import { VaccineProductStatus } from "@/types";
+import type { VaccineProductStatus } from "@/types";
 
 // ðŸ”¹ Utility â€” Simple ISO Date Validator
 const isValidISODate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -42,15 +43,17 @@ export default function CreateProduct() {
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   const { uuid } = useAppStore();
-  const statusOptions: string[] = [
-    "PENDING_QC",
-    "READY TO SHIPMENT",
-    "IN_TRANSIT",
-    "DELIVERED",
-    "EXPIRED",
-    "RECALLED",
+  const statusOptions: VaccineProductStatus[] = [
+    "PRODUCT_CREATED",
+    "PRODUCT_READY_FOR_SHIPMENT",
+    "PRODUCT_ALLOCATED",
+    "PRODUCT_IN_TRANSIT",
+    "PRODUCT_DELIVERED",
+    "PRODUCT_RETURNED",
+    "PRODUCT_CANCELLED",
   ];
 
   const createEmptyBatchForm = (manufacturerId: string | undefined) => ({
@@ -67,7 +70,29 @@ export default function CreateProduct() {
     requiredEndTemp: "",
   });
 
+  const createEmptyProductForm = (manufacturerId: string | undefined) => ({
+    manufacturerUUID: manufacturerId ?? "",
+    productCategory: "IoT",
+    productName: "",
+    quantity: "",
+    microprocessorMac: "",
+    sensorTypes: "",
+    wifiSSID: "",
+    wifiPassword: "",
+    status: "PRODUCT_READY_FOR_SHIPMENT",
+    requiredStorageTemp: "",
+    handlingInstructions: "",
+    expiryDate: "",
+    originFacilityAddr: "",
+    transportRoutePlanId: "",
+    qrId: "",
+    sensorDeviceUUID: "",
+  });
+
   const [batchForm, setBatchForm] = useState(() => createEmptyBatchForm(uuid));
+  const [productForm, setProductForm] = useState(() =>
+    createEmptyProductForm(uuid)
+  );
 
   useEffect(() => {
     if (!editingBatchId) {
@@ -79,22 +104,16 @@ export default function CreateProduct() {
   }, [uuid, editingBatchId]);
 
   const isEditingBatch = Boolean(editingBatchId);
+  const isEditingProduct = Boolean(editingProductId);
 
-  const [productForm, setProductForm] = useState({
-    productCategory: "IoT",
-    productName: "",
-    microprocessorMac: "",
-    sensorTypes: "",
-    wifiSSID: "",
-    wifiPassword: "",
-    status: "READY TO SHIPMENT" as string,
-    // legacy fields kept for UI compatibility; not sent to backend
-    requiredStorageTemp: "",
-    handlingInstructions: "",
-    expiryDate: "",
-    originFacilityAddr: "",
-    transportRoutePlanId: "",
-  });
+  useEffect(() => {
+    if (!editingProductId) {
+      setProductForm((prev) => ({
+        ...prev,
+        manufacturerUUID: uuid ?? "",
+      }));
+    }
+  }, [uuid, editingProductId]);
 
 
   // ============================
@@ -150,29 +169,41 @@ export default function CreateProduct() {
   const createProductMutation = useMutation({
     mutationFn: productRegistryService.registerProduct,
     onSuccess: () => {
-      toast.success("âœ… Product created successfully!");
+      toast.success("Product created successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      setProductForm({
-        productCategory: "IoT",
-        productName: "",
-        microprocessorMac: "",
-        sensorTypes: "",
-        wifiSSID: "",
-        wifiPassword: "",
-        status: "READY TO SHIPMENT",
-        requiredStorageTemp: "",
-        handlingInstructions: "",
-        expiryDate: "",
-        originFacilityAddr: "",
-        transportRoutePlanId: "",
-      });
+      setProductForm(createEmptyProductForm(uuid));
       setSelectedBatch("");
-      setIsProductDialogOpen(false); // âœ… close dialog
+      setEditingProductId(null);
+      setIsProductDialogOpen(false);
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || "Failed to create product");
     },
   });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateProductRequest;
+    }) => productRegistryService.updateProduct(id, data),
+    onSuccess: () => {
+      toast.success("Product updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      setProductForm(createEmptyProductForm(uuid));
+      setSelectedBatch("");
+      setEditingProductId(null);
+      setIsProductDialogOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || "Failed to update product");
+    },
+  });
+
+  const isSubmittingProduct =
+    createProductMutation.isPending || updateProductMutation.isPending;
 
   // ============================
   // ðŸ”¹ Input Handlers
@@ -194,6 +225,13 @@ export default function CreateProduct() {
     setEditingBatchId(null);
     setBatchForm(createEmptyBatchForm(uuid));
     setIsBatchDialogOpen(true);
+  };
+
+  const handleOpenNewProduct = () => {
+    setEditingProductId(null);
+    setProductForm(createEmptyProductForm(uuid));
+    setSelectedBatch("");
+    setIsProductDialogOpen(true);
   };
 
   const handleEditBatch = (batch: any) => {
@@ -233,6 +271,41 @@ export default function CreateProduct() {
       requiredEndTemp: safeString(batch.requiredEndTemp),
     });
     setIsBatchDialogOpen(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    if (!product) return;
+
+    const batchId =
+      product.batchId ?? product.batchUUID ?? product.batch_id ?? "";
+
+    const rawStatus = safeString(product.status) as VaccineProductStatus;
+    const normalizedStatus = statusOptions.includes(rawStatus)
+      ? rawStatus
+      : "PRODUCT_CREATED";
+
+    setEditingProductId(String(product.id ?? product.productUUID ?? batchId));
+    setSelectedBatch(batchId ? String(batchId) : "");
+    setProductForm({
+      manufacturerUUID:
+        safeString(product.manufacturerUUID) || (uuid ?? ""),
+      productCategory: safeString(product.productCategory) || "IoT",
+      productName: safeString(product.productName),
+      quantity: safeString(product.quantity),
+      microprocessorMac: safeString(product.microprocessorMac),
+      sensorTypes: safeString(product.sensorTypes),
+      wifiSSID: safeString(product.wifiSSID),
+      wifiPassword: safeString(product.wifiPassword),
+      status: normalizedStatus,
+      requiredStorageTemp: safeString(product.requiredStorageTemp),
+      handlingInstructions: safeString(product.handlingInstructions),
+      expiryDate: formatDatePart(product.expiryDate),
+      originFacilityAddr: safeString(product.originFacilityAddr),
+      transportRoutePlanId: safeString(product.transportRoutePlanId),
+      qrId: safeString(product.qrId),
+      sensorDeviceUUID: safeString(product.sensorDeviceUUID),
+    });
+    setIsProductDialogOpen(true);
   };
 
   const handleProductChange = (
@@ -296,11 +369,17 @@ export default function CreateProduct() {
     if (!selectedBatch) return "Select a batch first.";
     if (!f.productCategory.trim()) return "Product category is required.";
     if (!f.productName.trim()) return "Product name is required.";
+    if (!f.quantity.trim() || Number.isNaN(Number(f.quantity)))
+      return "Quantity is required (numeric).";
+    if (Number(f.quantity) <= 0)
+      return "Quantity must be greater than zero.";
     if (!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.microprocessorMac.trim())) return "Microprocessor MAC must be in format 00:1A:2B:3C:4D:5E.";
     if (!f.sensorTypes.trim()) return "Sensor types (e.g., temperature,humidity) required.";
     if (!f.wifiSSID.trim()) return "Wi-Fi SSID is required.";
     if (!f.wifiPassword.trim()) return "Wi-Fi Password is required.";
     if (!f.status) return "Status is required.";
+    if (!statusOptions.includes(f.status as VaccineProductStatus))
+      return "Select a valid status.";
 
     return null;
   };
@@ -337,22 +416,40 @@ export default function CreateProduct() {
     }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const error = validateProductForm();
     if (error) return toast.error(error);
 
-    createProductMutation.mutate({
-      manufacturerUUID: uuid,
+    const manufacturerId =
+      productForm.manufacturerUUID.trim() || (uuid ? uuid.trim() : "");
+
+    const selectedStatus = statusOptions.includes(
+      productForm.status as VaccineProductStatus
+    )
+      ? (productForm.status as VaccineProductStatus)
+      : "PRODUCT_CREATED";
+
+    const quantityValue = Number(productForm.quantity);
+
+    const payload = {
+      manufacturerUUID: manufacturerId,
       productName: productForm.productName.trim(),
       productCategory: productForm.productCategory.trim(),
       batchId: selectedBatch,
+      quantity: Number.isFinite(quantityValue) ? quantityValue : undefined,
       microprocessorMac: productForm.microprocessorMac.trim().toUpperCase(),
       sensorTypes: productForm.sensorTypes.trim(),
       wifiSSID: productForm.wifiSSID.trim(),
       wifiPassword: productForm.wifiPassword.trim(),
-      status: productForm.status,
-    });
+      status: selectedStatus,
+    };
+
+    if (editingProductId) {
+      updateProductMutation.mutate({ id: editingProductId, data: payload });
+    } else {
+      createProductMutation.mutate(payload);
+    }
   };
 
 
@@ -383,10 +480,17 @@ export default function CreateProduct() {
               {/* âž• Create Product Button */}
               <Dialog
                 open={isProductDialogOpen}
-                onOpenChange={setIsProductDialogOpen}
+                onOpenChange={(open) => {
+                  setIsProductDialogOpen(open);
+                  if (!open) {
+                    setEditingProductId(null);
+                    setProductForm(createEmptyProductForm(uuid));
+                    setSelectedBatch("");
+                  }
+                }}
               >
                 <DialogTrigger asChild>
-                  <Button className="ml-auto">
+                  <Button className="ml-auto" onClick={handleOpenNewProduct}>
                     <Plus className="w-4 h-4 mr-1" /> Create Product
                   </Button>
                 </DialogTrigger>
@@ -394,15 +498,17 @@ export default function CreateProduct() {
                 <DialogContent className="max-w-3xl max-h-[95vh] flex flex-col mx-auto p-6">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-semibold">
-                      Create New Product
+                      {isEditingProduct ? "Edit Product" : "Create New Product"}
                     </DialogTitle>
                     <DialogDescription>
-                      Link a new product to an existing batch.
+                      {isEditingProduct
+                        ? "Update product registration details."
+                        : "Link a new product to an existing batch."}
                     </DialogDescription>
                   </DialogHeader>
 
                   <form
-                    onSubmit={handleCreateProduct}
+                    onSubmit={handleProductSubmit}
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 overflow-y-auto p-5"
                   >
                     {/* ðŸ§© Left Column */}
@@ -459,6 +565,20 @@ export default function CreateProduct() {
                           name="productCategory"
                           placeholder="IoT"
                           value={productForm.productCategory}
+                          onChange={handleProductChange}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="quantity" className="font-medium text-sm mb-1 block">
+                          Quantity
+                        </label>
+                        <Input
+                          id="quantity"
+                          name="quantity"
+                          type="number"
+                          min="1"
+                          placeholder="25"
+                          value={productForm.quantity}
                           onChange={handleProductChange}
                         />
                       </div>
@@ -669,13 +789,15 @@ export default function CreateProduct() {
                       <Button
                         type="submit"
                         className="w-full"
-                        disabled={createProductMutation.isPending}
+                        disabled={isSubmittingProduct}
                       >
-                        {createProductMutation.isPending ? (
+                        {isSubmittingProduct ? (
                           <>
                             <Loader2 className="animate-spin w-4 h-4 mr-2" />{" "}
-                            Creating...
+                            {isEditingProduct ? "Updating..." : "Creating..."}
                           </>
+                        ) : isEditingProduct ? (
+                          "Update Product"
                         ) : (
                           "Create Product"
                         )}
@@ -703,16 +825,28 @@ export default function CreateProduct() {
                         <th className="p-2 border text-left">Category</th>
                         <th className="p-2 border text-left">Batch ID</th>
                         <th className="p-2 border text-left">Status</th>
+                        <th className="p-2 border text-left">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {products?.map((p: any) => (
-                        <tr key={p.productUUID} className="hover:bg-muted/30">
-                          <td className="p-2 border">{p.id}</td>
+                        <tr key={p.productUUID ?? p.id} className="hover:bg-muted/30">
+                          <td className="p-2 border">{p.id ?? p.productUUID}</td>
                           <td className="p-2 border">{p.productName}</td>
                           <td className="p-2 border">{p.productCategory}</td>
-                          <td className="p-2 border">{p.batchId}</td>
+                          <td className="p-2 border">{p.batchId ?? p.batchUUID}</td>
                           <td className="p-2 border">{p.status}</td>
+                          <td className="p-2 border">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-1"
+                              onClick={() => handleEditProduct(p)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -970,5 +1104,9 @@ export default function CreateProduct() {
     </div>
   );
 }
+
+
+
+
 
 

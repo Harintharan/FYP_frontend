@@ -618,144 +618,146 @@ export default function Register() {
             </div>
 
             {/* Checkpoint Details */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                <Label htmlFor="checkpointName">Checkpoint Name</Label>
-                <Input
-                  id="checkpointName"
-                  name="checkpointName"
-                  value={form.checkpointName}
-                  onChange={handleChange}
-                  placeholder="Colombo Port Warehouse"
-                  required={requiresCheckpoint}
-                />
-              </div>
-              <div>
-                <Label htmlFor="checkpointAddress">Checkpoint Address</Label>
-                <Input
-                  id="checkpointAddress"
-                  name="checkpointAddress"
-                  value={form.checkpointAddress}
-                  onChange={handleChange}
-                  placeholder="Dockyard Road, Colombo 01"
-                  required={requiresCheckpoint}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="checkpointLatitude">Latitude</Label>
-                <Input
-                  id="checkpointLatitude"
-                  name="checkpointLatitude"
-                  value={form.checkpointLatitude}
-                  onChange={handleChange}
-                  placeholder="6.9370"
-                  required={requiresCheckpoint}
-                />
-              </div>
-              <div>
-                <Label htmlFor="checkpointLongitude">Longitude</Label>
-                <Input
-                  id="checkpointLongitude"
-                  name="checkpointLongitude"
-                  value={form.checkpointLongitude}
-                  onChange={handleChange}
-                  placeholder="79.8500"
-                  required={requiresCheckpoint}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="checkpointCountry">Country</Label>
-                <SearchableSelect
-                  id="checkpointCountry"
-                  value={form.checkpointCountry}
-                  options={countryOptions}
-                  placeholder="Select country"
-                  emptyMessage="No country found."
-                  searchPlaceholder="Search country..."
-                  allowClear={!requiresCheckpoint}
-                  onChange={handleCheckpointCountrySelect}
-                />
-              </div>
-              <div>
-                <Label htmlFor="checkpointState">State / Province</Label>
-                {form.checkpointCountry ? (
-                  checkpointStateOptions.length > 0 ? (
-                    <SearchableSelect
-                      id="checkpointState"
-                      value={form.checkpointState}
-                      options={checkpointStateOptions}
-                      placeholder="Select state / province"
-                      emptyMessage="No state found."
-                      searchPlaceholder="Search state..."
-                      allowClear={!requiresCheckpoint}
-                      onChange={handleCheckpointStateSelect}
-                    />
-                  ) : (
+            {requiresCheckpoint && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="checkpointName">Checkpoint Name</Label>
                     <Input
-                      id="checkpointState"
-                      name="checkpointState"
-                      value={form.checkpointState}
+                      id="checkpointName"
+                      name="checkpointName"
+                      value={form.checkpointName}
                       onChange={handleChange}
-                      placeholder="Western Province"
+                      placeholder="Colombo Port Warehouse"
                       required={requiresCheckpoint}
                     />
-                  )
-                ) : (
-                  <SearchableSelect
-                    id="checkpointState"
-                    value=""
-                    options={[]}
-                    placeholder="Select a country first"
-                    emptyMessage="Select a country to view states."
-                    searchPlaceholder="Search state..."
-                    disabled
-                    onChange={() => undefined}
-                  />
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="checkpointCity">City</Label>
-                {form.checkpointCountry && form.checkpointState ? (
-                  checkpointCityOptions.length > 0 ? (
-                    <SearchableSelect
-                      id="checkpointCity"
-                      value={form.checkpointCity}
-                      options={checkpointCityOptions}
-                      placeholder="Select city"
-                      emptyMessage="No city found."
-                      searchPlaceholder="Search city..."
-                      allowClear
-                      onChange={handleCheckpointCitySelect}
-                    />
-                  ) : (
+                  </div>
+                  <div>
+                    <Label htmlFor="checkpointAddress">Checkpoint Address</Label>
                     <Input
-                      id="checkpointCity"
-                      name="checkpointCity"
-                      value={form.checkpointCity}
+                      id="checkpointAddress"
+                      name="checkpointAddress"
+                      value={form.checkpointAddress}
                       onChange={handleChange}
-                      placeholder="Sacramento"
+                      placeholder="Dockyard Road, Colombo 01"
+                      required={requiresCheckpoint}
                     />
-                  )
-                ) : (
-                  <SearchableSelect
-                    id="checkpointCity"
-                    value=""
-                    options={[]}
-                    placeholder="Select a state first"
-                    emptyMessage="Select a state to view cities."
-                    searchPlaceholder="Search city..."
-                    disabled
-                    onChange={() => undefined}
-                  />
-                )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="checkpointLatitude">Latitude</Label>
+                    <Input
+                      id="checkpointLatitude"
+                      name="checkpointLatitude"
+                      value={form.checkpointLatitude}
+                      onChange={handleChange}
+                      placeholder="6.9370"
+                      required={requiresCheckpoint}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkpointLongitude">Longitude</Label>
+                    <Input
+                      id="checkpointLongitude"
+                      name="checkpointLongitude"
+                      value={form.checkpointLongitude}
+                      onChange={handleChange}
+                      placeholder="79.8500"
+                      required={requiresCheckpoint}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="checkpointCountry">Country</Label>
+                    <SearchableSelect
+                      id="checkpointCountry"
+                      value={form.checkpointCountry}
+                      options={countryOptions}
+                      placeholder="Select country"
+                      emptyMessage="No country found."
+                      searchPlaceholder="Search country..."
+                      allowClear={!requiresCheckpoint}
+                      onChange={handleCheckpointCountrySelect}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkpointState">State / Province</Label>
+                    {form.checkpointCountry ? (
+                      checkpointStateOptions.length > 0 ? (
+                        <SearchableSelect
+                          id="checkpointState"
+                          value={form.checkpointState}
+                          options={checkpointStateOptions}
+                          placeholder="Select state / province"
+                          emptyMessage="No state found."
+                          searchPlaceholder="Search state..."
+                          allowClear={!requiresCheckpoint}
+                          onChange={handleCheckpointStateSelect}
+                        />
+                      ) : (
+                        <Input
+                          id="checkpointState"
+                          name="checkpointState"
+                          value={form.checkpointState}
+                          onChange={handleChange}
+                          placeholder="Western Province"
+                          required={requiresCheckpoint}
+                        />
+                      )
+                    ) : (
+                      <SearchableSelect
+                        id="checkpointState"
+                        value=""
+                        options={[]}
+                        placeholder="Select a country first"
+                        emptyMessage="Select a country to view states."
+                        searchPlaceholder="Search state..."
+                        disabled
+                        onChange={() => undefined}
+                      />
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="checkpointCity">City</Label>
+                    {form.checkpointCountry && form.checkpointState ? (
+                      checkpointCityOptions.length > 0 ? (
+                        <SearchableSelect
+                          id="checkpointCity"
+                          value={form.checkpointCity}
+                          options={checkpointCityOptions}
+                          placeholder="Select city"
+                          emptyMessage="No city found."
+                          searchPlaceholder="Search city..."
+                          allowClear
+                          onChange={handleCheckpointCitySelect}
+                        />
+                      ) : (
+                        <Input
+                          id="checkpointCity"
+                          name="checkpointCity"
+                          value={form.checkpointCity}
+                          onChange={handleChange}
+                          placeholder="Sacramento"
+                        />
+                      )
+                    ) : (
+                      <SearchableSelect
+                        id="checkpointCity"
+                        value=""
+                        options={[]}
+                        placeholder="Select a state first"
+                        emptyMessage="Select a state to view cities."
+                        searchPlaceholder="Search city..."
+                        disabled
+                        onChange={() => undefined}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            </div>
+            )}
 
             {/* Manufacturer Fields */}
             {form.type === "MANUFACTURER" && (

@@ -21,12 +21,13 @@ interface ProductCardProps {
 }
 
 const statusClassMap: Record<VaccineProductStatus, string> = {
-  PENDING_QC: 'bg-muted text-muted-foreground border border-border',
-  READY_FOR_SHIPMENT: 'bg-primary/10 text-primary border border-primary/20',
-  IN_TRANSIT: 'bg-warning/10 text-warning border border-warning/20',
-  DELIVERED: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900',
-  EXPIRED: 'bg-destructive/10 text-destructive border border-destructive/20',
-  RECALLED: 'bg-destructive/10 text-destructive border border-destructive/20',
+  PRODUCT_CREATED: 'bg-muted text-muted-foreground border border-border',
+  PRODUCT_READY_FOR_SHIPMENT: 'bg-primary/10 text-primary border border-primary/20',
+  PRODUCT_ALLOCATED: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-900',
+  PRODUCT_IN_TRANSIT: 'bg-warning/10 text-warning border border-warning/20',
+  PRODUCT_DELIVERED: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900',
+  PRODUCT_RETURNED: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-900',
+  PRODUCT_CANCELLED: 'bg-destructive/10 text-destructive border border-destructive/20',
 };
 
 function humanizeStatus(status: string) {
@@ -49,16 +50,25 @@ export function ProductCard({ product, onViewDetails, onGenerateQR, onEdit }: Pr
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const statusOptions: string[] = ['PENDING_QC', 'READY TO SHIPMENT', 'IN_TRANSIT', 'DELIVERED', 'EXPIRED', 'RECALLED'];
+  const statusOptions: VaccineProductStatus[] = [
+    'PRODUCT_CREATED',
+    'PRODUCT_READY_FOR_SHIPMENT',
+    'PRODUCT_ALLOCATED',
+    'PRODUCT_IN_TRANSIT',
+    'PRODUCT_DELIVERED',
+    'PRODUCT_RETURNED',
+    'PRODUCT_CANCELLED',
+  ];
 
   const [form, setForm] = useState({
     productName: product.productName ?? '',
     productCategory: (product as any).productCategory ?? '',
+    quantity: product.quantity ? String(product.quantity) : '',
     microprocessorMac: product.microprocessorMac ?? '',
     sensorTypes: product.sensorTypes ?? '',
     wifiSSID: product.wifiSSID ?? '',
     wifiPassword: product.wifiPassword ?? '',
-    status: (product.status as string) ?? 'PENDING_QC',
+    status: (product.status as VaccineProductStatus) ?? 'PRODUCT_CREATED',
   });
 
   const handleSave = async () => {
@@ -68,9 +78,14 @@ export function ProductCard({ product, onViewDetails, onGenerateQR, onEdit }: Pr
         toast.error('Wi-Fi Password is required.');
         return;
       }
+      if (!form.quantity || Number.isNaN(Number(form.quantity)) || Number(form.quantity) <= 0) {
+        toast.error('Quantity must be a positive number.');
+        return;
+      }
       await productRegistryService.updateProduct(product.id, {
         productName: form.productName,
         productCategory: form.productCategory,
+        quantity: form.quantity ? Number(form.quantity) : undefined,
         microprocessorMac: form.microprocessorMac,
         sensorTypes: form.sensorTypes,
         wifiSSID: form.wifiSSID,
@@ -79,7 +94,13 @@ export function ProductCard({ product, onViewDetails, onGenerateQR, onEdit }: Pr
       });
       toast.success('Product updated');
       setShowEdit(false);
-      if (onEdit) onEdit({ ...product, ...form } as VaccineProduct);
+      if (onEdit)
+        onEdit({
+          ...product,
+          ...form,
+          quantity: form.quantity ? Number(form.quantity) : undefined,
+          status: form.status,
+        } as VaccineProduct);
     } catch (e: any) {
       toast.error(e?.response?.data?.error || 'Failed to update product');
     } finally {
@@ -227,12 +248,23 @@ export function ProductCard({ product, onViewDetails, onGenerateQR, onEdit }: Pr
               <Input value={form.productCategory} onChange={(e) => setForm({ ...form, productCategory: e.target.value })} />
             </div>
             <div>
+              <label className="text-sm font-medium">Quantity</label>
+              <Input
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium">Status</label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as VaccineProductStatus })}>
                 <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent>
                   {statusOptions.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {humanizeStatus(s)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

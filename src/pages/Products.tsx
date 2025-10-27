@@ -8,37 +8,45 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Filter } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import type { VaccineProduct } from '@/types';
+import type { VaccineProduct, VaccineProductStatus } from '@/types';
 import { productRegistryService } from "@/services/productService";
 
-const statusOptions: Array<'ALL' | string> = [
+const statusOptions: Array<'ALL' | VaccineProductStatus> = [
   'ALL',
-  'PENDING_QC',
-  'READY TO SHIPMENT',
-  'IN_TRANSIT',
-  'DELIVERED',
-  'EXPIRED',
-  'RECALLED',
+  'PRODUCT_CREATED',
+  'PRODUCT_READY_FOR_SHIPMENT',
+  'PRODUCT_ALLOCATED',
+  'PRODUCT_IN_TRANSIT',
+  'PRODUCT_DELIVERED',
+  'PRODUCT_RETURNED',
+  'PRODUCT_CANCELLED',
 ];
 
-const getStatusColor = (status: string | 'ALL') => {
+const getStatusColor = (status: VaccineProductStatus | 'ALL') => {
   switch (status) {
-    case 'PENDING_QC': return 'bg-muted';
-    case 'READY_FOR_SHIPMENT':
-    case 'READY TO SHIPMENT':
+    case 'PRODUCT_CREATED':
+      return 'bg-muted';
+    case 'PRODUCT_READY_FOR_SHIPMENT':
       return 'bg-blue-500';
-    case 'IN_TRANSIT': return 'bg-yellow-500';
-    case 'DELIVERED': return 'bg-green-500';
-    case 'EXPIRED': return 'bg-destructive';
-    case 'RECALLED': return 'bg-red-600';
-    default: return 'bg-muted';
+    case 'PRODUCT_ALLOCATED':
+      return 'bg-indigo-500';
+    case 'PRODUCT_IN_TRANSIT':
+      return 'bg-yellow-500';
+    case 'PRODUCT_DELIVERED':
+      return 'bg-green-500';
+    case 'PRODUCT_RETURNED':
+      return 'bg-orange-500';
+    case 'PRODUCT_CANCELLED':
+      return 'bg-destructive';
+    default:
+      return 'bg-muted';
   }
 };
 
 const Products = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | VaccineProductStatus>('ALL');
   const [selectedProduct, setSelectedProduct] = useState<VaccineProduct | null>(null);
   const [showQRGenerator, setShowQRGenerator] = useState(false);
 
