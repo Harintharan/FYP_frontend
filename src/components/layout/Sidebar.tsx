@@ -45,7 +45,7 @@ export function Sidebar({
         return [
           { path: "/", label: "Dashboard", icon: LayoutDashboard },
           { path: "/products", label: "Products", icon: Package },
-          { path: "/products/create", label: "Create Product", icon: PlusCircle },
+          { path: "/products/create", label: "Manage Products", icon: PlusCircle },
           // { path: "/checkpoints", label: "Checkpoints", icon: MapPin },
           { path: "/handover", label: "Shipments", icon: Truck },
           { path: "/analytics", label: "Analytics", icon: BarChart3 },

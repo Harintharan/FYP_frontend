@@ -33,11 +33,27 @@ export interface Product {
   productName: string;
   productCategoryId: string;
   productCategoryName?: string;
+  productCategory?: {
+    id: string;
+    name?: string;
+    description?: string | null;
+  } | null;
+  manufacturerUUID?: string | null;
+  manufacturer?: {
+    id?: string | null;
+    name?: string | null;
+  } | null;
   requiredStartTemp?: string;
   requiredEndTemp?: string;
   handlingInstructions?: string;
   createdAt?: string;
   updatedAt?: string;
+  productHash?: string | null;
+  txHash?: string | null;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  pinataCid?: string | null;
+  pinataPinnedAt?: string | null;
   // Legacy fields retained for mock data and backward compatibility
   name?: string;
   manufacturer?: string;
@@ -84,6 +100,11 @@ export interface ProductBatchSummary {
   requiredEndTemp?: string;
   createdAt?: string;
   updatedAt?: string;
+  product?: {
+    id: string;
+    name?: string;
+    productName?: string;
+  } | null;
 }
 
 export interface ProductPackage {

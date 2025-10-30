@@ -28,7 +28,7 @@ export interface CreateCheckpointRequest {
 }
 
 export const checkpointService = {
-  async getAll(): Promise<Checkpoint[]> {
+  async getAll(params?: Record<string, unknown>): Promise<Checkpoint[]> {
     const res = await api.get('/api/checkpoints');
     return res.data;
   },

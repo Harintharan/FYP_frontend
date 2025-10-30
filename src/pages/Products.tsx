@@ -17,7 +17,7 @@ const filterBySearch = (products: Product[], term: string) => {
   if (!query) return products;
 
   return products.filter((product) => {
-    const categoryName = product.productCategoryName ?? "";
+    const categoryName = product.productCategory?.name ?? product.productCategoryName ?? "";
     return (
       product.productName.toLowerCase().includes(query) ||
       categoryName.toLowerCase().includes(query)
@@ -164,22 +164,22 @@ export default function Products() {
                   <div>
                     <p className="text-muted-foreground text-xs uppercase">Category</p>
                     <p className="font-medium">
-                      {product.productCategoryName ?? categoryLookup[product.productCategoryId] ?? "—"}
+                      {product.productCategory?.name ?? product.productCategoryName ?? categoryLookup[product.productCategoryId] ?? "-"}
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-muted-foreground text-xs uppercase">Start Temp</p>
-                      <p className="font-medium">{product.requiredStartTemp ?? "—"}</p>
+                      <p className="font-medium">{product.requiredStartTemp ?? "-"}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs uppercase">End Temp</p>
-                      <p className="font-medium">{product.requiredEndTemp ?? "—"}</p>
+                      <p className="font-medium">{product.requiredEndTemp ?? "-"}</p>
                     </div>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs uppercase">Handling Instructions</p>
-                    <p className="font-medium whitespace-pre-wrap">{product.handlingInstructions ?? "—"}</p>
+                    <p className="font-medium whitespace-pre-wrap">{product.handlingInstructions ?? "-"}</p>
                   </div>
                 </CardContent>
               </Card>

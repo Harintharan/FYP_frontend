@@ -1,41 +1,38 @@
-import { api } from './api';
+import { api } from "./api";
 
 export interface ShipmentItem {
   id: string;
-  productIds: string[];
-  fromUUID: string;
-  toUUID: string;
-  checkpointIds: string[];
-  status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'ACCEPTED' | string;
+  manufacturerUUID: string;
+  destinationPartyUUID: string;
+  status: "PREPARING" | "IN_TRANSIT" | "DELIVERED" | "ACCEPTED" | string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ShipmentPackagePayload {
-  product_category_id: string;
-  product_uuid: string;
-  batch_id: string;
-  package_id: string;
-  quantity: number;
+  package_uuid: string;
 }
 
-// New backend schema for shipment creation
+export interface ShipmentCheckpointPayload {
+  start_checkpoint_id: number | string;
+  end_checkpoint_id: number | string;
+  estimated_arrival_date: string;
+  time_tolerance?: string;
+  expected_ship_date?: string;
+  segment_order: number;
+  required_action?: string;
+}
+
 export interface CreateShipmentRequest {
   manufacturerUUID: string;
   destinationPartyUUID: string;
   shipmentItems: ShipmentPackagePayload[];
-  checkpoints: Array<{
-    start_checkpoint_id: number | string;
-    end_checkpoint_id: number | string;
-    estimated_arrival_date: string; // ISO
-    time_tolerance: string; // e.g., "2h"
-    expected_ship_date: string; // ISO
-    required_action: string;
-  }>;
+  checkpoints: ShipmentCheckpointPayload[];
 }
 
 export const shipmentService = {
   async create(data: CreateShipmentRequest): Promise<any> {
-    const res = await api.post('/api/shipments', data);
+    const res = await api.post("/api/shipments", data);
     return res.data;
   },
 
@@ -50,7 +47,8 @@ export const shipmentService = {
   },
 
   async getByManufacturer(uuid: string): Promise<any[]> {
-    const res = await api.get(`/api/shipments`);
+    const config = uuid ? { params: { manufacturerUUID: uuid } } : undefined;
+    const res = await api.get("/api/shipments", config);
     return res.data;
   },
 

@@ -1,297 +1,205 @@
-// src/components/ProductCard.tsx
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, MapPin, Thermometer, Clock, Edit3 } from 'lucide-react';
-import type { VaccineProduct, VaccineProductStatus } from '@/types';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { productRegistryService } from '@/services/productService';
+import { useMemo, useState } from "react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { QrCode, Eye, Edit3, Hash } from "lucide-react";
+import type { Product } from "@/types";
 
-interface ProductCardProps {
-  product: VaccineProduct;
-  onViewDetails: (product: VaccineProduct) => void;
-  onGenerateQR?: (product: VaccineProduct) => void;
-  onEdit?: (product: VaccineProduct) => void;            // ✅ NEW
-}
-
-const statusClassMap: Record<VaccineProductStatus, string> = {
-  PRODUCT_CREATED: 'bg-muted text-muted-foreground border border-border',
-  PRODUCT_READY_FOR_SHIPMENT: 'bg-primary/10 text-primary border border-primary/20',
-  PRODUCT_ALLOCATED: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-900',
-  PRODUCT_IN_TRANSIT: 'bg-warning/10 text-warning border border-warning/20',
-  PRODUCT_DELIVERED: 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900',
-  PRODUCT_RETURNED: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-900',
-  PRODUCT_CANCELLED: 'bg-destructive/10 text-destructive border border-destructive/20',
+type BackendProduct = Product & {
+  productCategory?: {
+    id: string;
+    name: string;
+  } | null;
+  manufacturer?: {
+    id?: string | null;
+  } | null;
+  manufacturerUUID?: string | null;
+  productHash?: string | null;
+  txHash?: string | null;
+  createdBy?: string | null;
+  pinataCid?: string | null;
+  pinataPinnedAt?: string | null;
 };
 
-function humanizeStatus(status: string) {
-  return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+interface ProductCardProps {
+  product: Product;
+  onViewDetails?: (product: Product) => void;
+  onGenerateQR?: (product: Product) => void;
+  onEdit?: (product: Product) => void;
 }
 
-function formatDate(dateString?: string) {
-  if (!dateString) return 'N/A';
-  const d = new Date(dateString);
-  if (Number.isNaN(d.getTime())) return dateString;
-  return d.toLocaleDateString();
-}
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "Not available";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString();
+};
 
-function formatEthAddr(addr?: `0x${string}`) {
-  if (!addr) return 'Unassigned';
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
+const formatHash = (value?: string | null) => {
+  if (!value) return "Not available";
+  if (value.length <= 12) return value;
+  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+};
+
+const temperatureRange = (product: BackendProduct) => {
+  const start = product.requiredStartTemp?.trim();
+  const end = product.requiredEndTemp?.trim();
+
+  if (start && end) return `${start} – ${end}`;
+  if (start) return `≥ ${start}`;
+  if (end) return `≤ ${end}`;
+  return "Not specified";
+};
 
 export function ProductCard({ product, onViewDetails, onGenerateQR, onEdit }: ProductCardProps) {
-  const [showView, setShowView] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const statusOptions: VaccineProductStatus[] = [
-    'PRODUCT_CREATED',
-    'PRODUCT_READY_FOR_SHIPMENT',
-    'PRODUCT_ALLOCATED',
-    'PRODUCT_IN_TRANSIT',
-    'PRODUCT_DELIVERED',
-    'PRODUCT_RETURNED',
-    'PRODUCT_CANCELLED',
-  ];
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [form, setForm] = useState({
-    productName: product.productName ?? '',
-    productCategory: (product as any).productCategory ?? '',
-    quantity: product.quantity ? String(product.quantity) : '',
-    microprocessorMac: product.microprocessorMac ?? '',
-    sensorTypes: product.sensorTypes ?? '',
-    wifiSSID: product.wifiSSID ?? '',
-    wifiPassword: product.wifiPassword ?? '',
-    status: (product.status as VaccineProductStatus) ?? 'PRODUCT_CREATED',
-  });
+  const backendProduct = useMemo(() => product as BackendProduct, [product]);
+  const categoryName =
+    backendProduct.productCategory?.name ??
+    backendProduct.productCategoryName ??
+    "Uncategorised";
 
-  const handleSave = async () => {
-    try {
-      setIsSaving(true);
-      if (!form.wifiPassword || !form.wifiPassword.trim()) {
-        toast.error('Wi-Fi Password is required.');
-        return;
-      }
-      if (!form.quantity || Number.isNaN(Number(form.quantity)) || Number(form.quantity) <= 0) {
-        toast.error('Quantity must be a positive number.');
-        return;
-      }
-      await productRegistryService.updateProduct(product.id, {
-        productName: form.productName,
-        productCategory: form.productCategory,
-        quantity: form.quantity ? Number(form.quantity) : undefined,
-        microprocessorMac: form.microprocessorMac,
-        sensorTypes: form.sensorTypes,
-        wifiSSID: form.wifiSSID,
-        wifiPassword: form.wifiPassword,
-        status: form.status,
-      });
-      toast.success('Product updated');
-      setShowEdit(false);
-      if (onEdit)
-        onEdit({
-          ...product,
-          ...form,
-          quantity: form.quantity ? Number(form.quantity) : undefined,
-          status: form.status,
-        } as VaccineProduct);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || 'Failed to update product');
-    } finally {
-      setIsSaving(false);
+  const manufacturerId = backendProduct.manufacturer?.id ?? backendProduct.manufacturerUUID ?? "Unknown";
+
+  const handleView = () => {
+    if (onViewDetails) {
+      onViewDetails(product);
+      return;
     }
+    setIsDialogOpen(true);
   };
 
-  const statusClasses = statusClassMap[product.status as VaccineProductStatus] ?? 'bg-muted text-muted-foreground border';
-
   return (
-    <Card className="shadow-card hover:shadow-floating transition-all duration-300 group">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">
-              {product.productName}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              Batch: {product.batchId}
+    <>
+      <Card className="border border-border/60 shadow-none hover:shadow-md transition-shadow">
+        <CardHeader className="space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-lg">{backendProduct.productName}</CardTitle>
+            <Badge variant="outline">{categoryName}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Manufacturer ID: <span className="font-medium text-foreground">{manufacturerId}</span>
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-3 text-sm">
+          <div>
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">Temperature Range</p>
+            <p className="font-medium">{temperatureRange(backendProduct)}</p>
+          </div>
+
+          <div>
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">Handling Instructions</p>
+            <p className="font-medium whitespace-pre-wrap">{backendProduct.handlingInstructions || "Not provided"}</p>
+          </div>
+
+          <div>
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">Product Hash</p>
+            <p className="font-medium flex items-center gap-2">
+              <Hash className="h-4 w-4 text-muted-foreground" />
+              {formatHash(backendProduct.productHash)}
             </p>
           </div>
-          <Badge className={cn('text-xs whitespace-nowrap', statusClasses)}>
-            {humanizeStatus(product.status)}
-          </Badge>
-        </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-muted-foreground">Exp Date</p>
-              <p className="font-medium">{formatDate(product.expiryDate)}</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-wide">Created</p>
+              <p className="font-medium">{formatDateTime(backendProduct.createdAt)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs uppercase tracking-wide">Pinned At</p>
+              <p className="font-medium">{formatDateTime(backendProduct.pinataPinnedAt)}</p>
             </div>
           </div>
+        </CardContent>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-muted-foreground">Current Holder</p>
-              <p className="font-medium text-xs">{formatEthAddr(product.createdBy)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <Thermometer className="w-4 h-4 text-muted-foreground" />
-          <div>
-            <p className="text-muted-foreground">Storage</p>
-            <p className="font-medium">{product.requiredStorageTemp}</p>
-          </div>
-        </div>
-
-        {/* ✅ Actions: View + Edit (+ optional QR) */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            size="sm"
-            onClick={() => { setShowView(true); if (onViewDetails) onViewDetails(product); }}
-            className="flex-1"
-          >
-            View Details
+        <CardFooter className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleView}>
+            <Eye className="h-4 w-4" />
+            View
           </Button>
-
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setShowEdit(true)}
-            className="flex-1"
-            aria-label="Edit Product"
-            title="Edit Product"
-          >
-            <Edit3 className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-
-          {onGenerateQR && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onGenerateQR(product)}
-              aria-label="Generate QR"
-              title="Generate QR"
-            >
-              <QrCode className="w-4 h-4" />
+          {onEdit ? (
+            <Button variant="secondary" size="sm" className="gap-2" onClick={() => onEdit(product)}>
+              <Edit3 className="h-4 w-4" />
+              Edit
             </Button>
-          )}
-        </div>
-      </CardContent>
+          ) : null}
+          {onGenerateQR ? (
+            <Button size="sm" className="gap-2" onClick={() => onGenerateQR(product)}>
+              <QrCode className="h-4 w-4" />
+              QR Code
+            </Button>
+          ) : null}
+        </CardFooter>
+      </Card>
 
-      {/* View Dialog */}
-      <Dialog open={showView} onOpenChange={setShowView}>
-        <DialogContent className="max-w-xl">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Product Details</DialogTitle>
-            <DialogDescription>Review product information</DialogDescription>
+            <DialogTitle>{backendProduct.productName}</DialogTitle>
+            <DialogDescription>Product metadata from the registry.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-sm">
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Category</p>
+                <p className="font-medium">{categoryName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Manufacturer ID</p>
+                <p className="font-medium">{manufacturerId}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Temperature Range</p>
+                <p className="font-medium">{temperatureRange(backendProduct)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Created By</p>
+                <p className="font-medium">{backendProduct.createdBy ?? "Unknown"}</p>
+              </div>
+            </div>
+
             <div>
-              <p className="text-muted-foreground">Name</p>
-              <p className="font-medium break-words">{product.productName}</p>
+              <p className="text-muted-foreground">Handling Instructions</p>
+              <p className="font-medium whitespace-pre-wrap">
+                {backendProduct.handlingInstructions?.trim() || "Not provided"}
+              </p>
             </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Product Hash</p>
+                <p className="font-medium">{backendProduct.productHash ?? "Not available"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Transaction Hash</p>
+                <p className="font-medium">{backendProduct.txHash ?? "Not available"}</p>
+              </div>
+            </div>
+
             <div>
-              <p className="text-muted-foreground">Batch</p>
-              <p className="font-medium break-words">{product.batchId}</p>
+              <p className="text-muted-foreground">Pinata CID</p>
+              <p className="font-medium break-all">{backendProduct.pinataCid ?? "Not available"}</p>
             </div>
-            <div>
-              <p className="text-muted-foreground">Category</p>
-              <p className="font-medium break-words">{(product as any).productCategory}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Status</p>
-              <p className="font-medium">{(product.status || '').toString()}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-muted-foreground">Microprocessor MAC</p>
-              <p className="font-medium">{product.microprocessorMac}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-muted-foreground">Sensor Types</p>
-              <p className="font-medium">{product.sensorTypes}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-muted-foreground">Wi-Fi SSID</p>
-              <p className="font-medium">{product.wifiSSID}</p>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Created</p>
+                <p className="font-medium">{formatDateTime(backendProduct.createdAt)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Pinned At</p>
+                <p className="font-medium">{formatDateTime(backendProduct.pinataPinnedAt)}</p>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>Update product fields and save</DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Name</label>
-              <Input value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Product Category</label>
-              <Input value={form.productCategory} onChange={(e) => setForm({ ...form, productCategory: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Quantity</label>
-              <Input
-                type="number"
-                min={1}
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Status</label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as VaccineProductStatus })}>
-                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {humanizeStatus(s)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Sensor Types</label>
-              <Input value={form.sensorTypes} onChange={(e) => setForm({ ...form, sensorTypes: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Wi-Fi SSID</label>
-              <Input value={form.wifiSSID} onChange={(e) => setForm({ ...form, wifiSSID: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Wi-Fi Password</label>
-              <Input type="password" value={form.wifiPassword} onChange={(e) => setForm({ ...form, wifiPassword: e.target.value })} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium">Microprocessor MAC</label>
-              <Input value={form.microprocessorMac} onChange={(e) => setForm({ ...form, microprocessorMac: e.target.value })} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
-            <Button disabled={isSaving} onClick={handleSave}>{isSaving ? 'Saving...' : 'Save Changes'}</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </Card>
+    </>
   );
 }
