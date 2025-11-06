@@ -101,6 +101,123 @@ const DEFAULT_LEG: ShipmentLegInput = {
 
 const HandoverContext = createContext<HandoverContextValue | null>(null);
 
+type ShipmentSegmentResponse = {
+  id?: string;
+  segmentHash?: string;
+  shipmentId?: string;
+  manufacturerUuid?: string;
+  manufacturerLegalName?: string;
+  status?: string | null;
+  segmentOrder?: number;
+  expectedShipDate?: string | null;
+  expected_ship_date?: string | null;
+  expectedArrivalDate?: string | null;
+  expected_arrival_date?: string | null;
+  estimatedArrivalDate?: string | null;
+  estimated_arrival_date?: string | null;
+  timeTolerance?: string | null;
+  time_tolerance?: string | null;
+  acceptedAt?: string | null;
+  accepted_at?: string | null;
+  handedOverAt?: string | null;
+  handed_over_at?: string | null;
+  startName?: string | null;
+  endName?: string | null;
+  startLocation?: { state?: string | null; country?: string | null } | null;
+  endLocation?: { state?: string | null; country?: string | null } | null;
+  items?: SupplierShipmentRecord["items"];
+  shipmentItems?: SupplierShipmentRecord["shipmentItems"];
+  checkpoints?: SupplierShipmentRecord["checkpoints"];
+  [key: string]: unknown;
+};
+
+const mapSegmentStatusToSupplierStatus = (status?: string | null) => {
+  if (typeof status !== "string") return "PENDING_ACCEPTANCE";
+  const normalized = status.trim().toUpperCase();
+  if (!normalized) return "PENDING_ACCEPTANCE";
+  switch (normalized) {
+    case "PENDING":
+    case "PENDING_SUPPLIER":
+    case "AWAITING_SUPPLIER":
+    case "AWAITING_SUPPLIER_CONFIRMATION":
+      return "PENDING_ACCEPTANCE";
+    default:
+      return normalized;
+  }
+};
+
+const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierShipmentRecord => {
+  const derivedId =
+    segment.shipmentId && segment.segmentOrder !== undefined
+      ? `${segment.shipmentId}-${segment.segmentOrder}`
+      : segment.shipmentId ?? undefined;
+  const idCandidate = segment.id ?? segment.segmentHash ?? derivedId ?? "unknown-segment";
+
+  const expectedArrival =
+    segment.estimatedArrivalDate ??
+    segment.estimated_arrival_date ??
+    segment.expectedArrivalDate ??
+    segment.expected_arrival_date ??
+    undefined;
+
+  const acceptedAt = segment.acceptedAt ?? segment.accepted_at ?? undefined;
+  const handedOverAt = segment.handedOverAt ?? segment.handed_over_at ?? undefined;
+
+  const originArea =
+    segment.startLocation?.state ??
+    segment.startLocation?.country ??
+    segment.startName ??
+    undefined;
+  const destinationArea =
+    segment.endLocation?.state ??
+    segment.endLocation?.country ??
+    segment.endName ??
+    undefined;
+
+  const resolvedItems =
+    Array.isArray(segment.items) && segment.items.length > 0
+      ? segment.items
+      : Array.isArray(segment.shipmentItems) && segment.shipmentItems.length > 0
+        ? segment.shipmentItems
+        : [];
+
+  const areaTokens = new Set<string>();
+  [
+    originArea,
+    destinationArea,
+    segment.startLocation?.country ?? undefined,
+    segment.endLocation?.country ?? undefined,
+    segment.startName ?? undefined,
+    segment.endName ?? undefined,
+  ]
+    .filter(Boolean)
+    .map(String)
+    .forEach((value) => areaTokens.add(value));
+
+  return {
+    id: String(idCandidate),
+    status: mapSegmentStatusToSupplierStatus(segment.status),
+    expectedArrival,
+    acceptedAt,
+    handedOverAt,
+    manufacturerName: segment.manufacturerLegalName ?? undefined,
+    fromUUID: segment.manufacturerUuid ?? undefined,
+    originArea,
+    destinationArea,
+    pickupArea: segment.startName ?? undefined,
+    dropoffArea: segment.endName ?? undefined,
+    areaTags: Array.from(areaTokens),
+    destinationCheckpoint: segment.endName ?? undefined,
+    shipmentItems: resolvedItems,
+    items: resolvedItems,
+    checkpoints: Array.isArray(segment.checkpoints) ? segment.checkpoints : undefined,
+    segmentOrder: segment.segmentOrder,
+    shipmentId: segment.shipmentId,
+    expectedShipDate: segment.expectedShipDate ?? segment.expected_ship_date ?? undefined,
+    timeTolerance: segment.timeTolerance ?? segment.time_tolerance ?? undefined,
+  };
+};
+
 const mockSupplierShipments = {
   pool: [
     {
@@ -175,10 +292,15 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     enabled: Boolean(uuid),
   });
 
-  const { data: incoming = [], isLoading: loadingIncoming } = useQuery<SupplierShipmentRecord[]>({
+  const { data: incoming = [], isLoading: loadingIncoming } = useQuery<
+    ShipmentSegmentResponse[],
+    Error,
+    SupplierShipmentRecord[]
+  >({
     queryKey: ["incomingShipments", uuid],
     queryFn: () => shipmentService.getIncoming(uuid ?? ""),
     enabled: Boolean(uuid) && (role === "SUPPLIER" || role === "WAREHOUSE"),
+    select: (segments) => segments.map(segmentToSupplierShipment),
   });
 
   const { data: myShipments = [], isLoading: loadingMyShipments } = useQuery<ManufacturerShipmentRecord[]>({
@@ -249,9 +371,9 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     onError: (error: unknown) => {
       const message =
         typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as { response?: { data?: { error?: string } } }).response?.data?.error === "string"
+          error !== null &&
+          "response" in error &&
+          typeof (error as { response?: { data?: { error?: string } } }).response?.data?.error === "string"
           ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
           : undefined;
       toast.error(message || "Failed to create shipment");

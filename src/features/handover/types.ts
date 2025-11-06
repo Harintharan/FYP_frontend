@@ -23,9 +23,13 @@ export type SupplierShipmentRecord = {
   dropoffArea?: string;
   status?: string;
   expectedArrival?: string;
+  expectedShipDate?: string;
   acceptedAt?: string;
   handedOverAt?: string;
   destinationCheckpoint?: string;
+  timeTolerance?: string;
+  segmentOrder?: number;
+  shipmentId?: string;
   shipmentItems?: Array<{ product_uuid?: string; productName?: string; quantity?: number }>;
   items?: Array<{ product_uuid?: string; productName?: string; quantity?: number }>;
   checkpoints?: Array<{

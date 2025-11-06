@@ -115,6 +115,37 @@ export const deriveEntityLabel = (value?: string) => {
 
 export const deriveRouteLabel = (shipment: SupplierShipmentRecord) => {
   const legacy = shipment as Record<string, unknown>;
+  const resolveLabel = (...values: Array<unknown>) => {
+    for (const value of values) {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.length > 0) return trimmed;
+      }
+    }
+    return undefined;
+  };
+
+  const pickupLabel = resolveLabel(
+    shipment.pickupArea,
+    shipment.originArea,
+    legacy.fromName,
+    legacy.startName,
+    legacy.origin,
+  );
+  const dropoffLabel = resolveLabel(
+    shipment.dropoffArea,
+    shipment.destinationArea,
+    legacy.toName,
+    legacy.endName,
+    legacy.destination,
+  );
+
+  if (pickupLabel || dropoffLabel) {
+    const origin = pickupLabel ?? "Origin";
+    const destination = dropoffLabel ?? "Destination";
+    return `${origin} -> ${destination}`;
+  }
+
   const routeType = typeof legacy.routeType === "string" ? legacy.routeType : undefined;
   if (routeType) return routeType;
 

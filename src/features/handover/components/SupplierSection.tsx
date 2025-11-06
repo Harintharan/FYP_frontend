@@ -27,6 +27,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  ArrowRight,
+  CalendarClock,
   Bus,
   CheckCircle2,
   Clock,
@@ -44,6 +46,14 @@ import type { SupplierShipmentRecord } from "../types";
 import { formatDistanceToNow } from "date-fns";
 
 const { deriveRouteLabel, extractShipmentItems, resolveShipmentAreas, supplierStatusBadgeClass, normalizeStatus, formatArrivalText } = handoverUtils;
+
+const shipmentDateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export function SupplierSection() {
   const shared = useHandoverSharedContext();
@@ -133,7 +143,7 @@ export function SupplierSection() {
               }
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
               {filteredSupplierPool.map((shipment) => (
                 <SupplierShipmentCard
                   key={`${shipment.id}-incoming`}
@@ -149,7 +159,7 @@ export function SupplierSection() {
                           }
                         >
                           {supplier.acceptShipmentPending &&
-                          supplier.acceptingShipmentId === shipment.id ? (
+                            supplier.acceptingShipmentId === shipment.id ? (
                             <>
                               <LoaderIndicator />
                               Accepting...
@@ -360,6 +370,20 @@ type SupplierShipmentCardProps = {
 function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) {
   const normalized = normalizeStatus(shipment.status);
   const arrivalText = formatArrivalText(shipment.expectedArrival);
+  const parseDateValue = (value?: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const expectedShipDate = parseDateValue(shipment.expectedShipDate);
+  const expectedShipAbsolute = expectedShipDate ? shipmentDateFormatter.format(expectedShipDate) : null;
+  const expectedShipRelative = expectedShipDate
+    ? formatDistanceToNow(expectedShipDate, { addSuffix: true })
+    : null;
+  const arrivalDate = parseDateValue(shipment.expectedArrival);
+  const arrivalAbsolute = arrivalDate ? shipmentDateFormatter.format(arrivalDate) : null;
+  const arrivalRelative =
+    arrivalDate && arrivalText && arrivalText !== "Unknown ETA" ? arrivalText : null;
   const items = extractShipmentItems(shipment);
   const itemPreview = items.slice(0, 2);
   const remainingItems = Math.max(items.length - itemPreview.length, 0);
@@ -367,45 +391,38 @@ function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) 
   const areaTokens = resolveShipmentAreas(shipment);
   const displayedAreas = areaTokens.slice(0, 2);
   const remainingAreas = Math.max(areaTokens.length - displayedAreas.length, 0);
+  const manufacturerLabel = shipment.manufacturerName ?? "Shipment";
+  const pickupLabel = shipment.pickupArea ?? shipment.originArea ?? "Origin";
+  const dropoffLabel = shipment.dropoffArea ?? shipment.destinationArea ?? "Destination";
 
   return (
     <Card className="border border-border/50 shadow-sm transition-all hover:border-primary/50 hover:shadow-md">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Shipment</p>
-            <p className="break-all text-base font-semibold leading-tight">{shipment.id}</p>
-            <Badge variant="secondary" className="w-fit border-primary/20 bg-primary/10 text-primary">
-              {routeLabel}
-            </Badge>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Manufacturer</p>
+            <p className="text-base font-semibold leading-tight text-foreground">{manufacturerLabel}</p>
+            <p className="text-xs text-muted-foreground">
+              Shipment ID:&nbsp;
+              <span className="font-medium text-foreground/80">{shipment.id}</span>
+            </p>
           </div>
           <Badge className={cn("text-xs whitespace-nowrap", supplierStatusBadgeClass(normalized))}>
             {normalized.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
           </Badge>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {displayedAreas.length > 0 ? (
-            displayedAreas.map((area) => (
-              <span
-                key={`${shipment.id}-${area}`}
-                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-2 py-1 text-muted-foreground"
-              >
-                <MapPin className="h-3 w-3 text-primary/80" />
-                {area}
-              </span>
-            ))
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/60 px-2 py-1 text-muted-foreground/80">
-              <MapPin className="h-3 w-3 opacity-60" />
-              Area not provided
-            </span>
-          )}
-          {remainingAreas > 0 && (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
-              +{remainingAreas} more
-            </span>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-3 w-3 text-primary/80" />
+            {pickupLabel}
+          </span>
+          <ArrowRight className="h-3 w-3 text-muted-foreground/80" />
+          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-3 w-3 text-primary/80" />
+            {dropoffLabel}
+          </span>
+
         </div>
 
         <div className="space-y-1">
@@ -430,9 +447,18 @@ function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) 
         </div>
 
         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+          {expectedShipAbsolute && (
+            <span className="inline-flex items-center gap-2">
+              <CalendarClock className="h-3 w-3" />
+              Shipment available on {expectedShipAbsolute}
+
+            </span>
+          )}
           <span className="inline-flex items-center gap-2">
             <Clock className="h-3 w-3" />
-            {normalized === "PENDING_ACCEPTANCE" ? "Arrives" : "Arrived"} {arrivalText}
+            {normalized === "PENDING_ACCEPTANCE" ? "Should be handover on " : "Arrived"}{" "}
+            {arrivalAbsolute ?? arrivalText}
+
           </span>
           {shipment.acceptedAt && (
             <span className="inline-flex items-center gap-2">
