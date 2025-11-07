@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { handoverUtils, useHandoverSharedContext, useSupplierContext } from "../context";
 import { ViewShipmentButton } from "./ViewShipmentButton";
+import type { SupplierShipmentRecord } from "../types";
 
 const { normalizeStatus } = handoverUtils;
 
@@ -14,6 +15,10 @@ export function WarehouseSection() {
   if (shared.role !== "WAREHOUSE") return null;
 
   const { incomingShipments, loadingIncoming, acceptingShipmentId } = supplier;
+
+  const resolveSegmentId = (shipment: SupplierShipmentRecord) => shipment.segmentId ?? shipment.id;
+  const resolveShipmentId = (shipment: SupplierShipmentRecord) =>
+    shipment.shipmentId ?? shipment.segmentId ?? shipment.id;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -31,15 +36,18 @@ export function WarehouseSection() {
             <p className="text-muted-foreground">No incoming shipments</p>
           ) : (
             <div className="space-y-3">
-              {incomingShipments.map((shipment) => (
-                <div key={shipment.id} className="space-y-2 rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Shipment: {shipment.id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Products: {shipment.shipmentItems?.length ?? shipment.items?.length ?? 0}
-                      </p>
-                    </div>
+              {incomingShipments.map((shipment) => {
+                const segmentId = resolveSegmentId(shipment);
+                const shipmentId = resolveShipmentId(shipment);
+                return (
+                  <div key={segmentId} className="space-y-2 rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Shipment: {shipmentId}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Products: {shipment.shipmentItems?.length ?? shipment.items?.length ?? 0}
+                        </p>
+                      </div>
                     <Badge
                       variant={normalizeStatus(shipment.status) === "PREPARING" ? "outline" : "secondary"}
                     >
@@ -50,27 +58,28 @@ export function WarehouseSection() {
                     <span>From: {shipment.fromUUID ?? shipment.manufacturerName ?? "Unknown"}</span>
                     <span>Checkpoints: {shipment.checkpoints?.length ?? 0}</span>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <ViewShipmentButton shipmentId={String(shipment.id)} />
-                    <Button
-                      size="sm"
-                      disabled={
-                        supplier.acceptShipmentPending && acceptingShipmentId === shipment.id
-                      }
-                      onClick={() => supplier.acceptShipment(String(shipment.id))}
-                    >
-                      {supplier.acceptShipmentPending && acceptingShipmentId === shipment.id ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Accepting...
-                        </span>
-                      ) : (
-                        "Accept"
-                      )}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <ViewShipmentButton segmentId={segmentId} shipmentId={String(shipmentId)} />
+                      <Button
+                        size="sm"
+                        disabled={
+                          supplier.acceptShipmentPending && acceptingShipmentId === segmentId
+                        }
+                        onClick={() => supplier.acceptShipment(String(segmentId))}
+                      >
+                        {supplier.acceptShipmentPending && acceptingShipmentId === segmentId ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Accepting...
+                          </span>
+                        ) : (
+                          "Accept"
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

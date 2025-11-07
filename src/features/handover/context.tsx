@@ -1,5 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAppStore } from "@/lib/store";
 import { checkpointService, type Checkpoint } from "@/services/checkpointService";
@@ -9,6 +15,7 @@ import {
   deriveRouteLabel,
   extractShipmentItems,
   formatArrivalText,
+  humanizeSupplierStatus,
   normalizeStatus,
   resolveShipmentAreas,
   supplierStatusBadgeClass,
@@ -18,6 +25,7 @@ import type {
   ManufacturerShipmentRecord,
   ShipmentLegInput,
   SupplierShipmentRecord,
+  SupplierShipmentStatus,
 } from "./types";
 
 type ManufacturerContextValue = {
@@ -48,16 +56,21 @@ type SupplierContextValue = {
   enabled: boolean;
   incomingShipments: SupplierShipmentRecord[];
   loadingIncoming: boolean;
-  supplierPool: SupplierShipmentRecord[];
-  supplierActive: SupplierShipmentRecord[];
-  supplierDelivered: SupplierShipmentRecord[];
-  supplierHistory: SupplierShipmentRecord[];
+  loadingByStatus: Record<SupplierShipmentStatus, boolean>;
+  shipmentsByStatus: Record<SupplierShipmentStatus, SupplierShipmentRecord[]>;
+  statusOrder: SupplierShipmentStatus[];
   areaQuery: string;
   setAreaQuery: (value: string) => void;
   filterShipmentsByArea: (shipments: SupplierShipmentRecord[]) => SupplierShipmentRecord[];
   acceptingShipmentId: string | null;
   acceptShipment: (id: string) => void;
   acceptShipmentPending: boolean;
+    takeoverSegmentId: string | null;
+    takeoverPending: boolean;
+    takeoverSegment: (
+      segmentId: string,
+      coords: { latitude: number; longitude: number },
+    ) => Promise<unknown>;
   handoverDialogOpen: boolean;
   setHandoverDialogOpen: (open: boolean) => void;
   handoverTarget: SupplierShipmentRecord | null;
@@ -101,12 +114,80 @@ const DEFAULT_LEG: ShipmentLegInput = {
 
 const HandoverContext = createContext<HandoverContextValue | null>(null);
 
+type TakeoverPayload = {
+  segmentId: string;
+  latitude: number;
+  longitude: number;
+};
+
+const SUPPLIER_STATUS_ORDER: SupplierShipmentStatus[] = [
+  "PENDING",
+  "ACCEPTED",
+  "IN_TRANSIT",
+  "DELIVERED",
+  "CLOSED",
+  "CANCELLED",
+];
+
+type SupplierStatusBuckets = Record<SupplierShipmentStatus, SupplierShipmentRecord[]>;
+
+const createStatusBuckets = (): SupplierStatusBuckets =>
+  SUPPLIER_STATUS_ORDER.reduce((acc, status) => {
+    acc[status] = [];
+    return acc;
+  }, {} as SupplierStatusBuckets);
+
+const mapSegmentStatusToSupplierTab = (status?: string | null): SupplierShipmentStatus => {
+  const normalized = normalizeStatus(status);
+  switch (normalized) {
+    case "PENDING":
+    case "PENDING_ACCEPTANCE":
+    case "PREPARING":
+    case "AWAITING_SUPPLIER_CONFIRMATION":
+      return "PENDING";
+    case "ACCEPTED":
+      return "ACCEPTED";
+    case "IN_TRANSIT":
+    case "READY_FOR_HANDOVER":
+    case "HANDOVER_PENDING":
+      return "IN_TRANSIT";
+    case "DELIVERED":
+    case "HANDOVER_READY":
+    case "HANDOVER_COMPLETED":
+    case "COMPLETED":
+      return "DELIVERED";
+    case "CLOSED":
+      return "CLOSED";
+    case "CANCELLED":
+    case "REJECTED":
+      return "CANCELLED";
+    default:
+      return "PENDING";
+  }
+};
+
+const formatCheckpointLabel = (
+  checkpoint?: { state?: string | null; country?: string | null; name?: string | null } | null,
+) => {
+  if (!checkpoint) return undefined;
+  const parts = [checkpoint.state, checkpoint.country]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter((value) => value.length > 0);
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+  const fallback = typeof checkpoint.name === "string" ? checkpoint.name.trim() : "";
+  return fallback.length > 0 ? fallback : undefined;
+};
+
 type ShipmentSegmentResponse = {
   id?: string;
   segmentHash?: string;
   shipmentId?: string;
+  segmentId?: string;
   manufacturerUuid?: string;
   manufacturerLegalName?: string;
+  consumerName?: string;
   status?: string | null;
   segmentOrder?: number;
   expectedShipDate?: string | null;
@@ -121,6 +202,27 @@ type ShipmentSegmentResponse = {
   accepted_at?: string | null;
   handedOverAt?: string | null;
   handed_over_at?: string | null;
+  startCheckpoint?: {
+    id?: string;
+    state?: string;
+    country?: string;
+    name?: string;
+  } | null;
+  endCheckpoint?: {
+    id?: string;
+    state?: string;
+    country?: string;
+    name?: string;
+  } | null;
+  shipment?: {
+    id?: string;
+    consumer?: {
+      id?: string;
+      legalName?: string;
+    } | null;
+    destinationPartyUUID?: string;
+    destinationPartyName?: string;
+  } | null;
   startName?: string | null;
   endName?: string | null;
   startLocation?: { state?: string | null; country?: string | null } | null;
@@ -131,18 +233,36 @@ type ShipmentSegmentResponse = {
   [key: string]: unknown;
 };
 
-const mapSegmentStatusToSupplierStatus = (status?: string | null) => {
-  if (typeof status !== "string") return "PENDING_ACCEPTANCE";
+const mapSegmentStatusToSupplierStatus = (status?: string | null): SupplierShipmentStatus => {
+  if (typeof status !== "string") return "PENDING";
   const normalized = status.trim().toUpperCase();
-  if (!normalized) return "PENDING_ACCEPTANCE";
+  if (!normalized) return "PENDING";
   switch (normalized) {
     case "PENDING":
     case "PENDING_SUPPLIER":
     case "AWAITING_SUPPLIER":
     case "AWAITING_SUPPLIER_CONFIRMATION":
-      return "PENDING_ACCEPTANCE";
+    case "PENDING_ACCEPTANCE":
+    case "PREPARING":
+      return "PENDING";
+    case "ACCEPTED":
+      return "ACCEPTED";
+    case "IN_TRANSIT":
+    case "READY_FOR_HANDOVER":
+    case "HANDOVER_PENDING":
+      return "IN_TRANSIT";
+    case "DELIVERED":
+    case "HANDOVER_READY":
+    case "HANDOVER_COMPLETED":
+    case "COMPLETED":
+      return "DELIVERED";
+    case "CLOSED":
+      return "CLOSED";
+    case "CANCELLED":
+    case "REJECTED":
+      return "CANCELLED";
     default:
-      return normalized;
+      return "PENDING";
   }
 };
 
@@ -151,7 +271,8 @@ const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierSh
     segment.shipmentId && segment.segmentOrder !== undefined
       ? `${segment.shipmentId}-${segment.segmentOrder}`
       : segment.shipmentId ?? undefined;
-  const idCandidate = segment.id ?? segment.segmentHash ?? derivedId ?? "unknown-segment";
+  const idCandidate =
+    segment.segmentId ?? segment.id ?? segment.segmentHash ?? derivedId ?? "unknown-segment";
 
   const expectedArrival =
     segment.estimatedArrivalDate ??
@@ -162,13 +283,22 @@ const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierSh
 
   const acceptedAt = segment.acceptedAt ?? segment.accepted_at ?? undefined;
   const handedOverAt = segment.handedOverAt ?? segment.handed_over_at ?? undefined;
+  const startCheckpointLabel = formatCheckpointLabel(segment.startCheckpoint);
+  const endCheckpointLabel = formatCheckpointLabel(segment.endCheckpoint);
+  const consumerName =
+    segment.consumerName ??
+    segment.shipment?.consumer?.legalName ??
+    segment.shipment?.destinationPartyName ??
+    undefined;
 
   const originArea =
+    startCheckpointLabel ??
     segment.startLocation?.state ??
     segment.startLocation?.country ??
     segment.startName ??
     undefined;
   const destinationArea =
+    endCheckpointLabel ??
     segment.endLocation?.state ??
     segment.endLocation?.country ??
     segment.endName ??
@@ -185,6 +315,8 @@ const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierSh
   [
     originArea,
     destinationArea,
+    startCheckpointLabel,
+    endCheckpointLabel,
     segment.startLocation?.country ?? undefined,
     segment.endLocation?.country ?? undefined,
     segment.startName ?? undefined,
@@ -196,18 +328,22 @@ const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierSh
 
   return {
     id: String(idCandidate),
+    segmentId: segment.segmentId ?? undefined,
     status: mapSegmentStatusToSupplierStatus(segment.status),
     expectedArrival,
     acceptedAt,
     handedOverAt,
     manufacturerName: segment.manufacturerLegalName ?? undefined,
+    consumerName,
+    destinationPartyName: segment.shipment?.destinationPartyName ?? consumerName ?? undefined,
+    destinationPartyUUID: segment.shipment?.destinationPartyUUID ?? undefined,
     fromUUID: segment.manufacturerUuid ?? undefined,
     originArea,
     destinationArea,
-    pickupArea: segment.startName ?? undefined,
-    dropoffArea: segment.endName ?? undefined,
+    pickupArea: startCheckpointLabel ?? segment.startName ?? undefined,
+    dropoffArea: endCheckpointLabel ?? segment.endName ?? undefined,
     areaTags: Array.from(areaTokens),
-    destinationCheckpoint: segment.endName ?? undefined,
+    destinationCheckpoint: endCheckpointLabel ?? segment.endName ?? undefined,
     shipmentItems: resolvedItems,
     items: resolvedItems,
     checkpoints: Array.isArray(segment.checkpoints) ? segment.checkpoints : undefined,
@@ -215,6 +351,8 @@ const segmentToSupplierShipment = (segment: ShipmentSegmentResponse): SupplierSh
     shipmentId: segment.shipmentId,
     expectedShipDate: segment.expectedShipDate ?? segment.expected_ship_date ?? undefined,
     timeTolerance: segment.timeTolerance ?? segment.time_tolerance ?? undefined,
+    startCheckpoint: segment.startCheckpoint ?? undefined,
+    endCheckpoint: segment.endCheckpoint ?? undefined,
   };
 };
 
@@ -224,7 +362,7 @@ const mockSupplierShipments = {
       id: "POOL-1024",
       manufacturerName: "Acme Manufacturing",
       fromUUID: "0xA1F4…2dc1",
-      status: "PENDING_ACCEPTANCE",
+      status: "PENDING",
       expectedArrival: new Date(Date.now() + 1000 * 60 * 90).toISOString(),
       shipmentItems: [
         { productName: "COVID Test Kits", quantity: 500 },
@@ -260,7 +398,7 @@ const mockSupplierShipments = {
       id: "DELIV-4096",
       manufacturerName: "BioSecure Inc.",
       fromUUID: "0x71A3…5c42",
-      status: "HANDOVER_READY",
+      status: "DELIVERED",
       expectedArrival: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       handedOverAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
       destinationCheckpoint: "Receiver Warehouse",
@@ -272,7 +410,7 @@ const mockSupplierShipments = {
       id: "HIST-5120",
       manufacturerName: "Acme Manufacturing",
       fromUUID: "0xA1F4…2dc1",
-      status: "COMPLETED",
+      status: "CLOSED",
       handedOverAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
       shipmentItems: [{ productName: "COVID Test Kits", quantity: 600 }],
     },
@@ -303,6 +441,19 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     select: (segments) => segments.map(segmentToSupplierShipment),
   });
 
+  const supplierSegmentsQueries = useQueries({
+    queries: SUPPLIER_STATUS_ORDER.map((status) => ({
+      queryKey: ["supplierSegments", uuid, status] as const,
+      queryFn: () => shipmentService.getSupplierSegments({ status }),
+      enabled: Boolean(uuid) && (role === "SUPPLIER" || role === "WAREHOUSE"),
+      select: (segments: ShipmentSegmentResponse[]) => segments.map(segmentToSupplierShipment),
+    })) satisfies UseQueryOptions<
+      ShipmentSegmentResponse[],
+      Error,
+      SupplierShipmentRecord[]
+    >[],
+  });
+
   const { data: myShipments = [], isLoading: loadingMyShipments } = useQuery<ManufacturerShipmentRecord[]>({
     queryKey: ["myShipments", uuid],
     queryFn: () => shipmentService.getByManufacturer(uuid ?? ""),
@@ -322,6 +473,7 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     temperatureCheck: "",
   });
   const [handoverLoading, setHandoverLoading] = useState(false);
+  const [takeoverSegmentId, setTakeoverSegmentId] = useState<string | null>(null);
   const [areaQuery, setAreaQuery] = useState("");
 
   const {
@@ -461,6 +613,9 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     onSuccess: () => {
       toast.success("Shipment accepted");
       queryClient.invalidateQueries({ queryKey: ["incomingShipments"] });
+      SUPPLIER_STATUS_ORDER.forEach((status) =>
+        queryClient.invalidateQueries({ queryKey: ["supplierSegments", uuid, status] }),
+      );
     },
     onError: (error: unknown) => {
       const message = (
@@ -475,6 +630,33 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     },
     onSettled: () => {
       setAcceptingShipmentId(null);
+    },
+  });
+
+  const takeoverSegmentMutation = useMutation({
+    mutationFn: ({ segmentId, latitude, longitude }: TakeoverPayload) =>
+      shipmentService.takeOver(segmentId, { latitude, longitude }),
+    onMutate: ({ segmentId }: TakeoverPayload) => {
+      setTakeoverSegmentId(segmentId);
+    },
+    onSuccess: () => {
+      toast.success("Segment taken over");
+      SUPPLIER_STATUS_ORDER.forEach((status) =>
+        queryClient.invalidateQueries({ queryKey: ["supplierSegments", uuid, status] }),
+      );
+    },
+    onError: (error: unknown) => {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { error?: string } } }).response?.data?.error === "string"
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
+      toast.error(message || "Failed to take over segment");
+    },
+    onSettled: () => {
+      setTakeoverSegmentId(null);
     },
   });
 
@@ -499,59 +681,48 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
       setHandoverTarget(null);
       resetHandoverForm();
       queryClient.invalidateQueries({ queryKey: ["incomingShipments"] });
+      SUPPLIER_STATUS_ORDER.forEach((status) =>
+        queryClient.invalidateQueries({ queryKey: ["supplierSegments", uuid, status] }),
+      );
     } catch (error) {
       console.error(error);
       toast.error("Failed to submit handover details.");
     } finally {
       setHandoverLoading(false);
     }
-  }, [handoverTarget, queryClient, resetHandoverForm]);
+  }, [handoverTarget, queryClient, resetHandoverForm, uuid]);
 
-  const pendingStatuses = useMemo(
-    () => ["PENDING_ACCEPTANCE", "PREPARING", "AWAITING_SUPPLIER_CONFIRMATION"],
+  const fallbackByStatus = useMemo<
+    Partial<Record<SupplierShipmentStatus, SupplierShipmentRecord[]>>
+  >(
+    () => ({
+      PENDING: mockSupplierShipments.pool,
+      ACCEPTED: mockSupplierShipments.accepted,
+      IN_TRANSIT: mockSupplierShipments.pickedUp,
+      DELIVERED: mockSupplierShipments.delivered,
+      CLOSED: mockSupplierShipments.history,
+      CANCELLED: [],
+    }),
     [],
   );
-  const activeStatuses = useMemo(
-    () => ["ACCEPTED", "IN_TRANSIT", "READY_FOR_HANDOVER", "HANDOVER_PENDING"],
-    [],
-  );
-  const historyStatuses = useMemo(
-    () => ["HANDOVER_READY", "HANDOVER_COMPLETED", "COMPLETED", "DELIVERED", "CLOSED", "REJECTED"],
-    [],
-  );
 
-  const supplierPendingRaw = useMemo(
-    () => incoming.filter((shipment) => pendingStatuses.includes(normalizeStatus(shipment.status))),
-    [incoming, pendingStatuses],
-  );
-  const supplierActiveRaw = useMemo(
-    () => incoming.filter((shipment) => activeStatuses.includes(normalizeStatus(shipment.status))),
-    [activeStatuses, incoming],
-  );
-  const supplierHistoryRaw = useMemo(
-    () => incoming.filter((shipment) => historyStatuses.includes(normalizeStatus(shipment.status))),
-    [historyStatuses, incoming],
-  );
+  const shipmentsByStatus = useMemo(() => {
+    const buckets = createStatusBuckets();
+    SUPPLIER_STATUS_ORDER.forEach((status, index) => {
+      const query = supplierSegmentsQueries[index];
+      const entries = query?.data ?? [];
+      buckets[status] = entries.length > 0 ? entries : fallbackByStatus[status] ?? [];
+    });
+    return buckets;
+  }, [supplierSegmentsQueries, fallbackByStatus]);
 
-  const supplierPool =
-    supplierPendingRaw.length > 0 ? supplierPendingRaw : mockSupplierShipments.pool;
-  const supplierActive =
-    supplierActiveRaw.length > 0
-      ? supplierActiveRaw
-      : mockSupplierShipments.accepted.concat(mockSupplierShipments.pickedUp);
-  const deliveredCandidates = useMemo(
-    () =>
-      incoming.filter((shipment) =>
-        ["HANDOVER_READY", "HANDOVER_COMPLETED", "COMPLETED", "DELIVERED"].includes(
-          normalizeStatus(shipment.status),
-        ),
-      ),
-    [incoming],
-  );
-  const supplierDelivered =
-    deliveredCandidates.length > 0 ? deliveredCandidates : mockSupplierShipments.delivered;
-  const supplierHistory =
-    supplierHistoryRaw.length > 0 ? supplierHistoryRaw : mockSupplierShipments.history;
+  const loadingByStatus = useMemo(() => {
+    return SUPPLIER_STATUS_ORDER.reduce((acc, status, index) => {
+      const query = supplierSegmentsQueries[index];
+      acc[status] = Boolean(query?.isLoading || query?.isFetching || query?.isPending);
+      return acc;
+    }, {} as Record<SupplierShipmentStatus, boolean>);
+  }, [supplierSegmentsQueries]);
 
   const filterShipmentsByArea = useCallback(
     (shipments: SupplierShipmentRecord[]) => {
@@ -619,16 +790,19 @@ export const HandoverProvider = ({ children }: { children: React.ReactNode }) =>
     enabled: role === "SUPPLIER" || role === "WAREHOUSE",
     incomingShipments: incoming,
     loadingIncoming,
-    supplierPool,
-    supplierActive,
-    supplierDelivered,
-    supplierHistory,
+    loadingByStatus,
+    shipmentsByStatus,
+    statusOrder: SUPPLIER_STATUS_ORDER,
     areaQuery,
     setAreaQuery,
     filterShipmentsByArea,
     acceptingShipmentId,
     acceptShipment: (id: string) => acceptShipment.mutate(id),
     acceptShipmentPending: acceptShipment.isPending,
+    takeoverSegmentId,
+    takeoverPending: takeoverSegmentMutation.isPending,
+    takeoverSegment: (segmentId: string, coords: { latitude: number; longitude: number }) =>
+      takeoverSegmentMutation.mutateAsync({ segmentId, ...coords }),
     handoverDialogOpen,
     setHandoverDialogOpen,
     handoverTarget,
@@ -674,4 +848,5 @@ export const handoverUtils = {
   supplierStatusBadgeClass,
   normalizeStatus,
   formatArrivalText,
+  humanizeSupplierStatus,
 };

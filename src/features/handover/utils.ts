@@ -68,6 +68,7 @@ export const normalizeStatus = (status?: string) => (status ?? "PENDING_ACCEPTAN
 
 export const supplierStatusBadgeClass = (status: string) => {
   switch (status) {
+    case "PENDING":
     case "PENDING_ACCEPTANCE":
     case "PREPARING":
       return "bg-yellow-100 text-yellow-700 border-yellow-300";
@@ -84,6 +85,7 @@ export const supplierStatusBadgeClass = (status: string) => {
       return "bg-emerald-100 text-emerald-700 border-emerald-300";
     case "CLOSED":
       return "bg-muted text-muted-foreground border";
+    case "CANCELLED":
     case "REJECTED":
       return "bg-red-100 text-red-700 border-red-300";
     default:

@@ -11,7 +11,11 @@ export type ShipmentLegInput = {
 
 export type SupplierShipmentRecord = {
   id: string;
+  segmentId?: string;
   manufacturerName?: string;
+  consumerName?: string;
+  destinationPartyName?: string;
+  destinationPartyUUID?: string;
   fromUUID?: string;
   originType?: "MANUFACTURER" | "WAREHOUSE" | "SUPPLIER" | "CONSUMER" | "DISTRIBUTOR" | string;
   destinationType?: "MANUFACTURER" | "WAREHOUSE" | "SUPPLIER" | "CONSUMER" | "DISTRIBUTOR" | string;
@@ -40,8 +44,28 @@ export type SupplierShipmentRecord = {
     time_tolerance?: string;
     required_action?: string;
   }>;
+  startCheckpoint?: {
+    id?: string;
+    state?: string;
+    country?: string;
+    name?: string;
+  };
+  endCheckpoint?: {
+    id?: string;
+    state?: string;
+    country?: string;
+    name?: string;
+  };
   [key: string]: unknown;
 };
+
+export type SupplierShipmentStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "IN_TRANSIT"
+  | "DELIVERED"
+  | "CLOSED"
+  | "CANCELLED";
 
 export type ManufacturerShipmentRecord = {
   id: string;

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Tabs,
   TabsContent,
@@ -37,15 +38,23 @@ import {
   Search,
   ShieldCheck,
   Truck,
+  XCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { handoverUtils, useHandoverSharedContext, useSupplierContext } from "../context";
-import type { SupplierShipmentRecord } from "../types";
+import type { SupplierShipmentRecord, SupplierShipmentStatus } from "../types";
+import { ViewShipmentButton } from "./ViewShipmentButton";
 import { formatDistanceToNow } from "date-fns";
 
-const { deriveRouteLabel, extractShipmentItems, resolveShipmentAreas, supplierStatusBadgeClass, normalizeStatus, formatArrivalText } = handoverUtils;
+const {
+  extractShipmentItems,
+  supplierStatusBadgeClass,
+  normalizeStatus,
+  formatArrivalText,
+  humanizeSupplierStatus,
+} = handoverUtils;
 
 const shipmentDateFormatter = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
@@ -54,6 +63,89 @@ const shipmentDateFormatter = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+type IconType = typeof Clock;
+
+type StatusConfig = {
+  label: string;
+  title: string;
+  description: string;
+  loadingTitle: string;
+  loadingDescription: string;
+  emptyTitle: string;
+  emptyFilteredTitle: string;
+  emptyDescription: string;
+  icon: IconType;
+};
+
+const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
+  PENDING: {
+    label: "Pending",
+    title: "Pending consignments",
+    description: "Review shipment details and accept once contents are verified.",
+    loadingTitle: "Loading pending consignments",
+    loadingDescription: "Fetching consignments awaiting your acceptance.",
+    emptyTitle: "No pending consignments",
+    emptyFilteredTitle: "No pending consignments in this area",
+    emptyDescription: "Shipments waiting for acceptance will appear here.",
+    icon: Clock,
+  },
+  ACCEPTED: {
+    label: "Accepted",
+    title: "Accepted consignments",
+    description: "Plan the next actions for consignments you have accepted.",
+    loadingTitle: "Loading accepted consignments",
+    loadingDescription: "Fetching accepted consignments.",
+    emptyTitle: "No accepted consignments",
+    emptyFilteredTitle: "No accepted consignments in this area",
+    emptyDescription: "Accepted consignments will show up once the manufacturer confirms your handover.",
+    icon: ShieldCheck,
+  },
+  IN_TRANSIT: {
+    label: "In transit",
+    title: "In-transit consignments",
+    description: "Track consignments moving through logistics checkpoints.",
+    loadingTitle: "Loading in-transit consignments",
+    loadingDescription: "Fetching consignments currently on the move.",
+    emptyTitle: "No consignments in transit",
+    emptyFilteredTitle: "No in-transit consignments in this area",
+    emptyDescription: "Once consignments leave your custody they will be tracked here.",
+    icon: Truck,
+  },
+  DELIVERED: {
+    label: "Delivered",
+    title: "Delivered consignments",
+    description: "Confirm deliveries as they arrive at their destinations.",
+    loadingTitle: "Loading delivered consignments",
+    loadingDescription: "Fetching consignments marked as delivered.",
+    emptyTitle: "No delivered consignments",
+    emptyFilteredTitle: "No delivered consignments in this area",
+    emptyDescription: "Completed consignments will appear here for final confirmation.",
+    icon: CheckCircle2,
+  },
+  CLOSED: {
+    label: "Closed",
+    title: "Closed consignments",
+    description: "Review closed consignments and download records when needed.",
+    loadingTitle: "Loading closed consignments",
+    loadingDescription: "Fetching consignments that have been closed.",
+    emptyTitle: "No closed consignments",
+    emptyFilteredTitle: "No closed consignments in this area",
+    emptyDescription: "Recently closed consignments will show up here.",
+    icon: CalendarClock,
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    title: "Cancelled consignments",
+    description: "Review consignments that were cancelled or rejected.",
+    loadingTitle: "Loading cancelled consignments",
+    loadingDescription: "Fetching consignments that were cancelled.",
+    emptyTitle: "No cancelled consignments",
+    emptyFilteredTitle: "No cancelled consignments in this area",
+    emptyDescription: "Cancelled consignments will be listed here for audit trails.",
+    icon: XCircle,
+  },
+};
 
 export function SupplierSection() {
   const shared = useHandoverSharedContext();
@@ -64,37 +156,197 @@ export function SupplierSection() {
   }
 
   const hasAreaFilter = supplier.areaQuery.trim().length > 0;
-
-  const filteredSupplierPool = supplier.filterShipmentsByArea(supplier.supplierPool);
-  const filteredSupplierActive = supplier.filterShipmentsByArea(supplier.supplierActive);
-  const filteredSupplierDelivered = supplier.filterShipmentsByArea(supplier.supplierDelivered);
-  const filteredSupplierHistory = supplier.filterShipmentsByArea(supplier.supplierHistory);
+  const [takeoverDialogOpen, setTakeoverDialogOpen] = useState(false);
+  const [takeoverTarget, setTakeoverTarget] = useState<SupplierShipmentRecord | null>(null);
+  const [takeoverForm, setTakeoverForm] = useState({ latitude: "", longitude: "" });
+  const getSegmentReference = (shipment: SupplierShipmentRecord) => shipment.segmentId ?? shipment.id;
+  const statusOrder = supplier.statusOrder;
+  const defaultTab = statusOrder[0] ?? "PENDING";
+  const takeoverSegmentIdentifier = takeoverTarget ? getSegmentReference(takeoverTarget) : null;
+  const takeoverBusy =
+    takeoverSegmentIdentifier !== null &&
+    supplier.takeoverPending &&
+    supplier.takeoverSegmentId === takeoverSegmentIdentifier;
+  const takeoverDisabled =
+    takeoverForm.latitude.trim().length === 0 ||
+    takeoverForm.longitude.trim().length === 0 ||
+    takeoverBusy;
 
   const openHandoverDialog = (shipment: SupplierShipmentRecord) => {
     supplier.setHandoverTarget(shipment);
     supplier.setHandoverDialogOpen(true);
   };
 
-  const handleMarkPickedUp = (shipment: SupplierShipmentRecord) => {
-    toast.success(`Shipment ${shipment.id} marked as picked up (demo)`);
+  const openTakeoverDialog = (shipment: SupplierShipmentRecord) => {
+    setTakeoverTarget(shipment);
+    setTakeoverForm({ latitude: "", longitude: "" });
+    setTakeoverDialogOpen(true);
+  };
+
+  const closeTakeoverDialog = () => {
+    setTakeoverDialogOpen(false);
+    setTakeoverTarget(null);
+    setTakeoverForm({ latitude: "", longitude: "" });
+  };
+
+  const handleTakeoverDialogChange = (open: boolean) => {
+    if (!open) {
+      closeTakeoverDialog();
+    } else {
+      setTakeoverDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDelivery = (shipment: SupplierShipmentRecord) => {
+    toast.success(`Delivery for segment ${getSegmentReference(shipment)} confirmed.`);
+  };
+
+  const handleDownloadProof = (shipment: SupplierShipmentRecord) => {
+    toast.info(`Downloading records for segment ${getSegmentReference(shipment)} (demo).`);
+  };
+
+  const handleReportIssue = (shipment: SupplierShipmentRecord) => {
+    toast.info(`Support has been notified about segment ${getSegmentReference(shipment)}.`);
+  };
+
+  const handleConfirmTakeover = async () => {
+    if (!takeoverTarget) return;
+    const latitude = Number(takeoverForm.latitude);
+    const longitude = Number(takeoverForm.longitude);
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      toast.error("Provide valid latitude and longitude values.");
+      return;
+    }
+    try {
+      await supplier.takeoverSegment(String(getSegmentReference(takeoverTarget)), {
+        latitude,
+        longitude,
+      });
+      closeTakeoverDialog();
+    } catch {
+      // errors handled via context mutation toast
+    }
+  };
+
+  const renderStatusAction = (status: SupplierShipmentStatus, shipment: SupplierShipmentRecord) => {
+    const segmentIdentifier = getSegmentReference(shipment);
+    switch (status) {
+      case "PENDING": {
+        const isAccepting =
+          supplier.acceptShipmentPending && supplier.acceptingShipmentId === segmentIdentifier;
+        return (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={
+                  supplier.acceptShipmentPending && supplier.acceptingShipmentId === segmentIdentifier
+                }
+              >
+                {isAccepting ? (
+                  <>
+                    <LoaderIndicator />
+                    Accepting...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Accept
+                  </>
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Accept segment {segmentIdentifier}?</AlertDialogTitle>
+              </AlertDialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Confirm the contents and condition before accepting. The manufacturer will be notified.
+              </p>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => supplier.acceptShipment(String(segmentIdentifier))}
+                  disabled={
+                    supplier.acceptShipmentPending &&
+                    supplier.acceptingShipmentId === segmentIdentifier
+                  }
+                >
+                  Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        );
+      }
+      case "ACCEPTED":
+        {
+          const isTakingOver =
+            supplier.takeoverPending && supplier.takeoverSegmentId === segmentIdentifier;
+          return (
+            <Button
+              size="sm"
+              className="gap-2"
+              disabled={isTakingOver}
+              onClick={() => openTakeoverDialog(shipment)}
+            >
+              {isTakingOver ? (
+                <>
+                  <LoaderIndicator />
+                  Taking over...
+                </>
+              ) : (
+                "Take Over"
+              )}
+            </Button>
+          );
+        }
+      case "IN_TRANSIT":
+        return (
+          <Button size="sm" onClick={() => openHandoverDialog(shipment)}>
+            Prepare Handover
+          </Button>
+        );
+      case "DELIVERED":
+        return (
+          <Button size="sm" variant="secondary" onClick={() => handleConfirmDelivery(shipment)}>
+            Confirm Delivery
+          </Button>
+        );
+      case "CLOSED":
+        return (
+          <Button size="sm" variant="secondary" onClick={() => handleDownloadProof(shipment)}>
+            Download Proof
+          </Button>
+        );
+      case "CANCELLED":
+        return (
+          <Button size="sm" variant="secondary" onClick={() => handleReportIssue(shipment)}>
+            Report Issue
+          </Button>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="incoming" className="space-y-6">
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="incoming" className="sm:min-w-[160px]">
-            Incoming
-          </TabsTrigger>
-          <TabsTrigger value="active" className="sm:min-w-[160px]">
-            Active
-          </TabsTrigger>
-          <TabsTrigger value="delivered" className="sm:min-w-[160px]">
-            Delivered
-          </TabsTrigger>
-          <TabsTrigger value="history" className="sm:min-w-[160px]">
-            History
-          </TabsTrigger>
+      <Tabs defaultValue={defaultTab} className="space-y-6">
+        <TabsList className="flex w-full flex-wrap gap-2">
+          {statusOrder.map((status) => {
+            const config = STATUS_CONFIG[status];
+            return (
+              <TabsTrigger
+                key={status}
+                value={status}
+                className="flex-1 min-w-[120px] sm:flex-none sm:min-w-[140px]"
+              >
+                {config.label}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -119,208 +371,126 @@ export function SupplierSection() {
           </div>
         </div>
 
-        <TabsContent value="incoming">
-          <SupplierSectionHeader
-            title="Awaiting your acceptance"
-            description="Inspect consignment details and accept once the shipment is received."
-          />
+        {statusOrder.map((status) => {
+          const config = STATUS_CONFIG[status];
+          const shipments = supplier.shipmentsByStatus[status] ?? [];
+          const filteredShipments = supplier.filterShipmentsByArea(shipments);
+          const isLoading = supplier.loadingByStatus?.[status] ?? false;
+          const EmptyIcon = hasAreaFilter ? MapPin : config.icon;
+          const emptyTitle = hasAreaFilter ? config.emptyFilteredTitle : config.emptyTitle;
+          const emptyDescription = hasAreaFilter
+            ? "Try a different area or clear the filter to see all consignments."
+            : config.emptyDescription;
 
-          {supplier.loadingIncoming ? (
-            <SupplierEmptyState
-              icon={Truck}
-              title="Loading consignments"
-              description="Fetching the latest shipments assigned to your organisation."
-              isLoading
-            />
-          ) : filteredSupplierPool.length === 0 ? (
-            <SupplierEmptyState
-              icon={hasAreaFilter ? MapPin : Truck}
-              title={hasAreaFilter ? "No consignments in this area" : "No shipments to accept"}
-              description={
-                hasAreaFilter
-                  ? "Adjust the area filter or clear it to view all assigned consignments."
-                  : "Once a manufacturer assigns a shipment to you it will appear here."
-              }
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-              {filteredSupplierPool.map((shipment) => (
-                <SupplierShipmentCard
-                  key={`${shipment.id}-incoming`}
-                  shipment={shipment}
-                  actions={
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          className="gap-2"
-                          disabled={
-                            supplier.acceptShipmentPending &&
-                            supplier.acceptingShipmentId === shipment.id
-                          }
-                        >
-                          {supplier.acceptShipmentPending &&
-                            supplier.acceptingShipmentId === shipment.id ? (
-                            <>
-                              <LoaderIndicator />
-                              Accepting...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-4 w-4" />
-                              Accept Shipment
-                            </>
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Accept shipment {shipment.id}?
-                          </AlertDialogTitle>
-                        </AlertDialogHeader>
-                        <p className="text-sm text-muted-foreground">
-                          Confirm contents and quantities before accepting. This will notify the manufacturer.
-                        </p>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => supplier.acceptShipment(String(shipment.id))}
-                            disabled={
-                              supplier.acceptShipmentPending &&
-                              supplier.acceptingShipmentId === shipment.id
-                            }
-                          >
-                            Confirm acceptance
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  }
+          return (
+            <TabsContent key={status} value={status}>
+              <SupplierSectionHeader title={config.title} description={config.description} />
+              {isLoading ? (
+                <SupplierEmptyState
+                  icon={config.icon}
+                  title={config.loadingTitle}
+                  description={config.loadingDescription}
+                  isLoading
                 />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="active">
-          <SupplierSectionHeader
-            title="Active consignments"
-            description="Prepare handovers for downstream checkpoints or partners."
-          />
-
-          {supplier.loadingIncoming ? (
-            <SupplierEmptyState
-              icon={ShieldCheck}
-              title="Loading active shipments"
-              description="Fetching accepted consignments."
-              isLoading
-            />
-          ) : filteredSupplierActive.length === 0 ? (
-            <SupplierEmptyState
-              icon={hasAreaFilter ? MapPin : ShieldCheck}
-              title={hasAreaFilter ? "Area filter returned no active consignments" : "No active consignments"}
-              description={
-                hasAreaFilter
-                  ? "Try a different area or clear the filter to see all active consignments."
-                  : "Accepted consignments awaiting handover will appear here."
-              }
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredSupplierActive.map((shipment) => {
-                const normalized = normalizeStatus(shipment.status);
-                const isPickedUp = ["ACCEPTED", "IN_TRANSIT", "READY_FOR_HANDOVER", "HANDOVER_PENDING"].includes(
-                  normalized,
-                );
-                return (
-                  <SupplierShipmentCard
-                    key={`${shipment.id}-active`}
-                    shipment={shipment}
-                    actions={
-                      <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => openHandoverDialog(shipment)}>
-                          {isPickedUp ? "Prepare Handover" : "Mark as Picked Up"}
-                        </Button>
-                        {!isPickedUp ? (
-                          <Button variant="ghost" onClick={() => handleMarkPickedUp(shipment)}>
-                            Mark Picked Up
-                          </Button>
-                        ) : null}
-                      </div>
-                    }
-                  />
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="delivered">
-          <SupplierSectionHeader
-            title="Delivered consignments"
-            description="Recently handed over shipments awaiting confirmation."
-          />
-
-          {supplier.loadingIncoming ? (
-            <SupplierEmptyState
-              icon={Truck}
-              title="Loading delivered shipments"
-              description="Retrieving consignments handed over recently."
-              isLoading
-            />
-          ) : filteredSupplierDelivered.length === 0 ? (
-            <SupplierEmptyState
-              icon={hasAreaFilter ? MapPin : Truck}
-              title={hasAreaFilter ? "No delivered consignments in this area" : "No delivered consignments"}
-              description={
-                hasAreaFilter
-                  ? "Broaden the search area to review recently delivered consignments."
-                  : "Shipments you handover will appear here before entering history."
-              }
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredSupplierDelivered.map((shipment) => (
-                <SupplierShipmentCard key={`${shipment.id}-delivered`} shipment={shipment} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="history">
-          <SupplierSectionHeader
-            title="Handover history"
-            description="Traceability records for completed consignments."
-          />
-
-          {supplier.loadingIncoming ? (
-            <SupplierEmptyState
-              icon={CheckCircle2}
-              title="Loading history"
-              description="Retrieving recorded handovers."
-              isLoading
-            />
-          ) : filteredSupplierHistory.length === 0 ? (
-            <SupplierEmptyState
-              icon={hasAreaFilter ? MapPin : CheckCircle2}
-              title={hasAreaFilter ? "No historical consignments in this area" : "No historical consignments"}
-              description={
-                hasAreaFilter
-                  ? "Reset the filter to review the complete handover history."
-                  : "Completed handovers will be archived here for traceability."
-              }
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredSupplierHistory.map((shipment) => (
-                <SupplierShipmentCard key={`${shipment.id}-history`} shipment={shipment} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              ) : filteredShipments.length === 0 ? (
+                <SupplierEmptyState
+                  icon={EmptyIcon}
+                  title={emptyTitle}
+                  description={emptyDescription}
+                />
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredShipments.map((shipment) => {
+                    const segmentIdentifier = shipment.segmentId ?? shipment.id;
+                    return (
+                      <SupplierShipmentCard
+                        key={`${shipment.id}-${status}`}
+                        shipment={shipment}
+                        actions={
+                          <div className="flex flex-wrap gap-2">
+                            {renderStatusAction(status, shipment)}
+                            <ViewShipmentButton
+                              segmentId={segmentIdentifier}
+                              shipmentId={shipment.shipmentId}
+                            />
+                          </div>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          );
+        })}
       </Tabs>
 
       <SupplierHandoverDialog />
+      <Dialog open={takeoverDialogOpen} onOpenChange={handleTakeoverDialogChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm segment takeover</DialogTitle>
+            <DialogDescription>
+              Provide the GPS coordinates where the segment handoff occurred.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Segment ID:{" "}
+                <span className="font-medium text-foreground">
+                  {takeoverSegmentIdentifier ?? "N/A"}
+                </span>
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="takeover-latitude" className="text-sm font-medium">
+                Latitude
+              </label>
+              <Input
+                id="takeover-latitude"
+                type="number"
+                step="any"
+                placeholder="e.g., 6.8341"
+                value={takeoverForm.latitude}
+                onChange={(event) =>
+                  setTakeoverForm((prev) => ({ ...prev, latitude: event.target.value }))
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="takeover-longitude" className="text-sm font-medium">
+                Longitude
+              </label>
+              <Input
+                id="takeover-longitude"
+                type="number"
+                step="any"
+                placeholder="e.g., 79.8693"
+                value={takeoverForm.longitude}
+                onChange={(event) =>
+                  setTakeoverForm((prev) => ({ ...prev, longitude: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={closeTakeoverDialog} disabled={takeoverBusy}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmTakeover} disabled={takeoverDisabled}>
+              {takeoverBusy ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Taking over...
+                </span>
+              ) : (
+                "Confirm Takeover"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -377,21 +547,23 @@ function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) 
   };
   const expectedShipDate = parseDateValue(shipment.expectedShipDate);
   const expectedShipAbsolute = expectedShipDate ? shipmentDateFormatter.format(expectedShipDate) : null;
-  const expectedShipRelative = expectedShipDate
-    ? formatDistanceToNow(expectedShipDate, { addSuffix: true })
-    : null;
   const arrivalDate = parseDateValue(shipment.expectedArrival);
   const arrivalAbsolute = arrivalDate ? shipmentDateFormatter.format(arrivalDate) : null;
-  const arrivalRelative =
-    arrivalDate && arrivalText && arrivalText !== "Unknown ETA" ? arrivalText : null;
   const items = extractShipmentItems(shipment);
   const itemPreview = items.slice(0, 2);
   const remainingItems = Math.max(items.length - itemPreview.length, 0);
-  const routeLabel = deriveRouteLabel(shipment);
-  const areaTokens = resolveShipmentAreas(shipment);
-  const displayedAreas = areaTokens.slice(0, 2);
-  const remainingAreas = Math.max(areaTokens.length - displayedAreas.length, 0);
-  const manufacturerLabel = shipment.manufacturerName ?? "Shipment";
+  const primaryEntityName =
+    shipment.consumerName ??
+    shipment.destinationPartyName ??
+    shipment.manufacturerName ??
+    "Shipment";
+  const primaryEntityLabel =
+    shipment.consumerName || shipment.destinationPartyName ? "Destination" : "Manufacturer";
+  const shipmentIdentifier = shipment.shipmentId ?? shipment.segmentId ?? shipment.id;
+  const shipmentIdentifierLabel = shipment.shipmentId ? "Shipment ID" : "Segment ID";
+  const segmentIdentifier = shipment.segmentId ?? shipment.id;
+  const showSegmentId = Boolean(shipment.shipmentId && segmentIdentifier);
+  const isPendingStatus = ["PENDING", "PENDING_ACCEPTANCE", "PREPARING"].includes(normalized);
   const pickupLabel = shipment.pickupArea ?? shipment.originArea ?? "Origin";
   const dropoffLabel = shipment.dropoffArea ?? shipment.destinationArea ?? "Destination";
 
@@ -400,15 +572,21 @@ function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) 
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Manufacturer</p>
-            <p className="text-base font-semibold leading-tight text-foreground">{manufacturerLabel}</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">{primaryEntityLabel}</p>
+            <p className="text-base font-semibold leading-tight text-foreground">{primaryEntityName}</p>
             <p className="text-xs text-muted-foreground">
-              Shipment ID:&nbsp;
-              <span className="font-medium text-foreground/80">{shipment.id}</span>
+              {shipmentIdentifierLabel}:&nbsp;
+              <span className="font-medium text-foreground/80">{shipmentIdentifier}</span>
             </p>
+            {showSegmentId ? (
+              <p className="text-xs text-muted-foreground">
+                Segment ID:&nbsp;
+                <span className="font-medium text-foreground/80">{segmentIdentifier}</span>
+              </p>
+            ) : null}
           </div>
           <Badge className={cn("text-xs whitespace-nowrap", supplierStatusBadgeClass(normalized))}>
-            {normalized.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
+            {humanizeSupplierStatus(normalized)}
           </Badge>
         </div>
 
@@ -456,9 +634,8 @@ function SupplierShipmentCard({ shipment, actions }: SupplierShipmentCardProps) 
           )}
           <span className="inline-flex items-center gap-2">
             <Clock className="h-3 w-3" />
-            {normalized === "PENDING_ACCEPTANCE" ? "Should be handover on " : "Arrived"}{" "}
+            {isPendingStatus ? "Should hand over on " : "Arrived "}
             {arrivalAbsolute ?? arrivalText}
-
           </span>
           {shipment.acceptedAt && (
             <span className="inline-flex items-center gap-2">
