@@ -180,10 +180,14 @@ const Settings = () => {
 
     let isMounted = true;
     setIsProfileLoading(true);
+    console.log('Settings: fetching registration', registrationId);
+
 
     registrationService
       .getById(registrationId)
       .then((data) => {
+        console.log('Settings: fetch success', data);
+
         if (!isMounted) return;
         const payload = resolveRegistrationPayload(data);
         const normalized = normalizeRegistration(payload);
@@ -269,54 +273,43 @@ const Settings = () => {
     }));
   };
 
-  const handleSaveRegistration = async () => {
-    if (!registrationId) {
-      toast({
-        title: 'Missing user identifier',
-        description: 'Cannot update profile without a valid registration id.',
-        variant: 'destructive',
+const handleSaveRegistration = async () => {
+  if (!registrationId) {
+    toast({ title: 'Missing user identifier', description: 'Cannot update profile without a valid registration id.', variant: 'destructive' });
+    return;
+  }
+
+  setIsProfileSaving(true);
+  try {
+    const payload = normalizeRegistration(editableRegistration);
+
+    await registrationService.update(registrationId, payload);
+
+    // Re-fetch so the UI gets the canonical data returned by the API
+    const latest = await registrationService.getById(registrationId);
+    const normalized = normalizeRegistration(resolveRegistrationPayload(latest));
+
+    setRegistration(normalized);
+    setEditableRegistration(normalized);
+
+    if (user) {
+      setUser({
+        ...user,
+        displayName: normalized.contact.personName || user.displayName,
+        email: normalized.contact.email || user.email,
+        organization: normalized.identification.legalName || user.organization,
       });
-      return;
     }
 
-    setIsProfileSaving(true);
-    try {
-      const payload = normalizeRegistration(editableRegistration);
-      const requestBody = {
-        payload,
-        reg_type: payload.type || registration?.type || 'MANUFACTURER',
-      };
-      const updated = await registrationService.update(registrationId, requestBody);
-      const normalized = normalizeRegistration(resolveRegistrationPayload(updated));
-      setRegistration(normalized);
-      setEditableRegistration(normalized);
-
-      toast({
-        title: 'Profile saved',
-        description: 'Registration details have been updated.',
-      });
-
-      if (user) {
-        setUser({
-          ...user,
-          displayName: normalized.contact.personName || user.displayName,
-          email: normalized.contact.email || user.email,
-          organization: normalized.identification.legalName || user.organization,
-        });
-      }
-
-      setIsProfileDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating registration:', error);
-      toast({
-        title: 'Save failed',
-        description: 'We could not update the profile. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProfileSaving(false);
-    }
-  };
+    toast({ title: 'Profile saved', description: 'Registration details have been updated.' });
+    setIsProfileDialogOpen(false);
+  } catch (error) {
+    console.error('Error updating registration:', error);
+    toast({ title: 'Save failed', description: 'We could not update the profile. Please try again.', variant: 'destructive' });
+  } finally {
+    setIsProfileSaving(false);
+  }
+};
 
   const realtimeOptions = useMemo(
     () => [
