@@ -8,7 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, Loader2, Plus, PlusCircle, X } from "lucide-react";
 import {
   packageService,
   type PackageRegistryPayload,
@@ -16,20 +26,22 @@ import {
   type UpdatePackagePayload,
 } from "@/services/packageService";
 import { batchService } from "@/services/batchService";
+import { sensorTypeService, type SensorType } from "@/services/sensorTypeService";
 import type { ProductBatchSummary } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 type PackageFormState = {
   batchId: string;
   microprocessorMac: string;
-  sensorTypes: string;
+  sensorTypes: string[];
 };
 
 const emptyPackageForm = (): PackageFormState => ({
   batchId: "",
   microprocessorMac: "",
-  sensorTypes: "",
+  sensorTypes: [],
 });
 
 const formatDateTime = (value?: string) => {
@@ -39,11 +51,21 @@ const formatDateTime = (value?: string) => {
   return date.toLocaleString();
 };
 
-const parseSensors = (value: string) =>
-  value
-    .split(",")
-    .map((sensor) => sensor.trim())
-    .filter(Boolean);
+const normalizeSensorArray = (value?: string[] | string | null) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((sensor) => (typeof sensor === "string" ? sensor.trim() : ""))
+      .filter((sensor) => sensor.length > 0);
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((sensor) => sensor.trim())
+      .filter((sensor) => sensor.length > 0);
+  }
+  return [];
+};
 
 const sensorsToLabel = (sensors?: string[] | string) => {
   if (!sensors) return "Not specified";
@@ -102,6 +124,125 @@ const deriveBatchProductionWindow = (batch: ProductBatchSummary) => {
   return `Batch - ${baseLabel}`;
 };
 
+type SensorTypeSelectorProps = {
+  selected: string[];
+  onChange: (next: string[]) => void;
+  options: SensorType[];
+  disabled?: boolean;
+  loading?: boolean;
+  error?: boolean;
+  placeholder?: string;
+  onCreateSensorType?: () => void;
+};
+
+function SensorTypeSelector({
+  selected,
+  onChange,
+  options,
+  disabled,
+  loading,
+  error,
+  placeholder = "Select sensor types",
+  onCreateSensorType,
+}: SensorTypeSelectorProps) {
+  const [open, setOpen] = useState(false);
+
+  const toggleSensor = (name: string) => {
+    onChange(
+      selected.includes(name)
+        ? selected.filter((sensor) => sensor !== name)
+        : [...selected, name]
+    );
+  };
+
+  const selectionLabel = selected.length
+    ? `${selected.length} sensor${selected.length > 1 ? "s" : ""} selected`
+    : placeholder;
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn("w-full justify-between", disabled && "opacity-50")}
+            disabled={disabled}
+          >
+            <span className="truncate">{selectionLabel}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[320px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search sensor types..." />
+            <CommandList>
+              <CommandEmpty>
+                {loading
+                  ? "Loading sensor types..."
+                  : error
+                  ? "Failed to load sensor types"
+                  : "No sensor types found"}
+              </CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => {
+                  const isSelected = selected.includes(option.name);
+                  return (
+                    <CommandItem
+                      key={option.id}
+                      value={option.name}
+                      onSelect={() => toggleSensor(option.name)}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                      {option.name}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+            {onCreateSensorType ? (
+              <>
+                <CommandSeparator />
+                <div className="p-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => {
+                      setOpen(false);
+                      onCreateSensorType();
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add sensor type
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {selected.length > 0 ? (
+        <div className="flex flex-wrap gap-2 pt-2">
+          {selected.map((sensor) => (
+            <Badge key={sensor} variant="secondary" className="flex items-center gap-1">
+              {sensor}
+              <button
+                type="button"
+                onClick={() => toggleSensor(sensor)}
+                className="rounded-full p-0.5 hover:text-destructive"
+                aria-label={`Remove ${sensor}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function PackageManagement() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -115,6 +256,9 @@ export function PackageManagement() {
   const [editForm, setEditForm] = useState<UpdatePackagePayload>({});
 
   const [viewingPackage, setViewingPackage] = useState<PackageResponse | null>(null);
+  const [isSensorTypeDialogOpen, setIsSensorTypeDialogOpen] = useState(false);
+  const [sensorTypeDialogContext, setSensorTypeDialogContext] = useState<"create" | "edit">("create");
+  const [newSensorTypeName, setNewSensorTypeName] = useState("");
 
   const {
     data: packages = [],
@@ -138,6 +282,51 @@ export function PackageManagement() {
     enabled: Boolean(manufacturerUUID),
   });
 
+  const {
+    data: sensorTypes = [],
+    isLoading: loadingSensorTypes,
+    isError: sensorTypesError,
+    error: sensorTypesErrorDetails,
+  } = useQuery<SensorType[]>({
+    queryKey: ["sensor-types", manufacturerUUID],
+    queryFn: () => sensorTypeService.list(),
+    enabled: Boolean(manufacturerUUID),
+  });
+
+  const createSensorTypeMutation = useMutation({
+    mutationFn: (payload: { name: string }) => sensorTypeService.create(payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["sensor-types", manufacturerUUID] });
+      setIsSensorTypeDialogOpen(false);
+      setNewSensorTypeName("");
+      toast({
+        title: "Sensor type created",
+        description: `${data.name} is now available.`,
+      });
+
+      if (sensorTypeDialogContext === "create") {
+        setCreateForm((current) => ({
+          ...current,
+          sensorTypes: Array.from(new Set([...current.sensorTypes, data.name])),
+        }));
+      } else {
+        setEditForm((current) => ({
+          ...current,
+          sensorTypes: Array.from(
+            new Set([...normalizeSensorArray(current.sensorTypes), data.name])
+          ),
+        }));
+      }
+    },
+    onError: (err: unknown) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to create sensor type",
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    },
+  });
+
   const batchOptions = useMemo(
     () =>
       batches.map((batch) => ({
@@ -148,6 +337,28 @@ export function PackageManagement() {
   );
 
   const batchLookup = useMemo(() => new Map(batches.map((batch) => [String(batch.id), batch])), [batches]);
+  const editSensorSelections = normalizeSensorArray(editForm.sensorTypes);
+  const sensorTypeErrorMessage =
+    sensorTypesErrorDetails instanceof Error ? sensorTypesErrorDetails.message : "Unable to load sensor types.";
+
+  const openSensorTypeDialog = (context: "create" | "edit") => {
+    setSensorTypeDialogContext(context);
+    setIsSensorTypeDialogOpen(true);
+  };
+
+  const handleSensorTypeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = newSensorTypeName.trim();
+    if (!trimmed) {
+      toast({
+        variant: "destructive",
+        title: "Name required",
+        description: "Enter a sensor type name.",
+      });
+      return;
+    }
+    createSensorTypeMutation.mutate({ name: trimmed });
+  };
 
   const createMutation = useMutation({
     mutationFn: (payload: PackageRegistryPayload) => packageService.register(payload),
@@ -211,7 +422,7 @@ export function PackageManagement() {
       manufacturerUUID,
       batchId: createForm.batchId,
       microprocessorMac: createForm.microprocessorMac.trim(),
-      sensorTypes: parseSensors(createForm.sensorTypes),
+      sensorTypes: createForm.sensorTypes,
     });
   };
 
@@ -331,6 +542,7 @@ export function PackageManagement() {
                       packageCode: pkg.packageCode ?? "",
                       status: pkg.status,
                       notes: pkg.notes,
+                      sensorTypes: normalizeSensorArray(pkg.sensorTypes),
                     });
                   }}
                 >
@@ -410,15 +622,19 @@ export function PackageManagement() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="package-sensors" className="text-sm font-medium">
-                Sensors <span className="text-muted-foreground">(comma separated)</span>
-              </label>
-              <Input
-                id="package-sensors"
-                placeholder="Temperature, Humidity"
-                value={createForm.sensorTypes}
-                onChange={(event) => setCreateForm((current) => ({ ...current, sensorTypes: event.target.value }))}
+              <label className="text-sm font-medium">Sensors</label>
+              <SensorTypeSelector
+                selected={createForm.sensorTypes}
+                onChange={(next) => setCreateForm((current) => ({ ...current, sensorTypes: next }))}
+                options={sensorTypes}
+                disabled={loadingSensorTypes || sensorTypesError}
+                loading={loadingSensorTypes}
+                error={sensorTypesError}
+                onCreateSensorType={() => openSensorTypeDialog("create")}
               />
+              {sensorTypesError ? (
+                <p className="text-sm text-destructive">{sensorTypeErrorMessage}</p>
+              ) : null}
             </div>
 
             <div className="flex justify-end gap-2">
@@ -438,9 +654,9 @@ export function PackageManagement() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Package</DialogTitle>
-            <DialogDescription>Update package metadata.</DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
+          <DialogDescription>Update package metadata.</DialogDescription>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={handleEditSubmit}>
             <div className="space-y-2">
               <label htmlFor="edit-package-code" className="text-sm font-medium">
                 Package code
@@ -464,6 +680,20 @@ export function PackageManagement() {
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium">Sensors</label>
+              <SensorTypeSelector
+                selected={editSensorSelections}
+                onChange={(next) => setEditForm((current) => ({ ...current, sensorTypes: next }))}
+                options={sensorTypes}
+                disabled={loadingSensorTypes || sensorTypesError}
+                loading={loadingSensorTypes}
+                error={sensorTypesError}
+                onCreateSensorType={() => openSensorTypeDialog("edit")}
+              />
+              {sensorTypesError ? <p className="text-sm text-destructive">{sensorTypeErrorMessage}</p> : null}
+            </div>
+
+            <div className="space-y-2">
               <label htmlFor="edit-package-notes" className="text-sm font-medium">
                 Notes
               </label>
@@ -481,6 +711,47 @@ export function PackageManagement() {
               <Button type="submit" className="gap-2" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Save changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSensorTypeDialogOpen} onOpenChange={setIsSensorTypeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add sensor type</DialogTitle>
+            <DialogDescription>Create a reusable sensor type for your organisation.</DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleSensorTypeSubmit}>
+            <div className="space-y-2">
+              <label htmlFor="new-sensor-type" className="text-sm font-medium">
+                Sensor type name
+              </label>
+              <Input
+                id="new-sensor-type"
+                autoFocus
+                placeholder="e.g., Humidity"
+                value={newSensorTypeName}
+                onChange={(event) => setNewSensorTypeName(event.target.value)}
+                disabled={createSensorTypeMutation.isPending}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsSensorTypeDialogOpen(false);
+                  setNewSensorTypeName("");
+                }}
+                disabled={createSensorTypeMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="gap-2" disabled={createSensorTypeMutation.isPending}>
+                {createSensorTypeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Save sensor type
               </Button>
             </div>
           </form>
