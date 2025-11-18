@@ -69,31 +69,10 @@ type PackageDetail = {
   quantity?: number;
 };
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value ?? undefined;
-  return dateTimeFormatter.format(date);
-};
-
-const formatCheckpoint = (checkpoint?: { state?: string; country?: string; id?: string }) => {
-  if (!checkpoint) return undefined;
-  const tokens = [checkpoint.state, checkpoint.country].filter(Boolean);
-  if (tokens.length > 0) return tokens.join(", ");
-  return checkpoint.id;
-};
-
-type PackageDetail = {
-  productCategory?: string;
-  productName?: string;
-  requiredStartTemp?: string;
-  requiredEndTemp?: string;
-  quantity?: number;
+type PartySummary = {
+  id?: string;
+  legalName?: string;
+  [key: string]: unknown;
 };
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -106,20 +85,6 @@ const formatDateTime = (value?: string | null) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value ?? undefined;
   return dateTimeFormatter.format(date);
-};
-
-const formatCheckpoint = (checkpoint?: { state?: string; country?: string; id?: string }) => {
-  if (!checkpoint) return undefined;
-  const tokens = [checkpoint.state, checkpoint.country].filter(Boolean);
-  if (tokens.length > 0) return tokens.join(", ");
-  return checkpoint.id;
-};
-
-const formatDateTime = (value?: string | null) => {
-  if (!value) return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
 };
 
 const formatStatus = (value?: string | null) => {
@@ -180,13 +145,18 @@ const formatCheckpoint = (checkpoint?: {
   state?: string;
   country?: string;
   name?: string;
+  id?: string | number;
 }) => {
   if (!checkpoint) return undefined;
   const label = [checkpoint.state, checkpoint.country]
-    .filter(Boolean)
+    .filter((value): value is string => Boolean(value))
     .join(", ");
-  if (checkpoint.name && label) return `${checkpoint.name} • ${label}`;
-  return checkpoint.name ?? label ?? undefined;
+  if (checkpoint.name && label) return `${checkpoint.name} - ${label}`;
+  return (
+    checkpoint.name ??
+    label ??
+    (checkpoint.id !== undefined ? String(checkpoint.id) : undefined)
+  );
 };
 
 const resolvePackages = (data?: ViewDetail | null) => {
@@ -265,25 +235,34 @@ export function ViewShipmentButton({
     data?.fromUUID ??
     data?.shipment?.manufacturerUUID ??
     "Unknown";
+  const rawShipmentConsumer = data?.shipment?.consumer;
+  const shipmentConsumer =
+    rawShipmentConsumer && typeof rawShipmentConsumer === "object"
+      ? (rawShipmentConsumer as PartySummary)
+      : undefined;
   const consumerLabel =
-    data?.shipment?.consumer?.legalName ??
+    shipmentConsumer?.legalName ??
     data?.consumerName ??
     data?.destinationPartyName ??
     data?.destinationPartyUUID ??
-    (data?.shipment?.consumer as { legalName?: string })?.legalName ??
     data?.shipment?.destinationPartyUUID ??
     data?.toUUID ??
     "Unknown";
-  const consumerId = data?.shipment?.consumer?.id ?? undefined;
+  const consumerId = shipmentConsumer?.id ?? undefined;
   const statusLabel = (data?.status ?? "UNKNOWN").replace(/_/g, " ");
   const expectedShip = formatDateTime(
-    data?.expectedShipDate ?? (data as { expected_ship_date?: string }).expected_ship_date,
+    data?.expectedShipDate ??
+      (data
+        ? (data as { expected_ship_date?: string }).expected_ship_date
+        : undefined),
   );
   const expectedArrival = formatDateTime(
     data?.expectedArrival ??
-    data?.estimatedArrivalDate ??
-    data?.estimated_arrival_date ??
-    (data as { expected_arrival_date?: string }).expected_arrival_date,
+      data?.estimatedArrivalDate ??
+      data?.estimated_arrival_date ??
+      (data
+        ? (data as { expected_arrival_date?: string }).expected_arrival_date
+        : undefined),
   );
   const acceptedAt = formatDateTime(data?.acceptedAt);
   const handedOverAt = formatDateTime(data?.handedOverAt);
@@ -296,6 +275,11 @@ export function ViewShipmentButton({
     data?.dropoffArea ??
     data?.destinationArea;
   const packages = resolvePackages(data);
+  const plannedCheckpoints = (
+    Array.isArray(data?.checkpoints) ? data.checkpoints : []
+  ).filter(
+    (checkpoint): checkpoint is ShipmentCheckpoint => Boolean(checkpoint),
+  );
 
   if (!fetchId) {
     console.warn(
@@ -517,25 +501,25 @@ export function ViewShipmentButton({
               ) : (
                 <p className="text-muted-foreground">No package details available.</p>
               )}
-            </section>
+            </div>
 
-            {Array.isArray(data.checkpoints) && data.checkpoints.length > 0 ? (
+            {plannedCheckpoints.length > 0 ? (
               <section>
                 <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
                   Planned Legs
                 </p>
                 <div className="divide-y rounded-md border">
-                  {data.checkpoints.map((checkpoint, index) => (
+                  {plannedCheckpoints.map((checkpoint, index) => (
                     <div key={index} className="space-y-1 p-3">
                       <p className="text-xs font-medium">Leg {index + 1}</p>
                       <div className="grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
                         <div>
                           <span className="text-muted-foreground">Start</span>:{" "}
-                          {checkpoint.start_checkpoint_id ?? "—"}
+                          {checkpoint.start_checkpoint_id ?? "-"}
                         </div>
                         <div>
                           <span className="text-muted-foreground">End</span>:{" "}
-                          {checkpoint.end_checkpoint_id ?? "—"}
+                          {checkpoint.end_checkpoint_id ?? "-"}
                         </div>
                         <div>
                           <span className="text-muted-foreground">Exp Ship</span>:{" "}
@@ -547,11 +531,11 @@ export function ViewShipmentButton({
                         </div>
                         <div>
                           <span className="text-muted-foreground">Tolerance</span>:{" "}
-                          {checkpoint.time_tolerance ?? "—"}
+                          {checkpoint.time_tolerance ?? "-"}
                         </div>
                         <div>
                           <span className="text-muted-foreground">Action</span>:{" "}
-                          {checkpoint.required_action ?? "—"}
+                          {checkpoint.required_action ?? "-"}
                         </div>
                       </div>
                     </div>
@@ -560,7 +544,7 @@ export function ViewShipmentButton({
               </section>
             ) : null}
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );
