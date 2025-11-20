@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount, useSignMessage } from "wagmi";
-import { useWeb3Modal } from "@web3modal/wagmi/react";
+import { useAccount, useSignMessage, useDisconnect } from "wagmi";
+import { useWeb3Modal, useWeb3ModalState } from "@web3modal/wagmi/react";
 import { getAccount } from "@wagmi/core";
 import { wagmiConfig } from "@/lib/web3/wagmi";
 import {
@@ -17,6 +17,8 @@ import {
   CheckCheck,
   Zap,
   Network,
+  LogOut,
+  ArrowRight,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
@@ -35,6 +37,8 @@ import metamaskFox from "@/img/metamask_fox.png";
 type LoginStep =
   | "idle"
   | "connecting"
+  | "fetching_nonce"
+  | "ready_to_sign"
   | "signing"
   | "verifying"
   | "success"
@@ -45,11 +49,14 @@ export default function LoginPage() {
   const [status, setStatus] = useState("Connect your wallet to continue");
   const [step, setStep] = useState<LoginStep>("idle");
   const [walletConnecting, setWalletConnecting] = useState(false);
+  const [nonce, setNonce] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { signMessageAsync } = useSignMessage();
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected, status: accountStatus } = useAccount();
   const { open } = useWeb3Modal();
+  const { open: isModalOpen } = useWeb3ModalState();
+  const { disconnect } = useDisconnect();
 
   const setAuth = useAppStore((s) => s.setAuth);
   const setWalletConnection = useAppStore((s) => s.setWalletConnection);
@@ -57,64 +64,55 @@ export default function LoginPage() {
   useEffect(() => {
     if (connectedAddress) {
       setWalletConnection(connectedAddress as `0x${string}`);
+      
+      // Pre-fetch nonce silently to enable 1-click login
+      const prefetchNonce = async () => {
+        try {
+          console.log("[Login] Pre-fetching nonce...");
+          const { data } = await api.get("/auth/nonce", { params: { address: connectedAddress } });
+          setNonce(data.nonce);
+          console.log("[Login] Nonce pre-fetched");
+        } catch (err) {
+          console.error("[Login] Failed to pre-fetch nonce:", err);
+          // Ignore error, fallback to manual fetch on click
+        }
+      };
+      prefetchNonce();
     } else {
       setWalletConnection(null);
+      setNonce(null);
     }
   }, [connectedAddress, setWalletConnection]);
 
+  // Reset loading state when connected so user can click "Login"
   useEffect(() => {
-    if (loading) {
-      return;
+    if (isConnected && !isModalOpen && step !== "ready_to_sign" && step !== "signing" && step !== "verifying" && step !== "success") {
+      setLoading(false);
+      setWalletConnecting(false);
+      setStatus("Wallet connected! Click 'Sign In' to verify ownership.");
     }
-    if (["verifying", "signing", "success", "connecting", "error"].includes(step)) {
-      return;
+  }, [isConnected, isModalOpen, step]);
+
+  // Handle reconnecting state
+  useEffect(() => {
+    if (accountStatus === "reconnecting") {
+      setLoading(true);
+      setStatus("Restoring wallet connection...");
+    } else if (accountStatus === "connected" && !loading && step === "idle") {
+      setLoading(false);
     }
-    if (connectedAddress) {
-      setStatus("Wallet connected. Continue with your wallet to sign in.");
-    } else if (!walletConnecting) {
+  }, [accountStatus]);
+
+  // Reset state if modal is closed without connection
+  useEffect(() => {
+    if (!isModalOpen && !isConnected && accountStatus !== "reconnecting") {
+      console.log("[Login] Modal closed without connection, resetting state");
+      setLoading(false);
+      setWalletConnecting(false);
+      setStep("idle");
       setStatus("Connect your wallet to continue");
     }
-  }, [connectedAddress, loading, step, walletConnecting]);
-
-  const ensureWalletConnection = async (): Promise<`0x${string}`> => {
-    let account = getAccount(wagmiConfig);
-    if (account.address) {
-      return account.address as `0x${string}`;
-    }
-
-    await open({ view: "Connect" });
-
-    account = getAccount(wagmiConfig);
-    if (account.address) {
-      return account.address as `0x${string}`;
-    }
-
-    throw new Error("WALLET_CONNECTION_CANCELLED");
-  };
-
-  const walletButtonLabel = connectedAddress
-    ? `Wallet: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`
-    : "Connect Wallet";
-
-  const handleWalletButtonClick = async () => {
-    if (connectedAddress) {
-      await open({ view: "Account" });
-      return;
-    }
-
-    try {
-      setWalletConnecting(true);
-      setStep("connecting");
-      setStatus("Opening wallet modal...");
-      await ensureWalletConnection();
-      setStep("idle");
-      setStatus("Wallet connected. Continue with your wallet to sign in.");
-    } catch (err) {
-      handleWalletError(err, { markStepError: false });
-    } finally {
-      setWalletConnecting(false);
-    }
-  };
+  }, [isModalOpen, isConnected, accountStatus]);
 
   const describeWalletError = (err: unknown) => {
     const errorMessage =
@@ -161,39 +159,50 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = async () => {
+  // Step 1: Fetch Nonce
+  const initiateLogin = async (address: `0x${string}`) => {
     try {
       setLoading(true);
-      setStep("connecting");
-      setStatus("Connecting wallet via Web3Modal...");
-      setWalletConnecting(true);
+      setStep("fetching_nonce");
+      setStatus("Preparing secure login...");
 
-      const address = await ensureWalletConnection();
-      setWalletConnection(address);
-
-      // ✅ Step 2: Request nonce from backend
-      setStatus("Requesting authentication challenge...");
+      // Request nonce from backend
       const { data } = await api.get("/auth/nonce", { params: { address } });
+      setNonce(data.nonce);
+      
+      // Stop loading and ask user to sign
+      setLoading(false);
+      setStep("ready_to_sign");
+      setStatus("Ready! Click 'Sign Message' to open your wallet.");
+    } catch (err: unknown) {
+      console.error("[Login] Nonce fetch error:", err);
+      handleWalletError(err);
+      setLoading(false);
+    }
+  };
 
-      // ✅ Step 3: Ask the connected wallet to sign message
+  // Step 2: Sign Message (Must be direct user action for mobile deep links)
+  const performSignature = async () => {
+    if (!connectedAddress || !nonce) return;
+
+    try {
+      setLoading(true);
       setStep("signing");
       setStatus("Please sign the message in your wallet...");
 
-      const message = `Registry Login\nAddress: ${address.toLowerCase()}\nNonce: ${
-        data.nonce
-      }`;
+      const message = `Registry Login\nAddress: ${connectedAddress.toLowerCase()}\nNonce: ${nonce}`;
 
       const signature = await signMessageAsync({
-        account: address,
+        account: connectedAddress,
         message,
       });
 
-      // ✅ Step 4: Send signature back to backend
+      // Send signature back to backend
       setStep("verifying");
       setStatus("Verifying signature...");
-      const res = await api.post("/auth/login", { address, signature });
+      const res = await api.post("/auth/login", { address: connectedAddress, signature });
 
-      // ✅ Step 5: Store JWT + role + address in Zustand store
+      // Store JWT + role + address in Zustand store
       setAuth({
         token: res.data.accessToken,
         refreshToken: res.data.refreshToken,
@@ -207,10 +216,52 @@ export default function LoginPage() {
       setStatus("✅ Login successful! Redirecting...");
       setTimeout(() => navigate("/"), 1000);
     } catch (err: unknown) {
+      console.error("[Login] Authentication error:", err);
       handleWalletError(err);
-    } finally {
-      setWalletConnecting(false);
       setLoading(false);
+      setWalletConnecting(false);
+      // Allow retry
+      setStep("ready_to_sign"); 
+    }
+  };
+
+  const handleMainButtonClick = async () => {
+    try {
+      // 1. If not connected, connect
+      if (!isConnected || !connectedAddress) {
+        console.log("[Login] Opening wallet modal");
+        setStep("connecting");
+        setStatus("Opening wallet connection...");
+        setWalletConnecting(true);
+        setLoading(true); 
+        await open({ view: "Connect" });
+        return;
+      }
+
+      // 2. Check if we can fast-track (One-Click)
+      if (nonce && step !== "ready_to_sign") {
+        console.log("[Login] Nonce available, fast-tracking to signature");
+        await performSignature();
+        return;
+      }
+
+      // 3. If connected but no nonce, fetch nonce (Two-Step Fallback)
+      if (step === "idle" || step === "error" || (isConnected && step !== "ready_to_sign")) {
+        await initiateLogin(connectedAddress);
+        return;
+      }
+
+      // 4. If nonce fetched, sign
+      if (step === "ready_to_sign") {
+        await performSignature();
+        return;
+      }
+      
+    } catch (err: unknown) {
+      console.error("[Login] Error in handleMainButtonClick:", err);
+      handleWalletError(err);
+      setLoading(false);
+      setWalletConnecting(false);
     }
   };
 
@@ -257,10 +308,10 @@ export default function LoginPage() {
                 TrackChain
               </span>
             </h1>
-            <p className="text-gray-400 text-[10px] md:text-xs font-medium tracking-wide">
+            <p className="text-gray-300 md:text-gray-400 text-[10px] md:text-xs font-medium tracking-wide">
               Enterprise Supply Chain on Blockchain
             </p>
-            <div className="flex items-center justify-center gap-1.5 mt-1.5 text-[9px] md:text-[10px] text-gray-500">
+            <div className="flex items-center justify-center gap-1.5 mt-1.5 text-[9px] md:text-[10px] text-gray-400 md:text-gray-500">
               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
               <Network className="w-2.5 h-2.5" />
               <span>Ganesh Testnet</span>
@@ -268,296 +319,230 @@ export default function LoginPage() {
           </div>
 
           {/* Login card */}
-          <Card className="backdrop-blur-xl bg-white/[0.04] border-white/[0.12] shadow-2xl overflow-hidden relative group hover:border-white/[0.18] hover:shadow-blue-500/10 transition-all duration-500">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.08] via-transparent to-purple-500/[0.08]"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.1),transparent_50%)]"></div>
+          <Card className="backdrop-blur-xl bg-white/[0.08] md:bg-white/[0.04] border-white/[0.2] md:border-white/[0.12] shadow-2xl overflow-hidden relative group hover:border-white/[0.25] md:hover:border-white/[0.18] hover:shadow-blue-500/10 transition-all duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.12] md:from-blue-500/[0.08] via-transparent to-purple-500/[0.12] md:to-purple-500/[0.08]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 md:from-black/30 via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.15),transparent_50%)]"></div>
 
-            <CardHeader className="relative space-y-1 md:space-y-1.5 pb-2 md:pb-3 px-3 md:px-4 pt-3 md:pt-4">
-              <CardTitle className="text-lg md:text-xl font-bold text-center text-white flex items-center justify-center gap-1.5 md:gap-2">
-                <div className="p-1 md:p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm">
-                  <Shield className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-400" />
-                </div>
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
-                  Secure Authentication
+            <CardHeader className="relative space-y-2 pb-4 px-4 md:px-6 pt-4 md:pt-6">
+              <CardTitle className="text-xl md:text-2xl font-bold text-center text-white">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400">
+                  {isConnected ? "Verify Identity" : "Welcome Back"}
                 </span>
               </CardTitle>
-              <CardDescription className="text-center text-gray-300 text-[10px] md:text-xs font-medium">
+              <CardDescription className="text-center text-gray-300 md:text-gray-400 text-xs md:text-sm font-medium">
                 {status}
               </CardDescription>
+              
+              {/* Connected Wallet Badge */}
+              {isConnected && connectedAddress && (
+                <div className="flex items-center justify-center mt-2 animate-fade-in">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-mono">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                    {connectedAddress.slice(0, 6)}...{connectedAddress.slice(-4)}
+                    <button 
+                      onClick={() => disconnect()}
+                      className="ml-2 p-1 hover:bg-blue-500/20 rounded-full transition-colors"
+                      title="Disconnect Wallet"
+                    >
+                      <LogOut className="w-3 h-3 text-red-400" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step indicator */}
+              {loading && (
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    step === "connecting" ? "bg-blue-400 scale-125" : step === "signing" || step === "verifying" || step === "success" ? "bg-emerald-400" : "bg-gray-600"
+                  }`}></div>
+                  <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    step === "signing" ? "bg-blue-400 scale-125" : step === "verifying" || step === "success" ? "bg-emerald-400" : "bg-gray-600"
+                  }`}></div>
+                  <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    step === "verifying" ? "bg-blue-400 scale-125" : step === "success" ? "bg-emerald-400" : "bg-gray-600"
+                  }`}></div>
+                </div>
+              )}
             </CardHeader>
 
-            <CardContent className="relative px-3 md:px-4">
-              <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4 py-2 md:py-3">
+            <CardContent className="relative px-4 md:px-6 pb-6">
+              <div className="flex flex-col items-center justify-center space-y-6">
                 {/* Wallet Icon with enhanced glow effect */}
                 <div className="relative group/fox">
                   <div
-                    className={`absolute -inset-3 bg-gradient-to-r from-orange-500/40 via-orange-400/40 to-orange-600/40 rounded-full blur-2xl ${
+                    className={`absolute -inset-4 bg-gradient-to-r from-orange-500/40 via-orange-400/40 to-orange-600/40 rounded-full blur-3xl ${
                       loading
                         ? "animate-pulse"
-                        : "group-hover/fox:opacity-100 opacity-70"
+                        : "group-hover/fox:opacity-100 opacity-60"
                     } transition-opacity duration-500`}
                   ></div>
-                  <div className="relative p-3 md:p-4 rounded-2xl bg-gradient-to-br from-orange-500/[0.12] to-orange-600/[0.12] border border-orange-500/30 backdrop-blur-sm shadow-lg shadow-orange-500/20 group-hover/fox:border-orange-500/40 group-hover/fox:shadow-orange-500/30 transition-all duration-300">
+                  <div className="relative p-5 md:p-6 rounded-3xl bg-gradient-to-br from-orange-500/[0.15] to-orange-600/[0.15] border border-orange-500/30 backdrop-blur-sm shadow-2xl shadow-orange-500/25 group-hover/fox:border-orange-500/50 group-hover/fox:shadow-orange-500/40 transition-all duration-300">
                     <img
                       src={metamaskFox}
-                      alt="Fox wallet icon"
-                      className={`relative w-16 h-16 md:w-20 md:h-20 ${
+                      alt="Wallet"
+                      className={`relative w-20 h-20 md:w-24 md:h-24 ${
                         loading ? "animate-bounce" : "animate-float"
                       } drop-shadow-2xl`}
                     />
+                    {isConnected && (
+                      <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-full border-4 border-slate-900 shadow-lg animate-scale-in">
+                        <CheckCheck className="w-4 h-4" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Helper Alert - Shows during signing step */}
-                {step === "signing" && (
-                  <Alert className="bg-blue-500/10 border-blue-500/30 text-blue-200 animate-fade-in py-2">
-                    <FileSignature className="h-3 w-3 md:h-3.5 md:w-3.5 text-blue-400" />
-                    <AlertDescription className="text-[9px] md:text-[10px]">
-                      <strong>Sign the message in your wallet popup.</strong>{" "}
-                      This
-                      is free and won't trigger any transaction.
-                    </AlertDescription>
-                  </Alert>
+                {/* Contextual Help Messages */}
+                {!loading && !isConnected && (
+                  <div className="w-full max-w-sm space-y-2 animate-fade-in">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                      <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-gray-300">
+                        <span className="font-semibold text-blue-400">New here?</span> Click the button below to connect your Web3 wallet
+                      </div>
+                    </div>
+                  </div>
                 )}
-
-                {/* Progress Steps Indicator */}
-                {loading && (
-                  <div className="w-full space-y-1 md:space-y-1.5 animate-fade-in">
-                    <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                      <div
-                        className={`p-1 md:p-1.5 rounded-lg ${
-                          step === "connecting" ||
-                          step === "signing" ||
-                          step === "verifying" ||
-                          step === "success"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-white/5 text-gray-500"
-                        }`}
-                      >
-                        <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                
+                {/* Ready to Sign Message */}
+                {step === "ready_to_sign" && (
+                  <div className="w-full max-w-sm space-y-2 animate-fade-in">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <Zap className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-gray-300">
+                        <span className="font-semibold text-emerald-400">Ready!</span> Tap the button below to open your wallet and sign.
                       </div>
-                      <span
-                        className={
-                          step === "connecting" ||
-                          step === "signing" ||
-                          step === "verifying" ||
-                          step === "success"
-                            ? "text-emerald-400"
-                            : "text-gray-500"
-                        }
-                      >
-                        Wallet Connected
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                      <div
-                        className={`p-1 md:p-1.5 rounded-lg ${
-                          step === "signing"
-                            ? "bg-blue-500/20 text-blue-400 animate-pulse"
-                            : step === "verifying" || step === "success"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-white/5 text-gray-500"
-                        }`}
-                      >
-                        {step === "signing" ? (
-                          <Loader2 className="w-2.5 h-2.5 md:w-3 md:h-3 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                        )}
-                      </div>
-                      <span
-                        className={
-                          step === "signing" ||
-                          step === "verifying" ||
-                          step === "success"
-                            ? "text-white"
-                            : "text-gray-500"
-                        }
-                      >
-                        Message Signed
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                      <div
-                        className={`p-1 md:p-1.5 rounded-lg ${
-                          step === "verifying"
-                            ? "bg-blue-500/20 text-blue-400 animate-pulse"
-                            : step === "success"
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-white/5 text-gray-500"
-                        }`}
-                      >
-                        {step === "verifying" ? (
-                          <Loader2 className="w-2.5 h-2.5 md:w-3 md:h-3 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                        )}
-                      </div>
-                      <span
-                        className={
-                          step === "verifying" || step === "success"
-                            ? "text-white"
-                            : "text-gray-500"
-                        }
-                      >
-                        Authentication Verified
-                      </span>
                     </div>
                   </div>
                 )}
 
-                {/* Feature badges - Show only when idle */}
-                {!loading && (
-                  <div className="grid grid-cols-3 gap-1.5 md:gap-2 w-full animate-fade-in">
-                    <div className="flex flex-col items-center gap-1 p-2 md:p-2.5 rounded-lg bg-gradient-to-br from-blue-500/[0.05] to-blue-600/[0.05] border border-white/10 hover:bg-gradient-to-br hover:from-blue-500/[0.1] hover:to-blue-600/[0.1] hover:border-blue-500/30 transition-all duration-300 group/badge cursor-default">
-                      <div className="p-1 md:p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 group-hover/badge:bg-blue-500/20 group-hover/badge:scale-110 transition-all duration-300">
-                        <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-blue-400" />
+                {/* Progress Steps - Shows during loading */}
+                {loading && (
+                  <div className="w-full max-w-sm space-y-4 animate-fade-in">
+                    {/* What's happening box */}
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-semibold text-blue-400">What's happening?</span>
                       </div>
-                      <span className="text-[8px] md:text-[9px] text-gray-300 font-medium">
-                        Encrypted
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 p-2 md:p-2.5 rounded-lg bg-gradient-to-br from-purple-500/[0.05] to-purple-600/[0.05] border border-white/10 hover:bg-gradient-to-br hover:from-purple-500/[0.1] hover:to-purple-600/[0.1] hover:border-purple-500/30 transition-all duration-300 group/badge cursor-default">
-                      <div className="p-1 md:p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 group-hover/badge:bg-purple-500/20 group-hover/badge:scale-110 transition-all duration-300">
-                        <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-purple-400" />
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${
+                            step === "connecting" || step === "fetching_nonce" || step === "ready_to_sign" || step === "signing" || step === "verifying" || step === "success"
+                              ? "bg-emerald-400 animate-pulse"
+                              : "bg-gray-600"
+                          }`}></div>
+                          <div>
+                            <div className={`text-xs font-medium ${
+                              step === "connecting" || step === "fetching_nonce" || step === "ready_to_sign" || step === "signing" || step === "verifying" || step === "success"
+                                ? "text-emerald-400"
+                                : "text-gray-500"
+                            }`}>1. Connecting Wallet</div>
+                            <div className="text-[10px] text-gray-400 mt-0.5">Approve the connection</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${
+                            step === "signing" || step === "verifying" || step === "success"
+                              ? "bg-emerald-400 animate-pulse"
+                              : "bg-gray-600"
+                          }`}></div>
+                          <div>
+                            <div className={`text-xs font-medium ${
+                              step === "signing" || step === "verifying" || step === "success"
+                                ? "text-emerald-400"
+                                : "text-gray-500"
+                            }`}>2. Sign Message</div>
+                            <div className="text-[10px] text-gray-400 mt-0.5">Prove ownership securely</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${
+                            step === "verifying" || step === "success"
+                              ? "bg-emerald-400 animate-pulse"
+                              : "bg-gray-600"
+                          }`}></div>
+                          <div>
+                            <div className={`text-xs font-medium ${
+                              step === "verifying" || step === "success"
+                                ? "text-emerald-400"
+                                : "text-gray-500"
+                            }`}>3. Verifying</div>
+                            <div className="text-[10px] text-gray-400 mt-0.5">Confirming identity</div>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[8px] md:text-[9px] text-gray-300 font-medium">
-                        Web3
-                      </span>
                     </div>
-                    <div className="flex flex-col items-center gap-1 p-2 md:p-2.5 rounded-lg bg-gradient-to-br from-emerald-500/[0.05] to-emerald-600/[0.05] border border-white/10 hover:bg-gradient-to-br hover:from-emerald-500/[0.1] hover:to-emerald-600/[0.1] hover:border-emerald-500/30 transition-all duration-300 group/badge cursor-default">
-                      <div className="p-1 md:p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 group-hover/badge:bg-emerald-500/20 group-hover/badge:scale-110 transition-all duration-300">
-                        <Zap className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400" />
+                    
+                    {/* Current action hint */}
+                    {step === "signing" && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 animate-pulse">
+                        <FileSignature className="w-4 h-4 text-yellow-400" />
+                        <span className="text-xs text-yellow-400 font-medium">Check your wallet for the signature request</span>
                       </div>
-                      <span className="text-[8px] md:text-[9px] text-gray-300 font-medium">
-                        Fast
-                      </span>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
             </CardContent>
 
-            <CardFooter className="relative flex flex-col gap-1.5 md:gap-2 px-3 md:px-4 pb-3 md:pb-4">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading || walletConnecting}
-                onClick={handleWalletButtonClick}
-                className="w-full font-semibold text-[10px] md:text-xs py-3 md:py-3.5 border-white/20 text-white bg-white/[0.02] hover:bg-white/[0.1] hover:border-white/40 transition-all duration-300 flex items-center justify-between gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  {walletConnecting ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-orange-300" />
-                  ) : (
-                    <Wallet className="w-4 h-4 text-orange-300" />
-                  )}
-                  <span>
-                    {walletConnecting ? "Connecting..." : walletButtonLabel}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[9px] text-gray-300">
-                  <Network className="w-3 h-3" />
-                  <span>
-                    {walletConnecting
-                      ? "Check wallet"
-                      : isConnected
-                      ? "Ready"
-                      : "Tap to connect"}
-                  </span>
-                </div>
-              </Button>
-
+            <CardFooter className="relative flex flex-col gap-3 px-4 md:px-6 pb-4 md:pb-6">
               <Button
                 disabled={loading}
-                onClick={handleLogin}
+                onClick={handleMainButtonClick}
                 size="lg"
-                className="w-full font-semibold text-xs md:text-sm py-4 md:py-5 text-white bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-size-200 hover:bg-pos-100 border-0 shadow-xl shadow-orange-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none relative overflow-hidden group/btn"
+                className={`w-full font-semibold text-sm md:text-base py-5 md:py-6 text-white bg-gradient-to-r bg-size-200 hover:bg-pos-100 border-0 shadow-2xl transition-all duration-500 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group/btn rounded-xl ${
+                  isConnected 
+                    ? "from-emerald-500 via-emerald-600 to-emerald-500 shadow-emerald-500/40 hover:shadow-emerald-500/60" 
+                    : "from-orange-500 via-orange-600 to-orange-500 shadow-orange-500/40 hover:shadow-orange-500/60"
+                }`}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-1000"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-500 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                
                 {loading ? (
-                  <div className="flex items-center justify-center gap-1.5 md:gap-2 relative z-10">
-                    <Loader2 className="animate-spin w-3.5 h-3.5 md:w-4 md:h-4" />
-                    <span>Connecting...</span>
+                  <div className="flex items-center justify-center gap-2 relative z-10">
+                    <Loader2 className="animate-spin w-5 h-5" />
+                    <span>{step === 'signing' ? 'Check Wallet to Sign...' : 'Processing...'}</span>
+                  </div>
+                ) : step === "ready_to_sign" ? (
+                  <div className="flex items-center justify-center gap-2 relative z-10">
+                    <FileSignature className="w-5 h-5" />
+                    <span>Sign Message Now</span>
+                    <ArrowRight className="w-4 h-4 animate-pulse" />
+                  </div>
+                ) : isConnected ? (
+                  <div className="flex items-center justify-center gap-2 relative z-10">
+                    <FileSignature className="w-5 h-5" />
+                    <span>Sign In with Wallet</span>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center gap-1.5 md:gap-2 relative z-10">
-                    <img
-                      src={metamaskFox}
-                      alt=""
-                      className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:scale-110 transition-transform duration-300"
-                    />
-                    <span>Continue with your wallet</span>
+                  <div className="flex items-center justify-center gap-2 relative z-10">
+                    <Wallet className="w-5 h-5" />
+                    <span>Connect Wallet</span>
                   </div>
                 )}
               </Button>
-
-              {/* First-time user help - Only show when not loading */}
-              {!loading && (
-                <Alert className="bg-gradient-to-br from-blue-500/[0.08] to-purple-500/[0.08] border-blue-400/20 text-gray-200 backdrop-blur-sm shadow-lg shadow-blue-500/10 animate-fade-in">
-                  <div className="flex items-start gap-2">
-                    <div className="p-1.5 rounded-lg bg-blue-500/20 border border-blue-400/30 mt-0.5">
-                      <Info className="h-3 w-3 md:h-3.5 md:w-3.5 text-blue-300" />
-                    </div>
-                    <AlertDescription className="text-[9px] md:text-[10px] leading-relaxed">
-                      <strong className="text-white font-semibold block mb-0.5">
-                        📱 Using Mobile?
-                      </strong>
-                      <span className="text-gray-300">
-                        Use{" "}
-                        <span className="text-orange-400 font-medium">
-                          Connect Wallet
-                        </span>{" "}
-                        above to launch MetaMask, WalletConnect, or any supported
-                        wallet. On mobile browsers it deep-links into the
-                        MetaMask app automatically. Make sure the{" "}
-                        <span className="text-emerald-400 font-medium">
-                          Ganache network
-                        </span>{" "}
-                        (Chain ID: 1337, RPC:{" "}
-                        {typeof window !== "undefined"
-                          ? `${window.location.protocol}//${window.location.hostname}:7545`
-                          : "http://your-ip:7545"}
-                        ) is added in your wallet before signing.
-                      </span>
-                    </AlertDescription>
-                  </div>
-                </Alert>
-              )}
             </CardFooter>
           </Card>
 
           {/* Security badges */}
-          <div className="mt-2 md:mt-3 flex items-center justify-center gap-2 md:gap-3 text-[8px] md:text-[9px] text-gray-500 font-medium">
-            <div className="flex items-center gap-0.5 md:gap-1 hover:text-emerald-400 transition-colors duration-300 group/sec cursor-default">
-              <CheckCircle2 className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-500 group-hover/sec:scale-125 transition-transform duration-300" />
-              <span>Decentralized</span>
-            </div>
-            <div className="w-px h-2 md:h-2.5 bg-gray-700/50"></div>
-            <div className="flex items-center gap-0.5 md:gap-1 hover:text-blue-400 transition-colors duration-300 group/sec cursor-default">
-              <CheckCircle2 className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-500 group-hover/sec:scale-125 transition-transform duration-300" />
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+            <div className="flex items-center gap-1.5 hover:text-emerald-400 transition-colors duration-300 cursor-default">
+              <Shield className="w-3.5 h-3.5" />
               <span>Secure</span>
             </div>
-            <div className="w-px h-2 md:h-2.5 bg-gray-700/50"></div>
-            <div className="flex items-center gap-0.5 md:gap-1 hover:text-purple-400 transition-colors duration-300 group/sec cursor-default">
-              <CheckCircle2 className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-500 group-hover/sec:scale-125 transition-transform duration-300" />
-              <span>Transparent</span>
+            <div className="w-px h-4 bg-gray-700/50"></div>
+            <div className="flex items-center gap-1.5 hover:text-blue-400 transition-colors duration-300 cursor-default">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Encrypted</span>
             </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-2 text-center">
-            <p className="text-[8px] md:text-[9px] text-gray-600 flex items-center justify-center gap-1">
-              <span>Powered by Ethereum</span>
-              <span className="text-gray-700">•</span>
-              <span className="flex items-center gap-0.5">
-                Built with{" "}
-                <span className="text-red-500 animate-pulse">❤️</span> for
-                Supply Chain
-              </span>
-            </p>
+            <div className="w-px h-4 bg-gray-700/50"></div>
+            <div className="flex items-center gap-1.5 hover:text-purple-400 transition-colors duration-300 cursor-default">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Web3</span>
+            </div>
           </div>
         </div>
       </div>

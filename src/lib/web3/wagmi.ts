@@ -1,7 +1,8 @@
-import { http } from "wagmi";
-import { defineChain } from "viem";
-import { defaultWagmiConfig } from "@web3modal/wagmi/react/config";
+import { http, createConfig } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { defineChain, type Chain } from "viem";
 import { createWeb3Modal } from "@web3modal/wagmi/react";
+import { walletConnect, injected, coinbaseWallet } from "wagmi/connectors";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
@@ -14,7 +15,10 @@ function isLocalHost(host?: string | null) {
 
 function resolveRpcUrl() {
   const fallbackPort = import.meta.env.VITE_CHAIN_RPC_PORT?.trim() || "7545";
-  const configured = import.meta.env.VITE_CHAIN_RPC_URL?.trim();
+  const configured = 
+    import.meta.env.VITE_CHAIN_RPC_URL?.trim() || 
+    import.meta.env.VITE_RPC_URL?.trim(); // Check both variable names
+    
   const locationHost =
     typeof window !== "undefined" ? window.location.hostname : undefined;
   const locationProtocol =
@@ -74,7 +78,7 @@ const rpcUrl = resolveRpcUrl();
 
 export const ganache = defineChain({
   id: Number.isFinite(chainId) ? chainId : 1337,
-  name: import.meta.env.VITE_CHAIN_NAME?.trim() || "Ganache Local",
+  name: import.meta.env.VITE_CHAIN_NAME?.trim() || "Ganache",
   nativeCurrency: {
     name: "Ethereum",
     symbol: "ETH",
@@ -87,23 +91,25 @@ export const ganache = defineChain({
   },
 });
 
-const chains = [ganache];
+const chains: readonly [Chain, ...Chain[]] = [ganache, mainnet];
 
-export const wagmiConfig = defaultWagmiConfig({
-  projectId,
+const metadata = {
+  name: appName,
+  description: appDescription,
+  url: appUrl,
+  icons: [appIcon],
+};
+
+export const wagmiConfig = createConfig({
   chains,
-  metadata: {
-    name: appName,
-    description: appDescription,
-    url: appUrl,
-    icons: [appIcon],
-  },
   transports: {
     [ganache.id]: http(rpcUrl),
   },
-  enableInjected: true,
-  enableWalletConnect: true,
-  enableCoinbase: false,
+  connectors: [
+    walletConnect({ projectId, metadata, showQrModal: false }),
+    injected({ shimDisconnect: true }),
+    coinbaseWallet({ appName: metadata.name }),
+  ],
 });
 
 declare global {
@@ -117,10 +123,10 @@ if (typeof window !== "undefined" && !window.__WEB3MODAL_INITIALIZED__) {
   createWeb3Modal({
     wagmiConfig,
     projectId,
-    chains,
     themeMode: "dark",
     themeVariables: {
       "--w3m-accent": "#f97316",
     },
+    allowUnsupportedChain: true,
   });
 }

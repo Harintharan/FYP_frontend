@@ -26,12 +26,18 @@ interface SidebarProps {
   className?: string;
   collapsed?: boolean;
   setCollapsed?: (value: boolean) => void;
+  isMobile?: boolean;
+  mobileMenuOpen?: boolean;
+  setMobileMenuOpen?: (value: boolean) => void;
 }
 
 export function Sidebar({
   className,
   collapsed = false,
   setCollapsed,
+  isMobile = false,
+  mobileMenuOpen = false,
+  setMobileMenuOpen,
 }: SidebarProps) {
   const { role } = useAppStore();
   const userRole = role ?? "GUEST"; // ✅ fallback for null
@@ -119,31 +125,63 @@ export function Sidebar({
     }
   };
 
+  // Handle navigation click - close mobile menu
+  const handleNavClick = (path: string) => {
+    navigate(path);
+    if (isMobile && setMobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
   const navigationItems = getNavigationItems();
+
+  // Don't render sidebar on mobile unless menu is open
+  if (isMobile && !mobileMenuOpen) {
+    return null;
+  }
 
   return (
     <div
       className={cn(
-        "fixed left-0 top-15 h-[calc(100vh-3.75rem)] bg-card border-r shadow-md flex flex-col z-50 transition-all duration-300",
-        collapsed ? "w-20" : "w-64",
+        "bg-card border-r shadow-md flex flex-col transition-all duration-300",
+        isMobile 
+          ? "fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-50" // Mobile: Full-width overlay
+          : "fixed left-0 top-16 h-[calc(100vh-4rem)]", // Desktop: Fixed sidebar
+        isMobile 
+          ? "" 
+          : collapsed 
+            ? "w-20" 
+            : "w-64",
         className
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
-        {!collapsed && (
+        {!collapsed && !isMobile && (
           <h2 className="font-semibold text-lg">
             {userRole !== "GUEST" ? `${userRole} Panel` : "Navigation"}
           </h2>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed && setCollapsed(!collapsed)}
-          className="hover:bg-muted"
-        >
-          {collapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed && setCollapsed(!collapsed)}
+            className="hover:bg-muted"
+          >
+            {collapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+          </Button>
+        )}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
+            className="hover:bg-muted ml-auto"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
       </div>
 
       {/* Main Scrollable Section */}
@@ -168,7 +206,7 @@ export function Sidebar({
                       else newSet.add(item.key);
                       return newSet;
                     });
-                    navigate(item.children[0].path);
+                    handleNavClick(item.children[0].path);
                   }}
                   variant={hasActiveChild ? "secondary" : "ghost"}
                   className={cn(
@@ -179,8 +217,8 @@ export function Sidebar({
                   )}
                 >
                   <item.icon className="w-4 h-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                  {!collapsed && (
+                  {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+                  {(!collapsed || isMobile) && (
                     <ChevronDown
                       className={cn(
                         "w-4 h-4 ml-auto transition-transform",
@@ -189,7 +227,7 @@ export function Sidebar({
                     />
                   )}
                 </Button>
-                {isExpanded && !collapsed && (
+                {isExpanded && (!collapsed || isMobile) && (
                   <div className="ml-4 space-y-1">
                     {item.children.map((child) => {
                       const Icon = child.icon;
@@ -201,7 +239,7 @@ export function Sidebar({
                       return (
                         <Button
                           key={child.path}
-                          onClick={() => navigate(child.path)}
+                          onClick={() => handleNavClick(child.path)}
                           variant={isActive ? "secondary" : "ghost"}
                           className={cn(
                             "w-full justify-start gap-3 h-10 transition-all duration-200",
@@ -228,7 +266,7 @@ export function Sidebar({
             return (
               <Button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavClick(item.path)}
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3 h-11 transition-all duration-200",
@@ -238,7 +276,7 @@ export function Sidebar({
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
               </Button>
             );
           }

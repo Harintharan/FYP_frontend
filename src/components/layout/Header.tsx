@@ -6,6 +6,7 @@ import {
   Truck,
   Warehouse,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,12 @@ import { useAppStore } from "@/lib/store";
 import { useNavigate } from "react-router-dom";
 import { useDisconnect } from "wagmi";
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+  isMobile?: boolean;
+}
+
+export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
   const { user, unreadAlertsCount, logout, role } = useAppStore();
   const navigate = useNavigate();
   const { disconnect } = useDisconnect();
@@ -47,56 +53,69 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center space-x-2 md:space-x-4">
+          {/* Hamburger menu for mobile */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMenuClick}
+              className="mr-2"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          )}
+          
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Package className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+              <Package className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">TrackChain</h1>
-              <p className="text-xs text-muted-foreground">Supply Chain DApp</p>
+              <h1 className="text-base md:text-xl font-bold">TrackChain</h1>
+              <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">Supply Chain DApp</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           {user && (
-            <div className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-muted/50">
+            <div className="flex items-center space-x-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-muted/50">
               <RoleIcon className="w-4 h-4 text-primary" />
-              <div className="text-sm">
-                <p className="font-medium">{role || "User"}</p>
-                {/* <p className="text-xs text-muted-foreground capitalize">
-                  {user.role.toLowerCase().replace("_", " ")}
-                </p> */}
-              </div>
+              {!isMobile && (
+                <div className="text-sm">
+                  <p className="font-medium">{role || "User"}</p>
+                </div>
+              )}
             </div>
           )}
 
-          <Button variant="ghost" size="sm" className="relative">
+          <Button variant="ghost" size={isMobile ? "icon" : "sm"} className="relative">
             <Bell className="w-4 h-4" />
             {unreadAlertsCount > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-2 -right-2 w-5 h-5 p-0 flex items-center justify-center text-xs"
+                className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 p-0 flex items-center justify-center text-[10px] md:text-xs"
               >
                 {unreadAlertsCount}
               </Badge>
             )}
           </Button>
 
-          <Button variant="ghost" size="sm">
-            <Settings className="w-4 h-4" />
-          </Button>
+          {!isMobile && (
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+          )}
 
           <Button
             variant="ghost"
-            size="sm"
+            size={isMobile ? "icon" : "sm"}
             onClick={handleLogout}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            <LogOut className="w-4 h-4" />
+            {!isMobile && <span className="ml-2">Logout</span>}
           </Button>
         </div>
       </div>
