@@ -122,12 +122,7 @@ const formatHash = (value?: string | null) => {
 };
 
 const getMockQrPayload = (pkg: PackageResponse) => {
-  const packageToken = pkg.packageCode ?? `ID-${pkg.id}`;
-  const batchToken =
-    pkg.batch?.batchCode ?? (pkg.batchId ? `BATCH-${pkg.batchId}` : "BATCH-N/A");
-  const sensorToken = sensorsToLabel(pkg.sensorTypes).replace(/\s+/g, "_");
-  const macToken = pkg.microprocessorMac ?? "MAC-UNKNOWN";
-  return `PKG|${packageToken}|${batchToken}|${sensorToken}|${macToken}`;
+  return String(pkg.packageCode ?? pkg.package_uuid ?? pkg.id ?? "");
 };
 
 const productionTimeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -325,6 +320,7 @@ export function PackageManagement() {
   const [viewingPackage, setViewingPackage] = useState<PackageResponse | null>(
     null
   );
+  const [qrPreviewPackage, setQrPreviewPackage] = useState<PackageResponse | null>(null);
   const [isSensorTypeDialogOpen, setIsSensorTypeDialogOpen] = useState(false);
   const [sensorTypeDialogContext, setSensorTypeDialogContext] = useState<
     "create" | "edit"
@@ -675,27 +671,9 @@ export function PackageManagement() {
                     <TableCell>{pkg.status ?? "Not specified"}</TableCell>
                     <TableCell>{sensorsToLabel(pkg.sensorTypes)}</TableCell>
                     <TableCell>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            View QR
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 space-y-3" align="center">
-                          <div className="text-center space-y-2">
-                            <p className="text-sm font-medium">Package QR</p>
-                            {/* <p className="text-xs text-muted-foreground">
-                            Mock encrypted payload
-                          </p> */}
-                          </div>
-                          <div className="flex justify-center">
-                            <QRCodeGenerator data={qrPayload} title="Package QR" size={160} />
-                          </div>
-                          <div className="rounded-md border bg-muted/40 p-2 text-[11px] font-mono break-all">
-                            {qrPayload}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <Button size="sm" variant="outline" onClick={() => setQrPreviewPackage(pkg)}>
+                        View QR
+                      </Button>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
@@ -1109,6 +1087,30 @@ export function PackageManagement() {
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(qrPreviewPackage)}
+        onOpenChange={(open) => (!open ? setQrPreviewPackage(null) : null)}
+      >
+        <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {qrPreviewPackage?.packageCode || `Package ${qrPreviewPackage?.id}`}
+            </DialogTitle>
+            <DialogDescription>Package QR code</DialogDescription>
+          </DialogHeader>
+          {qrPreviewPackage ? (
+            <div className="space-y-3">
+              <div className="flex justify-center">
+                <QRCodeGenerator data={getMockQrPayload(qrPreviewPackage)} title="Package QR" size={200} />
+              </div>
+              <div className="rounded-md border bg-muted/40 p-2 text-[11px] font-mono break-all">
+                {getMockQrPayload(qrPreviewPackage)}
               </div>
             </div>
           ) : null}

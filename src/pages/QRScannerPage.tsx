@@ -1,6 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { QRScanner } from "@/components/qr/QRScanner";
-import { QRCodeGenerator } from "@/components/qr/QRCodeGenerator";
 import {
   Card,
   CardContent,
@@ -19,71 +18,59 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { AlertTriangle, Loader2, ScanLine, ShieldCheck } from "lucide-react";
+import { api } from "@/services/api";
 
-type VerificationResult = {
-  status: "valid" | "warning" | "invalid";
-  title: string;
-  message: string;
-  reference: string;
-  processedAt: string;
-  extraDetails: Array<{ label: string; value: string }>;
-};
-
-const DEMO_QR_PAYLOAD = "ENCRYPTED::SEGMENT-ALPHA-1234567890";
-
-const statusCopy: Record<
-  VerificationResult["status"],
-  { label: string; badgeVariant: "default" | "secondary" | "destructive" }
-> = {
-  valid: { label: "Verified", badgeVariant: "default" },
-  warning: { label: "Needs Attention", badgeVariant: "secondary" },
-  invalid: { label: "Rejected", badgeVariant: "destructive" },
-};
-
-const mockSubmitScan = async (
-  encryptedText: string,
-): Promise<VerificationResult> => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-  const score = encryptedText.length % 3;
-  if (score === 0) {
-    return {
-      status: "valid",
-      title: "Shipment Verified",
-      message:
-        "The QR payload matched a valid shipment segment. You can continue the process.",
-      reference: `SEG-${encryptedText.slice(0, 6).toUpperCase()}`,
-      processedAt: new Date().toISOString(),
-      extraDetails: [
-        { label: "Segment Status", value: "IN_TRANSIT" },
-        { label: "Temperature Lock", value: "Active" },
-      ],
+type PackageStatusResponse = {
+  package?: {
+    package_uuid?: string;
+    package_accepted?: string;
+    batch_id?: string;
+    created_at?: string;
+    product?: {
+      name?: string;
+      type?: string;
+      temperature_requirements?: { min?: string; max?: string };
     };
-  }
-  if (score === 1) {
-    return {
-      status: "warning",
-      title: "Verification Warning",
-      message:
-        "The payload is valid but requires manual confirmation due to unusual routing.",
-      reference: `CHK-${encryptedText.slice(-6).toUpperCase()}`,
-      processedAt: new Date().toISOString(),
-      extraDetails: [
-        { label: "Flag", value: "Route deviation" },
-        { label: "Action", value: "Confirm with dispatcher" },
-      ],
+  };
+  shipment_chain?: Array<{
+    shipment_id?: string;
+    manufacturer_uuid?: string;
+    consumer_uuid?: string;
+    status?: string;
+    shipment_date?: string;
+    segments?: Array<{
+      segment_id?: string;
+      from_location?: { name?: string; state?: string; country?: string };
+      to_location?: { name?: string; state?: string; country?: string };
+      status?: string;
+      carrier?: string | null;
+      expected_ship_date?: string;
+      estimated_arrival_date?: string;
+      segment_order?: number;
+      start_timestamp?: string;
+      end_timestamp?: string;
+    }>;
+  }>;
+  breaches?: {
+    statistics?: {
+      total?: number;
+      resolved?: number;
+      active?: number;
+      byType?: Record<string, number>;
+      bySeverity?: Record<string, number>;
     };
-  }
-  return {
-    status: "invalid",
-    title: "Verification Failed",
-    message:
-      "The encrypted data did not match any shipment on record. Please retry or escalate.",
-    reference: `ERR-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-    processedAt: new Date().toISOString(),
-    extraDetails: [
-      { label: "Reason", value: "Unknown payload signature" },
-      { label: "Suggested Next Step", value: "Re-scan QR or contact support" },
-    ],
+    records?: Array<{
+      breach_uuid?: string;
+      breach_type?: string;
+      severity?: string;
+      status?: string;
+      detected_at?: string;
+      resolved_at?: string | null;
+      detected_value?: string;
+      threshold?: { min?: string | null; max?: string | null };
+      location?: { latitude?: string; longitude?: string };
+      blockchain?: { tx_hash?: string; ipfs_cid?: string | null };
+    }>;
   };
 };
 
@@ -92,9 +79,9 @@ export default function QRScannerPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastScannedValue, setLastScannedValue] = useState<string | null>(null);
-  const [verificationResult, setVerificationResult] =
-    useState<VerificationResult | null>(null);
+  const [statusResult, setStatusResult] = useState<PackageStatusResponse | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement | null>(null);
 
   const handleScan = useCallback(async (payload: string) => {
     setScannerOpen(false);
@@ -102,13 +89,15 @@ export default function QRScannerPage() {
     setIsSubmitting(true);
     setLastScannedValue(payload);
     setSubmissionError(null);
-    setVerificationResult(null);
+    setStatusResult(null);
     try {
-      const response = await mockSubmitScan(payload);
-      setVerificationResult(response);
+      const normalized = payload.trim();
+      const response = await api.get(`/api/package-status/${normalized}`);
+      const data = response.data?.data ?? response.data;
+      setStatusResult(data ?? null);
     } catch (error) {
       console.error("Failed to submit QR payload", error);
-      setSubmissionError("Unable to reach verification service. Please retry.");
+      setSubmissionError("Unable to reach package status service. Please retry.");
     } finally {
       setIsSubmitting(false);
     }
@@ -118,9 +107,31 @@ export default function QRScannerPage() {
     if (isSubmitting) return;
     setDialogOpen(open);
     if (!open) {
-      setVerificationResult(null);
+      setStatusResult(null);
       setSubmissionError(null);
     }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!printRef.current || !statusResult) return;
+    const win = window.open("", "", "width=900,height=1000");
+    if (!win) return;
+    const styles = `
+      <style>
+        body { font-family: Arial, sans-serif; padding: 16px; color: #111827; }
+        h1 { font-size: 20px; margin-bottom: 8px; }
+        h2 { font-size: 16px; margin-top: 16px; margin-bottom: 6px; }
+        p, li, span, div { font-size: 12px; line-height: 1.4; }
+        .section { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .muted { color: #6b7280; }
+      </style>
+    `;
+    win.document.write(`<html><head>${styles}</head><body>${printRef.current.innerHTML}</body></html>`);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
   };
 
   return (
@@ -207,29 +218,6 @@ export default function QRScannerPage() {
           </Card>
 
           <div className="space-y-6">
-            {/* <Card className="border-none bg-card/80 shadow-lg shadow-primary/5 backdrop-blur">
-              <CardHeader className="pb-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                  Step 2
-                </p>
-                <CardTitle className="text-2xl">Demo QR for testing</CardTitle>
-                <CardDescription>
-                  Scan or copy the encrypted payload to preview the verification experience.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-4 flex flex-col items-center gap-4">
-                  <QRCodeGenerator data={DEMO_QR_PAYLOAD} title="Demo QR" size={200} />
-                  <div className="w-full rounded-xl border border-border/60 bg-background/90 p-3 font-mono text-xs sm:text-sm break-all text-center">
-                    {DEMO_QR_PAYLOAD}
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    On a single device? Paste the payload into the scanner modal to simulate a camera scan.
-                  </p>
-                </div>
-              </CardContent>
-            </Card> */}
-
             <Card className="border-none bg-card/80 shadow-lg shadow-primary/5 backdrop-blur">
               <CardHeader className="pb-3">
                 <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
@@ -266,11 +254,11 @@ export default function QRScannerPage() {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="mx-4 sm:max-w-md rounded-2xl border border-border bg-card/95 backdrop-blur">
           <DialogHeader>
-            <DialogTitle>Verification Response</DialogTitle>
+            <DialogTitle>Package status</DialogTitle>
             <DialogDescription>
               {isSubmitting
                 ? "Submitting encrypted payload to backend..."
-                : "Latest response from the verification endpoint."}
+                : "Latest response from the status endpoint."}
             </DialogDescription>
           </DialogHeader>
 
@@ -289,49 +277,111 @@ export default function QRScannerPage() {
               </div>
               <p className="text-sm text-destructive">{submissionError}</p>
             </div>
-          ) : verificationResult ? (
-            <div className="space-y-4">
+          ) : statusResult ? (
+            <div className="space-y-4" ref={printRef}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold">
-                    {verificationResult.title}
+                    Package UUID: {statusResult.package?.package_uuid ?? "N/A"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(verificationResult.processedAt).toLocaleString()}
+                    Status: {statusResult.package?.package_accepted ?? "N/A"}
                   </p>
                 </div>
-                <Badge variant={statusCopy[verificationResult.status].badgeVariant}>
-                  {statusCopy[verificationResult.status].label}
-                </Badge>
+                <Badge>{statusResult.package?.product?.name ?? "Package"}</Badge>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                {verificationResult.message}
-              </p>
-
-              <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                <p className="text-muted-foreground">Reference</p>
-                <p className="font-medium">{verificationResult.reference}</p>
+              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Product</p>
+                <p className="font-medium">{statusResult.package?.product?.name ?? "Unknown product"}</p>
+                <p className="text-muted-foreground">{statusResult.package?.product?.type ?? "Type N/A"}</p>
+                {statusResult.package?.product?.temperature_requirements ? (
+                  <p className="text-xs text-muted-foreground">
+                    Temp: {statusResult.package.product.temperature_requirements.min ?? "N/A"} to{" "}
+                    {statusResult.package.product.temperature_requirements.max ?? "N/A"}
+                  </p>
+                ) : null}
               </div>
 
-              <Separator />
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  Additional details
-                </p>
-                <div className="grid gap-2">
-                  {verificationResult.extraDetails.map((detail) => (
-                    <div
-                      key={detail.label}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {detail.label}
-                      </span>
-                      <span className="font-medium">{detail.value}</span>
+              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">Shipment chain</p>
+                  <p className="text-xs text-muted-foreground">
+                    {statusResult.shipment_chain?.length ?? 0} shipment(s)
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {statusResult.shipment_chain?.map((shipment, idx) => (
+                    <div key={shipment.shipment_id ?? idx} className="rounded-md border border-border/70 bg-background/60 p-2">
+                      <p className="text-xs text-muted-foreground">
+                        Shipment ID: <span className="font-medium text-foreground">{shipment.shipment_id ?? "N/A"}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Status: <span className="font-medium text-foreground">{shipment.status ?? "N/A"}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Date:{" "}
+                        <span className="font-medium text-foreground">
+                          {shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleString() : "N/A"}
+                        </span>
+                      </p>
+                      <Separator className="my-2" />
+                      <div className="space-y-2">
+                        {shipment.segments?.map((segment) => (
+                          <div
+                            key={segment.segment_id}
+                            className="rounded border border-border/50 bg-muted/30 p-2 text-xs text-muted-foreground"
+                          >
+                            <div className="flex justify-between">
+                              <span>Segment {segment.segment_order ?? "-"}</span>
+                              <span className="font-medium text-foreground">{segment.status ?? "N/A"}</span>
+                            </div>
+                            <p>From: {segment.from_location?.name ?? "Unknown"}</p>
+                            <p>To: {segment.to_location?.name ?? "Unknown"}</p>
+                            <p>
+                              ETA:{" "}
+                              {segment.estimated_arrival_date
+                                ? new Date(segment.estimated_arrival_date).toLocaleString()
+                                : "N/A"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">Breach summary</p>
+                  <Badge variant="secondary">
+                    {statusResult.breaches?.statistics?.active ?? 0} active
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total: {statusResult.breaches?.statistics?.total ?? 0} | Resolved:{" "}
+                  {statusResult.breaches?.statistics?.resolved ?? 0}
+                </p>
+                <div className="space-y-1">
+                  {statusResult.breaches?.records?.slice(0, 3).map((breach) => (
+                    <div
+                      key={breach.breach_uuid}
+                      className="rounded border border-border/50 bg-background/60 p-2 text-xs text-muted-foreground"
+                    >
+                      <div className="flex justify-between">
+                        <span>{breach.breach_type ?? "Breach"}</span>
+                        <span className="font-medium text-foreground">{breach.severity ?? "N/A"}</span>
+                      </div>
+                      <p>Detected: {breach.detected_at ? new Date(breach.detected_at).toLocaleString() : "N/A"}</p>
+                      <p>Status: {breach.status ?? "N/A"}</p>
+                    </div>
+                  ))}
+                  {(statusResult.breaches?.records?.length ?? 0) > 3 ? (
+                    <p className="text-xs text-muted-foreground">
+                      +{(statusResult.breaches?.records?.length ?? 0) - 3} more breach records
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -340,6 +390,14 @@ export default function QRScannerPage() {
               Scan a QR code to view verification feedback.
             </p>
           )}
+
+          {statusResult && !isSubmitting ? (
+            <div className="flex justify-end">
+              <Button variant="secondary" className="gap-2" onClick={handleDownloadPdf}>
+                Download as PDF
+              </Button>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>
