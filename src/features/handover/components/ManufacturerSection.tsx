@@ -68,7 +68,7 @@ export function ManufacturerSection() {
         </CardContent>
       </Card>
 
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Registered Packages</CardTitle>
         </CardHeader>
@@ -107,7 +107,7 @@ export function ManufacturerSection() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
