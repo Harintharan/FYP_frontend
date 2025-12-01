@@ -4,6 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,14 @@ import {
   ChevronDown,
   X,
   Check,
+  Package,
+  MapPin,
+  Calendar,
+  Clock,
+  AlertCircle,
+  TruckIcon,
+  Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -32,7 +41,7 @@ import {
 import { useHandoverSharedContext, useManufacturerContext } from "../context";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 
 type CheckpointOption = {
   id: string;
@@ -147,37 +156,6 @@ export function CreateShipmentDialog() {
   const isManufacturerLocked = manufacturerCheckpoints.length === 1;
   const isConsumerLocked = consumerCheckpoints.length === 1;
 
-  // Auto-set first leg's startId when manufacturer checkpoints load
-  useEffect(() => {
-    if (manufacturerCheckpoints.length > 0 && legs.length > 0) {
-      const firstCheckpointId = String(manufacturerCheckpoints[0].id);
-      if (legs[0].startId !== firstCheckpointId) {
-        setLegs((arr) =>
-          arr.map((item, idx) =>
-            idx === 0 ? { ...item, startId: firstCheckpointId } : item
-          )
-        );
-      }
-    }
-  }, [manufacturerCheckpoints, setLegs, legs]);
-
-  // Auto-set last leg's endId when consumer checkpoints load
-  useEffect(() => {
-    if (consumerCheckpoints.length > 0 && legs.length > 0) {
-      const lastIndex = legs.length - 1;
-      const firstConsumerCheckpointId = String(consumerCheckpoints[0].id);
-      if (legs[lastIndex].endId !== firstConsumerCheckpointId) {
-        setLegs((arr) =>
-          arr.map((item, idx) =>
-            idx === lastIndex
-              ? { ...item, endId: firstConsumerCheckpointId }
-              : item
-          )
-        );
-      }
-    }
-  }, [consumerCheckpoints, setLegs, legs]);
-
   const destinationOptions = useMemo(() => {
     return destinationResults.map((item: CheckpointOption) => {
       const labelLeft = item?.name || "Checkpoint";
@@ -189,6 +167,22 @@ export function CreateShipmentDialog() {
       };
     });
   }, [destinationResults]);
+
+  // Guard set to prevent repetitive toggles per package
+  const toggleInProgressRef = useRef<Set<string>>(new Set());
+
+  const handlePackageClick = useCallback(
+    (id: string, selected: boolean) => {
+      if (toggleInProgressRef.current.has(id)) return;
+      toggleInProgressRef.current.add(id);
+      try {
+        togglePackageSelection(id, !selected);
+      } finally {
+        setTimeout(() => toggleInProgressRef.current.delete(id), 150);
+      }
+    },
+    [togglePackageSelection]
+  );
 
   const [destPopoverOpen, setDestPopoverOpen] = useState(false);
 
@@ -347,33 +341,50 @@ export function CreateShipmentDialog() {
   return (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 shadow-md hover:shadow-lg transition-all">
           <Plus className="w-4 h-4" />
           New Shipment
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Shipment</DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="text-2xl flex items-center gap-2">
+            <TruckIcon className="w-6 h-6 text-primary" />
+            Create Shipment
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
+            Configure your shipment route, select packages, and define
+            checkpoint legs
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleCreateShipment} className="space-y-4">
+        <form
+          onSubmit={handleCreateShipment}
+          className="flex-1 overflow-y-auto space-y-6 py-4 px-1"
+        >
           {/* Destination Party Section */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Destination Party (Consumer)
-            </label>
+          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              <label className="text-sm font-semibold">
+                Destination Party (Consumer)
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Select the consumer checkpoint where this shipment will be
+              delivered
+            </p>
             <Popover open={destPopoverOpen} onOpenChange={setDestPopoverOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between border rounded-lg px-4 py-3 bg-background text-left text-sm hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring transition-colors min-h-[44px]"
+                  className="w-full flex items-center justify-between border-2 rounded-lg px-4 py-3.5 bg-background text-left text-sm hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-h-[48px] shadow-sm"
                   onClick={() => setDestPopoverOpen((v) => !v)}
                 >
                   <span
                     className={
                       selectedDestinationLabel
-                        ? "text-foreground"
+                        ? "text-foreground font-medium"
                         : "text-muted-foreground"
                     }
                   >
@@ -381,25 +392,26 @@ export function CreateShipmentDialog() {
                       "Select consumer checkpoint..."}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 ml-2 text-muted-foreground transition-transform ${
+                    className={`w-5 h-5 ml-2 text-muted-foreground transition-transform duration-200 ${
                       destPopoverOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] p-0"
+                className="w-[var(--radix-popover-trigger-width)] p-0 shadow-lg"
                 align="start"
                 sideOffset={4}
               >
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto">
                   {loadingDestinations ? (
-                    <div className="flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading consumers...
                     </div>
                   ) : destinationOptions.length === 0 ? (
-                    <div className="px-3 py-2.5 text-sm text-muted-foreground">
+                    <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
                       No consumer checkpoints available.
                     </div>
                   ) : (
@@ -409,16 +421,16 @@ export function CreateShipmentDialog() {
                         <button
                           key={option.value + option.label}
                           type="button"
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors min-h-[44px] ${
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all min-h-[48px] border-b last:border-b-0 ${
                             isSelected
-                              ? "bg-accent text-accent-foreground font-medium"
-                              : "hover:bg-accent/50"
+                              ? "bg-primary/10 text-primary font-semibold border-primary/20"
+                              : "hover:bg-accent/80"
                           }`}
                           onClick={() => handleSelectDestination(option)}
                         >
-                          <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                             {isSelected && (
-                              <Check className="w-4 h-4 text-primary" />
+                              <CheckCircle2 className="w-5 h-5 text-primary" />
                             )}
                           </span>
                           <span className="flex-1 truncate">
@@ -432,13 +444,16 @@ export function CreateShipmentDialog() {
               </PopoverContent>
             </Popover>
             {destUUID && selectedDestinationLabel && (
-              <div className="mt-3 p-3 rounded-lg border bg-muted/30">
+              <div className="mt-3 p-4 rounded-lg border-2 border-primary/30 bg-primary/5 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground mb-1">
-                      {selectedDestinationLabel}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {selectedDestinationLabel}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono pl-6">
                       UUID: {destUUID}
                     </p>
                   </div>
@@ -448,10 +463,10 @@ export function CreateShipmentDialog() {
                       setDestUUID("");
                       setDestSearch("");
                     }}
-                    className="flex-shrink-0 p-1 hover:bg-background rounded transition-colors"
+                    className="flex-shrink-0 p-1.5 hover:bg-background/80 rounded-md transition-colors"
                     aria-label="Clear selection"
                   >
-                    <X className="w-4 h-4 text-muted-foreground" />
+                    <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </button>
                 </div>
               </div>
@@ -459,385 +474,493 @@ export function CreateShipmentDialog() {
           </div>
 
           {/* Packages Section */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium mb-1">Select Packages</p>
-              <p className="text-xs text-muted-foreground">
-                Choose the package UUIDs that should be included in this
-                shipment.
-              </p>
+          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="w-5 h-5 text-primary" />
+              <p className="text-sm font-semibold">Select Packages</p>
             </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Choose the package UUIDs that should be included in this shipment
+            </p>
 
             {loadingManufacturerPackages ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
+                <Loader2 className="w-5 h-5 animate-spin" />
                 Loading packages...
               </div>
             ) : availablePackages.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No registered packages found for this manufacturer. Register
-                packages before creating a shipment.
-              </p>
-            ) : (
-              <div className="max-h-56 overflow-y-auto space-y-2 pr-2">
-                {availablePackages.map((pkg) => {
-                  const rawId = pkg.package_uuid ?? pkg.id;
-                  if (!rawId) return null;
-                  const packageId = String(rawId);
-                  const availableQuantity =
-                    pkg.quantityAvailable ?? pkg.quantity ?? "N/A";
-                  const productName =
-                    pkg.batch?.product?.productName ??
-                    pkg.batch?.product?.name ??
-                    undefined;
-                  const label = pkg.packageCode || `Package ${packageId}`;
-                  const isSelected = selectedPackageIds.includes(packageId);
-                  return (
-                    <div
-                      key={packageId}
-                      className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-3 text-sm transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-accent/50 border-primary shadow-sm"
-                          : "bg-muted/20 border-border/60 hover:bg-muted/40 hover:border-border"
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        togglePackageSelection(packageId, !isSelected);
-                      }}
-                    >
-                      <div className="flex flex-col gap-1">
-                        <span className="font-medium text-foreground leading-tight">
-                          {label}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {packageId.slice(0, 8)}...{packageId.slice(-4)}
-                        </span>
-                        {productName && (
-                          <span className="text-xs text-muted-foreground">
-                            {productName}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          <span className="font-medium">Available:</span>{" "}
-                          {availableQuantity}
-                        </span>
-                      </div>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) =>
-                          togglePackageSelection(packageId, checked === true)
-                        }
-                        aria-label={`Select package ${label}`}
-                        className="flex-shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  );
-                })}
+              <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">
+                    No registered packages found for this manufacturer. Register
+                    packages before creating a shipment.
+                  </p>
+                </div>
               </div>
-            )}
+            ) : (
+              <>
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+                  {availablePackages.map((pkg) => {
+                    const rawId = pkg.package_uuid ?? pkg.id;
+                    if (!rawId) return null;
+                    const packageId = String(rawId);
+                    const availableQuantity =
+                      pkg.quantityAvailable ?? pkg.quantity ?? "N/A";
+                    const productName =
+                      pkg.batch?.product?.productName ??
+                      pkg.batch?.product?.name ??
+                      undefined;
+                    const label = pkg.packageCode || `Package ${packageId}`;
+                    const isSelected = selectedPackageIds.includes(packageId);
 
-            <p className="text-xs text-muted-foreground text-right">
-              Selected packages: {selectedPackageIds.length}
-            </p>
+                    // Use the top-level handlePackageClick (defined once) to avoid hooks in loops
+
+                    return (
+                      <div
+                        key={packageId}
+                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${
+                          isSelected
+                            ? "bg-primary/10 border-primary shadow-md scale-[1.01]"
+                            : "bg-background border-border/60 hover:bg-accent/50 hover:border-border hover:shadow-sm"
+                        }`}
+                        aria-pressed={isSelected}
+                      >
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <Package
+                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                              isSelected
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                            }`}
+                          />
+                          <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <span className="font-semibold text-foreground leading-tight">
+                              {label}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {packageId.slice(0, 12)}...{packageId.slice(-6)}
+                            </span>
+                            {productName && (
+                              <span className="text-xs text-muted-foreground">
+                                <span className="font-medium">Product:</span>{" "}
+                                {productName}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              <span className="font-medium">Available:</span>{" "}
+                              <span
+                                className={`font-semibold ${
+                                  isSelected ? "text-primary" : ""
+                                }`}
+                              >
+                                {availableQuantity}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            togglePackageSelection(packageId, checked === true);
+                          }}
+                          aria-label={`Select package ${label}`}
+                          className="flex-shrink-0 mt-1 h-5 w-5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="pt-2 mt-2 border-t flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {selectedPackageIds.length === 0
+                      ? "No packages selected"
+                      : `${selectedPackageIds.length} package${
+                          selectedPackageIds.length === 1 ? "" : "s"
+                        } selected`}
+                  </p>
+                  {selectedPackageIds.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Ready to ship
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Route Checkpoint Legs Section */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Route Checkpoint Legs</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              <p className="text-sm font-semibold">Route Checkpoint Legs</p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
               Define the shipment route from your checkpoint to the consumer.
-              Add warehouse stops if needed.
+              Add warehouse stops if needed
             </p>
 
             {/* Manufacturer checkpoint status */}
             {loadingManufacturerCheckpoints ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-3 justify-center">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading your checkpoints...
               </div>
             ) : manufacturerCheckpoints.length === 0 ? (
-              <p className="text-xs text-destructive">
-                No checkpoints found for your account. Please register a
-                checkpoint first.
-              </p>
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30">
+                <div className="flex items-start gap-2 text-destructive">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm">
+                    No checkpoints found for your account. Please register a
+                    checkpoint first.
+                  </p>
+                </div>
+              </div>
             ) : null}
 
-            {legs.map((leg, index) => {
-              const startOptions = getStartCheckpointOptions(index);
-              const endOptions = getEndCheckpointOptions(index);
-              const startLocked = isStartLocked(index);
-              const endLocked = isEndLocked(index);
-              const loadingStart = isLoadingStart(index);
-              const loadingEnd = isLoadingEnd(index);
-              const isFirstLeg = index === 0;
-              const isLastLeg = index === legs.length - 1;
-              const isMiddleLeg = !isFirstLeg && !isLastLeg;
+            <div className="space-y-3">
+              {legs.map((leg, index) => {
+                const startOptions = getStartCheckpointOptions(index);
+                const endOptions = getEndCheckpointOptions(index);
+                const startLocked = isStartLocked(index);
+                const endLocked = isEndLocked(index);
+                const loadingStart = isLoadingStart(index);
+                const loadingEnd = isLoadingEnd(index);
+                const isFirstLeg = index === 0;
+                const isLastLeg = index === legs.length - 1;
+                const isMiddleLeg = !isFirstLeg && !isLastLeg;
 
-              return (
-                <div
-                  key={`leg-${index}`}
-                  className="rounded-md border border-border/60 p-3 space-y-3"
-                >
-                  {/* Leg Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        Leg {index + 1}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        ({getLegTypeLabel(index)})
-                      </span>
-                    </div>
-                    {canRemoveLeg(index) && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMiddleLeg(index)}
-                        className="h-7 px-2 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Start Checkpoint */}
-                    <div>
-                      <label className="text-xs text-muted-foreground flex items-center gap-1">
-                        Start Checkpoint
-                        {startLocked && <Lock className="w-3 h-3" />}
-                        {isFirstLeg && (
-                          <span className="text-xs">(Manufacturer)</span>
-                        )}
-                        {isMiddleLeg && (
-                          <span className="text-xs">(Warehouse)</span>
-                        )}
-                      </label>
-                      {loadingStart ? (
-                        <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/20">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading...
-                          </span>
-                        </div>
-                      ) : startOptions.length === 0 ? (
-                        <div className="flex items-center h-10 px-3 border rounded-md bg-muted/20">
-                          <span className="text-sm text-muted-foreground">
-                            No checkpoints available
-                          </span>
-                        </div>
-                      ) : (
-                        <Select
-                          value={leg.startId}
-                          onValueChange={(value) =>
-                            setLegs((arr) =>
-                              arr.map((item, idx) => {
-                                // Update this leg's startId
-                                if (idx === index) {
-                                  return { ...item, startId: value };
-                                }
-                                // Sync: also update previous leg's endId to match
-                                if (idx === index - 1) {
-                                  return { ...item, endId: value };
-                                }
-                                return item;
-                              })
-                            )
-                          }
-                          disabled={startLocked}
+                return (
+                  <div
+                    key={`leg-${index}`}
+                    className="rounded-lg border-2 border-border/60 p-4 space-y-4 bg-background shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {/* Leg Header */}
+                    <div className="flex items-center justify-between pb-3 border-b">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                            isFirstLeg
+                              ? "bg-primary text-primary-foreground"
+                              : isLastLeg
+                              ? "bg-green-500 text-white"
+                              : "bg-orange-500 text-white"
+                          }`}
                         >
-                          <SelectTrigger
-                            className={startLocked ? "bg-muted/50" : ""}
-                          >
-                            <SelectValue placeholder="Select start checkpoint" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {startOptions.map((checkpoint) => {
-                              const id = String(checkpoint.id);
-                              return (
-                                <SelectItem
-                                  key={`${id}-start-${index}`}
-                                  value={id}
-                                >
-                                  {formatCheckpointLabel(checkpoint)}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold block">
+                            Leg {index + 1}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {getLegTypeLabel(index)}
+                          </span>
+                        </div>
+                      </div>
+                      {canRemoveLeg(index) && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMiddleLeg(index)}
+                          className="h-8 px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Remove
+                        </Button>
                       )}
                     </div>
 
-                    {/* End Checkpoint */}
-                    <div>
-                      <label className="text-xs text-muted-foreground flex items-center gap-1">
-                        End Checkpoint
-                        {endLocked && <Lock className="w-3 h-3" />}
-                        {isLastLeg && (
-                          <span className="text-xs">(Consumer)</span>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {/* Start Checkpoint */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
+                          Start Checkpoint
+                          {startLocked && <Lock className="w-3 h-3" />}
+                          {isFirstLeg && (
+                            <span className="text-xs ml-1">(Manufacturer)</span>
+                          )}
+                          {isMiddleLeg && (
+                            <span className="text-xs ml-1">(Warehouse)</span>
+                          )}
+                        </label>
+                        {loadingStart ? (
+                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">
+                              Loading...
+                            </span>
+                          </div>
+                        ) : startOptions.length === 0 ? (
+                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                            <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              No checkpoints available
+                            </span>
+                          </div>
+                        ) : (
+                          <Select
+                            value={leg.startId}
+                            onValueChange={(value) =>
+                              setLegs((arr) =>
+                                arr.map((item, idx) => {
+                                  if (idx === index) {
+                                    return { ...item, startId: value };
+                                  }
+                                  if (idx === index - 1) {
+                                    return { ...item, endId: value };
+                                  }
+                                  return item;
+                                })
+                              )
+                            }
+                            disabled={startLocked}
+                          >
+                            <SelectTrigger
+                              className={`h-11 border-2 ${
+                                startLocked ? "bg-muted/50" : ""
+                              }`}
+                            >
+                              <SelectValue placeholder="Select start checkpoint" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {startOptions.map((checkpoint) => {
+                                const id = String(checkpoint.id);
+                                return (
+                                  <SelectItem
+                                    key={`${id}-start-${index}`}
+                                    value={id}
+                                  >
+                                    {formatCheckpointLabel(checkpoint)}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
                         )}
-                        {!isLastLeg && (
-                          <span className="text-xs">(Warehouse)</span>
+                      </div>
+
+                      {/* End Checkpoint */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
+                          End Checkpoint
+                          {endLocked && <Lock className="w-3 h-3" />}
+                          {isLastLeg && (
+                            <span className="text-xs ml-1">(Consumer)</span>
+                          )}
+                          {!isLastLeg && (
+                            <span className="text-xs ml-1">(Warehouse)</span>
+                          )}
+                        </label>
+                        {loadingEnd ? (
+                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">
+                              Loading...
+                            </span>
+                          </div>
+                        ) : isLastLeg && !destUUID ? (
+                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                            <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Select destination party first
+                            </span>
+                          </div>
+                        ) : endOptions.length === 0 ? (
+                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                            <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              No checkpoints available
+                            </span>
+                          </div>
+                        ) : (
+                          <Select
+                            value={leg.endId}
+                            onValueChange={(value) =>
+                              setLegs((arr) =>
+                                arr.map((item, idx) => {
+                                  if (idx === index) {
+                                    return { ...item, endId: value };
+                                  }
+                                  if (idx === index + 1) {
+                                    return { ...item, startId: value };
+                                  }
+                                  return item;
+                                })
+                              )
+                            }
+                            disabled={endLocked}
+                          >
+                            <SelectTrigger
+                              className={`h-11 border-2 ${
+                                endLocked ? "bg-muted/50" : ""
+                              }`}
+                            >
+                              <SelectValue placeholder="Select end checkpoint" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {endOptions.map((checkpoint) => {
+                                const id = String(checkpoint.id);
+                                return (
+                                  <SelectItem
+                                    key={`${id}-end-${index}`}
+                                    value={id}
+                                  >
+                                    {formatCheckpointLabel(checkpoint)}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
                         )}
-                      </label>
-                      {loadingEnd ? (
-                        <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/20">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading...
-                          </span>
-                        </div>
-                      ) : isLastLeg && !destUUID ? (
-                        <div className="flex items-center h-10 px-3 border rounded-md bg-muted/20">
-                          <span className="text-sm text-muted-foreground">
-                            Select destination party first
-                          </span>
-                        </div>
-                      ) : endOptions.length === 0 ? (
-                        <div className="flex items-center h-10 px-3 border rounded-md bg-muted/20">
-                          <span className="text-sm text-muted-foreground">
-                            No checkpoints available
-                          </span>
-                        </div>
-                      ) : (
-                        <Select
-                          value={leg.endId}
-                          onValueChange={(value) =>
+                      </div>
+
+                      {/* Expected Ship Date */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Expected Ship Date
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={leg.expectedShip}
+                          onChange={(event) =>
                             setLegs((arr) =>
-                              arr.map((item, idx) => {
-                                // Update this leg's endId
-                                if (idx === index) {
-                                  return { ...item, endId: value };
-                                }
-                                // Sync: also update next leg's startId to match
-                                if (idx === index + 1) {
-                                  return { ...item, startId: value };
-                                }
-                                return item;
-                              })
+                              arr.map((item, idx) =>
+                                idx === index
+                                  ? {
+                                      ...item,
+                                      expectedShip: event.target.value,
+                                    }
+                                  : item
+                              )
                             )
                           }
-                          disabled={endLocked}
-                        >
-                          <SelectTrigger
-                            className={endLocked ? "bg-muted/50" : ""}
-                          >
-                            <SelectValue placeholder="Select end checkpoint" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {endOptions.map((checkpoint) => {
-                              const id = String(checkpoint.id);
-                              return (
-                                <SelectItem
-                                  key={`${id}-end-${index}`}
-                                  value={id}
-                                >
-                                  {formatCheckpointLabel(checkpoint)}
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
+                          className="h-11 border-2"
+                        />
+                      </div>
 
-                    {/* Expected Ship Date */}
-                    <div>
-                      <label className="text-xs text-muted-foreground">
-                        Expected Ship Date
-                      </label>
-                      <Input
-                        type="datetime-local"
-                        value={leg.expectedShip}
-                        onChange={(event) =>
-                          setLegs((arr) =>
-                            arr.map((item, idx) =>
-                              idx === index
-                                ? { ...item, expectedShip: event.target.value }
-                                : item
+                      {/* Estimated Arrival */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Estimated Arrival
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={leg.estArrival}
+                          onChange={(event) =>
+                            setLegs((arr) =>
+                              arr.map((item, idx) =>
+                                idx === index
+                                  ? { ...item, estArrival: event.target.value }
+                                  : item
+                              )
                             )
-                          )
-                        }
-                      />
-                    </div>
+                          }
+                          className="h-11 border-2"
+                        />
+                      </div>
 
-                    {/* Estimated Arrival */}
-                    <div>
-                      <label className="text-xs text-muted-foreground">
-                        Estimated Arrival
-                      </label>
-                      <Input
-                        type="datetime-local"
-                        value={leg.estArrival}
-                        onChange={(event) =>
-                          setLegs((arr) =>
-                            arr.map((item, idx) =>
-                              idx === index
-                                ? { ...item, estArrival: event.target.value }
-                                : item
+                      {/* Time Tolerance */}
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          Time Tolerance
+                        </label>
+                        <Input
+                          placeholder="e.g., 2h, 30m, 1d"
+                          value={leg.timeTolerance}
+                          onChange={(event) =>
+                            setLegs((arr) =>
+                              arr.map((item, idx) =>
+                                idx === index
+                                  ? {
+                                      ...item,
+                                      timeTolerance: event.target.value,
+                                    }
+                                  : item
+                              )
                             )
-                          )
-                        }
-                      />
-                    </div>
-
-                    {/* Time Tolerance */}
-                    <div className="md:col-span-2">
-                      <label className="text-xs text-muted-foreground">
-                        Time Tolerance
-                      </label>
-                      <Input
-                        placeholder="e.g., 2h, 30m, 1d"
-                        value={leg.timeTolerance}
-                        onChange={(event) =>
-                          setLegs((arr) =>
-                            arr.map((item, idx) =>
-                              idx === index
-                                ? { ...item, timeTolerance: event.target.value }
-                                : item
-                            )
-                          )
-                        }
-                      />
+                          }
+                          className="h-11 border-2"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             {/* Add Warehouse Stop Button */}
             <Button
               type="button"
-              variant="secondary"
-              size="sm"
+              variant="outline"
+              size="default"
               onClick={addMiddleLeg}
               disabled={warehouseCheckpoints.length === 0}
+              className="w-full border-2 border-dashed hover:bg-accent/50 hover:border-primary transition-all h-11"
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="w-4 h-4 mr-2" />
               Add Warehouse Stop
             </Button>
             {warehouseCheckpoints.length === 0 &&
               !loadingWarehouseCheckpoints && (
-                <p className="text-xs text-muted-foreground">
-                  No warehouse checkpoints available to add intermediate stops.
-                </p>
+                <div className="flex items-start gap-2 text-muted-foreground text-xs px-2">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <p>
+                    No warehouse checkpoints available to add intermediate
+                    stops.
+                  </p>
+                </div>
               )}
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" disabled={creatingShipment} className="w-full">
+          <Button
+            type="submit"
+            disabled={
+              creatingShipment || selectedPackageIds.length === 0 || !destUUID
+            }
+            className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+          >
             {creatingShipment ? (
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating Shipment...
               </span>
             ) : (
-              "Create Shipment"
+              <span className="inline-flex items-center gap-2">
+                <TruckIcon className="w-5 h-5" />
+                Create Shipment
+              </span>
             )}
           </Button>
+
+          {/* Validation messages */}
+          {!creatingShipment && (
+            <div className="space-y-1 text-xs">
+              {selectedPackageIds.length === 0 && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Please select at least one package</span>
+                </div>
+              )}
+              {!destUUID && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>Please select a destination party</span>
+                </div>
+              )}
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>
