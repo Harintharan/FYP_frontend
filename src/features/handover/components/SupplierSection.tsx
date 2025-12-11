@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Tabs,
   TabsContent,
@@ -43,6 +44,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { handoverUtils, useHandoverSharedContext, useSupplierContext } from "../context";
+import { shipmentService } from "@/services/shipmentService";
 import type { SupplierShipmentRecord, SupplierShipmentStatus } from "../types";
 import { ViewShipmentButton } from "./ViewShipmentButton";
 import { formatDistanceToNow } from "date-fns";
@@ -149,6 +151,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
 export function SupplierSection() {
   const shared = useHandoverSharedContext();
   const supplier = useSupplierContext();
+  const queryClient = useQueryClient();
   const canRender = supplier.enabled && shared.role === "SUPPLIER";
   const hasAreaFilter = supplier.areaQuery.trim().length > 0;
   const [takeoverDialogOpen, setTakeoverDialogOpen] = useState(false);
@@ -157,7 +160,7 @@ export function SupplierSection() {
   const [takeoverLocating, setTakeoverLocating] = useState(false);
   const [takeoverLocationError, setTakeoverLocationError] = useState<string | null>(null);
   const [acceptDialogSegmentId, setAcceptDialogSegmentId] = useState<string | null>(null);
-  const [acceptingInProgress, setAcceptingInProgress] = useState<string | null>(null);
+  const [acceptingSegmentId, setAcceptingSegmentId] = useState<string | null>(null);
   const getSegmentReference = (shipment: SupplierShipmentRecord) => shipment.segmentId ?? shipment.id;
   const statusOrder = supplier.statusOrder;
   const defaultTab = statusOrder[0] ?? "PENDING";
@@ -260,23 +263,11 @@ export function SupplierSection() {
     handleReportIssue,
     acceptDialogSegmentId,
     setAcceptDialogSegmentId,
-    acceptingInProgress,
-    setAcceptingInProgress,
   };
 
   if (!canRender) {
     return null;
   }
-
-  useEffect(() => {
-    if (
-      acceptingInProgress &&
-      !supplier.acceptShipmentPending
-    ) {
-      setAcceptDialogSegmentId(null);
-      setAcceptingInProgress(null);
-    }
-  }, [acceptingInProgress, supplier.acceptShipmentPending]);
 
   return (
     <div className="space-y-6">
@@ -483,8 +474,6 @@ type SupplierActionContext = {
   handleReportIssue: (shipment: SupplierShipmentRecord) => void;
   acceptDialogSegmentId: string | null;
   setAcceptDialogSegmentId: (id: string | null) => void;
-  acceptingInProgress: string | null;
-  setAcceptingInProgress: (id: string | null) => void;
 };
 
 type SupplierShipmentActionsProps = {
@@ -502,8 +491,6 @@ const SupplierShipmentActions = ({ status, shipment, context }: SupplierShipment
     handleReportIssue,
     acceptDialogSegmentId,
     setAcceptDialogSegmentId,
-    acceptingInProgress,
-    setAcceptingInProgress,
   } = context;
   if (!supplier.enabled) return null;
   const segmentIdentifier = shipment.segmentId ?? shipment.id;
@@ -518,8 +505,7 @@ const SupplierShipmentActions = ({ status, shipment, context }: SupplierShipment
   switch (status) {
     case "PENDING": {
       const canAccept = allowAction("canAccept");
-      const isAccepting =
-        supplier.acceptShipmentPending && supplier.acceptingShipmentId === segmentIdentifier;
+      const isAccepting = acceptingSegmentId === segmentIdentifier;
       const dialogOpen = acceptDialogSegmentId === segmentIdentifier;
       const handleDialogChange = (open: boolean) => {
         if (isAccepting) return;
@@ -530,8 +516,31 @@ const SupplierShipmentActions = ({ status, shipment, context }: SupplierShipment
       const arrivalText = formatArrivalText(shipment.expectedArrival);
       const handleAccept = () => {
         if (isAccepting || !canAccept) return;
-        setAcceptingInProgress(segmentIdentifier);
-        supplier.acceptShipment(String(segmentIdentifier));
+        setAcceptingSegmentId(segmentIdentifier);
+        shipmentService
+          .accept(String(segmentIdentifier))
+          .then(() => {
+            toast.success("Shipment accepted");
+            queryClient.invalidateQueries({ queryKey: ["incomingShipments"] });
+            supplier.statusOrder.forEach((status) =>
+              queryClient.invalidateQueries({ queryKey: ["supplierSegments", supplier.uuid, status] }),
+            );
+            setAcceptDialogSegmentId(null);
+          })
+          .catch((error) => {
+            console.error(error);
+            const message =
+              typeof error === "object" &&
+              error !== null &&
+              "response" in error &&
+              typeof (error as { response?: { data?: { error?: string } } }).response?.data?.error === "string"
+                ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+                : "Failed to accept shipment";
+            toast.error(message);
+          })
+          .finally(() => {
+            setAcceptingSegmentId(null);
+          });
       };
       return (
         <AlertDialog open={dialogOpen} onOpenChange={handleDialogChange}>
@@ -619,11 +628,7 @@ const SupplierShipmentActions = ({ status, shipment, context }: SupplierShipment
                   event.preventDefault();
                   handleAccept();
                 }}
-                disabled={
-                  !canAccept ||
-                  (supplier.acceptShipmentPending &&
-                    supplier.acceptingShipmentId === segmentIdentifier)
-                }
+                disabled={!canAccept || isAccepting}
               >
                 {isAccepting ? (
                   <span className="inline-flex items-center gap-2">

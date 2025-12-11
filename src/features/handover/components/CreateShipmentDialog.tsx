@@ -6,7 +6,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,18 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Loader2, Plus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useHandoverSharedContext, useManufacturerContext } from "../context";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export function CreateShipmentDialog() {
   const shared = useHandoverSharedContext();
   const manufacturer = useManufacturerContext();
-  const [destSearch, setDestSearch] = useState("");
 
   if (!manufacturer.enabled || shared.role !== "MANUFACTURER") {
     return null;
@@ -53,17 +52,16 @@ export function CreateShipmentDialog() {
     data: destinationResults = [],
     isFetching: loadingDestinations,
   } = useQuery({
-    queryKey: ["consumer-destinations", destSearch],
+    queryKey: ["consumer-destinations"],
     queryFn: async () => {
       const res = await api.get("/api/checkpoints", {
-        params: { ownerType: "CONSUMER", name: destSearch },
+        params: { ownerType: "CONSUMER" },
       });
       const payload = res.data;
       if (Array.isArray(payload)) return payload;
       if (payload && Array.isArray(payload.data)) return payload.data;
       return [];
     },
-    enabled: destSearch.trim().length >= 2,
     staleTime: 30_000,
   });
 
@@ -79,9 +77,13 @@ export function CreateShipmentDialog() {
     });
   }, [destinationResults]);
 
-  const handleSelectDestination = (option: { value: string; label: string }) => {
-    setDestUUID(option.value);
-    setDestSearch(option.label);
+  const selectedDestination = useMemo(
+    () => destinationOptions.find((option) => option.value === destUUID) ?? null,
+    [destinationOptions, destUUID],
+  );
+
+  const handleSelectDestination = (value: string) => {
+    setDestUUID(value);
   };
 
   return (
@@ -100,44 +102,42 @@ export function CreateShipmentDialog() {
         <form onSubmit={handleCreateShipment} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Destination Party</label>
-            <Input
-              placeholder="Search consumer checkpoints (type at least 2 characters)"
-              value={destSearch}
-              onChange={(event) => setDestSearch(event.target.value)}
-            />
-            <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Selected UUID:</span>
+            <Select
+              value={destUUID || undefined}
+              onValueChange={handleSelectDestination}
+              disabled={loadingDestinations || destinationOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    loadingDestinations
+                      ? "Loading destinations..."
+                      : "Choose destination party"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {destinationOptions.length > 0 ? (
+                  destinationOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="__no_results" disabled>
+                    No destinations found
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <div className="rounded-md border border-border/60 bg-muted/20 p-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <span>Selected UUID</span>
                 <span className="font-semibold text-foreground">{destUUID || "None"}</span>
               </div>
-              {destSearch.trim().length >= 2 ? (
-                <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-                  {loadingDestinations ? (
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm px-1 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
-                    </div>
-                  ) : destinationOptions.length === 0 ? (
-                    <p className="px-1 py-2 text-xs text-muted-foreground">No matches found.</p>
-                  ) : (
-                    destinationOptions.map((option) => (
-                      <button
-                        key={option.value + option.label}
-                        type="button"
-                        className="flex w-full justify-between rounded-md px-2 py-1 text-left text-sm hover:bg-muted"
-                        onClick={() => handleSelectDestination(option)}
-                      >
-                        <span className="text-foreground">{option.label}</span>
-                        <span className="text-xs text-muted-foreground">UUID: {option.value}</span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Start typing to search consumer checkpoints (min 2 characters).
-                </p>
-              )}
+              {selectedDestination ? (
+                <p className="mt-1 text-foreground text-sm">Destination: {selectedDestination.label}</p>
+              ) : null}
             </div>
           </div>
 

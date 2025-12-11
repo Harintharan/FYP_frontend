@@ -377,6 +377,9 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
   };
 
 
+
+
+
   const activeAlerts = alerts.filter((alert) => !alert.acknowledged);
 
   if (!supplier.enabled) {
