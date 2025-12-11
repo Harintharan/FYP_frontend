@@ -249,13 +249,12 @@ const ManufacturerDashboard = ({
                   className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 p-3"
                 >
                   <span
-                    className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                      alert.level === "CRITICAL"
-                        ? "bg-destructive"
-                        : alert.level === "WARN"
+                    className={`mt-1 h-2.5 w-2.5 rounded-full ${alert.level === "CRITICAL"
+                      ? "bg-destructive"
+                      : alert.level === "WARN"
                         ? "bg-amber-400"
                         : "bg-secondary"
-                    }`}
+                      }`}
                   />
                   <div>
                     <p className="text-sm font-medium">{alert.message}</p>
@@ -357,12 +356,12 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
   const stateOptions =
     selectedCountry === "ALL"
       ? Array.from(
-          new Set(
-            pendingShipments.map(
-              (shipment) => deriveShipmentLocation(shipment).state ?? "Unknown"
-            )
+        new Set(
+          pendingShipments.map(
+            (shipment) => deriveShipmentLocation(shipment).state ?? "Unknown"
           )
-        ).sort()
+        )
+      ).sort()
       : locationMetadata.statesByCountry.get(selectedCountry) ?? [];
 
   const quickAcceptMatches = useMemo(() => {
@@ -517,8 +516,8 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
                 const location = deriveShipmentLocation(shipment);
                 const etaText = shipment.expectedArrival
                   ? formatDistanceToNow(new Date(shipment.expectedArrival), {
-                      addSuffix: true,
-                    })
+                    addSuffix: true,
+                  })
                   : "ETA unavailable";
                 const segmentIdentifier = getSegmentReference(shipment);
                 return (

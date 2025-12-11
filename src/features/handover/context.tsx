@@ -601,7 +601,7 @@ export const HandoverProvider = ({
       }
 
       if (!destUUID.trim()) {
-        toast.error("Enter destination party UUID");
+        toast.error("Select a destination party from the dropdown");
         return;
       }
 

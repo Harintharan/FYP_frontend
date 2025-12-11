@@ -7,7 +7,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -392,9 +391,8 @@ export function CreateShipmentDialog() {
                       "Select consumer checkpoint..."}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 ml-2 text-muted-foreground transition-transform duration-200 ${
-                      destPopoverOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 ml-2 text-muted-foreground transition-transform duration-200 ${destPopoverOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
               </PopoverTrigger>
@@ -421,11 +419,10 @@ export function CreateShipmentDialog() {
                         <button
                           key={option.value + option.label}
                           type="button"
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all min-h-[48px] border-b last:border-b-0 ${
-                            isSelected
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all min-h-[48px] border-b last:border-b-0 ${isSelected
                               ? "bg-primary/10 text-primary font-semibold border-primary/20"
                               : "hover:bg-accent/80"
-                          }`}
+                            }`}
                           onClick={() => handleSelectDestination(option)}
                         >
                           <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -519,20 +516,18 @@ export function CreateShipmentDialog() {
                     return (
                       <div
                         key={packageId}
-                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${
-                          isSelected
+                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${isSelected
                             ? "bg-primary/10 border-primary shadow-md scale-[1.01]"
                             : "bg-background border-border/60 hover:bg-accent/50 hover:border-border hover:shadow-sm"
-                        }`}
+                          }`}
                         aria-pressed={isSelected}
                       >
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           <Package
-                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                              isSelected
+                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isSelected
                                 ? "text-primary"
                                 : "text-muted-foreground"
-                            }`}
+                              }`}
                           />
                           <div className="flex flex-col gap-1 flex-1 min-w-0">
                             <span className="font-semibold text-foreground leading-tight">
@@ -550,9 +545,8 @@ export function CreateShipmentDialog() {
                             <span className="text-xs text-muted-foreground">
                               <span className="font-medium">Available:</span>{" "}
                               <span
-                                className={`font-semibold ${
-                                  isSelected ? "text-primary" : ""
-                                }`}
+                                className={`font-semibold ${isSelected ? "text-primary" : ""
+                                  }`}
                               >
                                 {availableQuantity}
                               </span>
@@ -578,9 +572,8 @@ export function CreateShipmentDialog() {
                   <p className="text-xs text-muted-foreground">
                     {selectedPackageIds.length === 0
                       ? "No packages selected"
-                      : `${selectedPackageIds.length} package${
-                          selectedPackageIds.length === 1 ? "" : "s"
-                        } selected`}
+                      : `${selectedPackageIds.length} package${selectedPackageIds.length === 1 ? "" : "s"
+                      } selected`}
                   </p>
                   {selectedPackageIds.length > 0 && (
                     <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -643,13 +636,12 @@ export function CreateShipmentDialog() {
                     <div className="flex items-center justify-between pb-3 border-b">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                            isFirstLeg
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${isFirstLeg
                               ? "bg-primary text-primary-foreground"
                               : isLastLeg
-                              ? "bg-green-500 text-white"
-                              : "bg-orange-500 text-white"
-                          }`}
+                                ? "bg-green-500 text-white"
+                                : "bg-orange-500 text-white"
+                            }`}
                         >
                           {index + 1}
                         </div>
@@ -723,9 +715,8 @@ export function CreateShipmentDialog() {
                             disabled={startLocked}
                           >
                             <SelectTrigger
-                              className={`h-11 border-2 ${
-                                startLocked ? "bg-muted/50" : ""
-                              }`}
+                              className={`h-11 border-2 ${startLocked ? "bg-muted/50" : ""
+                                }`}
                             >
                               <SelectValue placeholder="Select start checkpoint" />
                             </SelectTrigger>
@@ -799,9 +790,8 @@ export function CreateShipmentDialog() {
                             disabled={endLocked}
                           >
                             <SelectTrigger
-                              className={`h-11 border-2 ${
-                                endLocked ? "bg-muted/50" : ""
-                              }`}
+                              className={`h-11 border-2 ${endLocked ? "bg-muted/50" : ""
+                                }`}
                             >
                               <SelectValue placeholder="Select end checkpoint" />
                             </SelectTrigger>
@@ -836,9 +826,9 @@ export function CreateShipmentDialog() {
                               arr.map((item, idx) =>
                                 idx === index
                                   ? {
-                                      ...item,
-                                      expectedShip: event.target.value,
-                                    }
+                                    ...item,
+                                    expectedShip: event.target.value,
+                                  }
                                   : item
                               )
                             )
@@ -883,9 +873,9 @@ export function CreateShipmentDialog() {
                               arr.map((item, idx) =>
                                 idx === index
                                   ? {
-                                      ...item,
-                                      timeTolerance: event.target.value,
-                                    }
+                                    ...item,
+                                    timeTolerance: event.target.value,
+                                  }
                                   : item
                               )
                             )
