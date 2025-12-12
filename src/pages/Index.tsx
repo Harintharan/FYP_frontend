@@ -203,9 +203,9 @@ const ManufacturerDashboard = ({
                 No shipments in transit. Create one to start tracking.
               </p>
             ) : (
-              liveShipments.map((shipment) => (
+              liveShipments.map((shipment, shipmentIdx) => (
                 <div
-                  key={shipment.id}
+                  key={`${shipment.id}-${shipmentIdx}`}
                   className="rounded-2xl border border-border/70 bg-background/60 p-4"
                 >
                   <div className="flex items-center justify-between text-sm">
@@ -243,9 +243,9 @@ const ManufacturerDashboard = ({
                 No open alerts right now.
               </p>
             ) : (
-              activeAlerts.map((alert) => (
+              activeAlerts.map((alert, alertIdx) => (
                 <div
-                  key={alert.id}
+                  key={`${alert.id}-${alertIdx}`}
                   className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 p-3"
                 >
                   <span

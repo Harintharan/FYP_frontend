@@ -24,6 +24,7 @@ import {
   Check,
   Package,
   MapPin,
+  Globe2,
   Calendar,
   Clock,
   AlertCircle,
@@ -37,10 +38,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { useHandoverSharedContext, useManufacturerContext } from "../context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 
 type CheckpointOption = {
   id: string;
@@ -54,7 +56,11 @@ type CheckpointOption = {
 export function CreateShipmentDialog() {
   const shared = useHandoverSharedContext();
   const manufacturer = useManufacturerContext();
+  const queryClient = useQueryClient();
   const [destSearch, setDestSearch] = useState("");
+  const manufacturerAutoFilledRef = useRef(false);
+  const consumerAutoFilledRef = useRef(false);
+  const lastConsumerEndRef = useRef<{ dest?: string; endId?: string }>({});
 
   const {
     createOpen,
@@ -72,6 +78,54 @@ export function CreateShipmentDialog() {
   } = manufacturer;
 
   const { uuid, role } = shared;
+
+  // Refetch checkpoint data when dialog opens
+  useEffect(() => {
+    if (createOpen && uuid && manufacturer.enabled && role === "MANUFACTURER") {
+      // Refetch manufacturer checkpoints for first leg start
+      queryClient.invalidateQueries({
+        queryKey: ["manufacturer-checkpoints", uuid],
+      });
+      // Refetch warehouse checkpoints for middle legs
+      queryClient.invalidateQueries({
+        queryKey: ["warehouse-checkpoints"],
+      });
+      // Refetch all consumer checkpoints for destination dropdown
+      queryClient.invalidateQueries({
+        queryKey: ["all-consumer-checkpoints"],
+      });
+    }
+  }, [createOpen, uuid, manufacturer.enabled, role, queryClient]);
+
+  // Reset form data when dialog closes
+  useEffect(() => {
+    if (!createOpen) {
+      // Reset auto-fill flags when dialog closes
+      manufacturerAutoFilledRef.current = false;
+      consumerAutoFilledRef.current = false;
+      // Reset all form values
+      setDestUUID("");
+      setDestSearch("");
+      setLegs([
+        {
+          startId: "",
+          endId: "",
+          estArrival: "",
+          expectedShip: "",
+          timeTolerance: "",
+          requiredAction: "",
+        },
+      ]);
+      // Deselect all packages
+      selectedPackageIds.forEach((id) => togglePackageSelection(id, false));
+    }
+  }, [
+    createOpen,
+    setDestUUID,
+    setLegs,
+    selectedPackageIds,
+    togglePackageSelection,
+  ]);
 
   // Fetch Manufacturer's checkpoints (for first leg start)
   const {
@@ -155,6 +209,112 @@ export function CreateShipmentDialog() {
   const isManufacturerLocked = manufacturerCheckpoints.length === 1;
   const isConsumerLocked = consumerCheckpoints.length === 1;
 
+  // Auto-fill first leg start checkpoint when manufacturer has only 1 checkpoint (only on initial open)
+  useEffect(() => {
+    if (
+      manufacturerCheckpoints.length === 1 &&
+      createOpen &&
+      !manufacturerAutoFilledRef.current
+    ) {
+      manufacturerAutoFilledRef.current = true;
+      setLegs((currentLegs) => {
+        if (currentLegs.length === 0) return currentLegs;
+        const firstLeg = currentLegs[0];
+        const checkpointId = manufacturerCheckpoints[0].id;
+        // Only update if not already set
+        if (!firstLeg.startId) {
+          return [
+            { ...firstLeg, startId: checkpointId },
+            ...currentLegs.slice(1),
+          ];
+        }
+        return currentLegs;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createOpen]);
+
+  // Auto-fill last leg end checkpoint when consumer has only 1 checkpoint (only on initial open)
+  useEffect(() => {
+    if (
+      consumerCheckpoints.length === 1 &&
+      createOpen &&
+      destUUID &&
+      !consumerAutoFilledRef.current
+    ) {
+      setLegs((currentLegs) => {
+        if (currentLegs.length === 0) return currentLegs;
+        const lastIndex = currentLegs.length - 1;
+        const lastLeg = currentLegs[lastIndex];
+        const checkpointId = consumerCheckpoints[0].id;
+        // Only update if not already set
+        if (lastLeg.endId) {
+          consumerAutoFilledRef.current = true;
+          lastConsumerEndRef.current = { dest: destUUID, endId: lastLeg.endId };
+          return currentLegs;
+        }
+        consumerAutoFilledRef.current = true;
+        lastConsumerEndRef.current = { dest: destUUID, endId: checkpointId };
+        return [
+          ...currentLegs.slice(0, lastIndex),
+          { ...lastLeg, endId: checkpointId },
+        ];
+        return currentLegs;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createOpen, destUUID, consumerCheckpoints.length]);
+
+  // Allow auto-fill again when destination changes
+  useEffect(() => {
+    consumerAutoFilledRef.current = false;
+    lastConsumerEndRef.current = { dest: destUUID };
+  }, [destUUID]);
+
+  // Allow auto-fill again when legs length changes (e.g., adding/removing stops)
+  useEffect(() => {
+    consumerAutoFilledRef.current = false;
+  }, [legs.length]);
+
+  // Ensure last leg end stays aligned with selected destination's checkpoints
+  useEffect(() => {
+    if (!createOpen || !destUUID || consumerCheckpoints.length === 0) return;
+
+    setLegs((currentLegs) => {
+      if (currentLegs.length === 0) return currentLegs;
+
+      const lastIndex = currentLegs.length - 1;
+      const lastLeg = currentLegs[lastIndex];
+      const validEndIds = consumerCheckpoints.map((cp) => String(cp.id));
+      const currentEndId = lastLeg.endId ? String(lastLeg.endId) : "";
+
+      // Keep current end if it is still valid for the destination
+      if (currentEndId && validEndIds.includes(currentEndId)) {
+        lastConsumerEndRef.current = { dest: destUUID, endId: currentEndId };
+        return currentLegs;
+      }
+
+      // Use cached end for this destination if still valid; otherwise first option
+      const cachedEndId =
+        lastConsumerEndRef.current.dest === destUUID
+          ? lastConsumerEndRef.current.endId
+          : undefined;
+      const fallbackEndId =
+        cachedEndId && validEndIds.includes(cachedEndId)
+          ? cachedEndId
+          : validEndIds[0];
+
+      if (!fallbackEndId) return currentLegs;
+
+      lastConsumerEndRef.current = { dest: destUUID, endId: fallbackEndId };
+
+      return [
+        ...currentLegs.slice(0, lastIndex),
+        { ...lastLeg, endId: fallbackEndId },
+      ];
+    });
+  }, [createOpen, destUUID, consumerCheckpoints, legs.length, setLegs]);
+
   const destinationOptions = useMemo(() => {
     return destinationResults.map((item: CheckpointOption) => {
       const labelLeft = item?.name || "Checkpoint";
@@ -169,6 +329,38 @@ export function CreateShipmentDialog() {
 
   // Guard set to prevent repetitive toggles per package
   const toggleInProgressRef = useRef<Set<string>>(new Set());
+
+  // Keep leg timing logical: each leg departs after/at previous arrival and arrives after/at its own departure
+  const normalizeLegTimings = useCallback(
+    (draftLegs: typeof legs) => {
+      const normalized = draftLegs.map((leg) => ({ ...leg }));
+      for (let i = 0; i < normalized.length; i++) {
+        const prev = normalized[i - 1];
+        const prevAnchor = prev ? prev.estArrival || prev.expectedShip : "";
+
+        // Departure cannot be before previous leg's arrival
+        if (
+          prevAnchor &&
+          normalized[i].expectedShip &&
+          normalized[i].expectedShip < prevAnchor
+        ) {
+          normalized[i].expectedShip = prevAnchor;
+        }
+
+        // Arrival cannot be before departure (or previous arrival if departure unset)
+        const departAnchor = normalized[i].expectedShip || prevAnchor;
+        if (
+          departAnchor &&
+          normalized[i].estArrival &&
+          normalized[i].estArrival < departAnchor
+        ) {
+          normalized[i].estArrival = departAnchor;
+        }
+      }
+      return normalized;
+    },
+    [legs]
+  );
 
   const handlePackageClick = useCallback(
     (id: string, selected: boolean) => {
@@ -207,11 +399,57 @@ export function CreateShipmentDialog() {
 
     setLegs((arr) => {
       const insertIndex = arr.length - 1; // Insert before the last leg
-      const previousLeg = arr[insertIndex - 1]; // The leg before where we're inserting
       const lastLeg = arr[insertIndex]; // The current last leg
+      const previousLeg = arr[insertIndex - 1]; // The leg before where we're inserting
+      const isFirstInsertion = insertIndex === 0;
+
+      // Preserve the manufacturer start on the first insertion; otherwise chain from previous leg
+      const newLegStartId = isFirstInsertion
+        ? lastLeg.startId
+        : previousLeg?.endId || "";
+
+      // Special handling for first insertion to avoid moving user-entered fields
+      if (isFirstInsertion) {
+        const preservedFirstLeg = {
+          ...lastLeg,
+          endId: "", // user will select the warehouse end, keep other fields
+        };
+        const newLastLeg = {
+          startId: "",
+          endId: lastLeg.endId, // keep the consumer end selection if already chosen
+          estArrival: "",
+          expectedShip: "",
+          timeTolerance: "",
+          requiredAction: "",
+        };
+        return [preservedFirstLeg, newLastLeg];
+      }
+
+      // If there are exactly two legs (origin -> consumer) and we add a stop,
+      // keep the previously entered timing fields on the new middle leg so
+      // they don't appear to "shift" to the new last leg.
+      if (arr.length === 2) {
+        const newLeg = {
+          startId: newLegStartId,
+          endId: "", // user picks warehouse end
+          estArrival: lastLeg.estArrival,
+          expectedShip: lastLeg.expectedShip,
+          timeTolerance: lastLeg.timeTolerance,
+          requiredAction: lastLeg.requiredAction,
+        };
+        const updatedLastLeg = {
+          ...lastLeg,
+          startId: "",
+          estArrival: "",
+          expectedShip: "",
+          timeTolerance: "",
+          requiredAction: "",
+        };
+        return [...arr.slice(0, insertIndex), newLeg, updatedLastLeg];
+      }
 
       const newLeg = {
-        startId: previousLeg?.endId || "", // Start where previous leg ended
+        startId: newLegStartId, // Start where previous leg ended (or stay at manufacturer on first add)
         endId: "", // User will select warehouse checkpoint
         estArrival: "",
         expectedShip: "",
@@ -219,7 +457,7 @@ export function CreateShipmentDialog() {
         requiredAction: "",
       };
 
-      // Also clear the last leg's startId so user can select it
+      // Clear the last leg's startId so it can sync to the new leg's end
       const updatedLastLeg = { ...lastLeg, startId: "" };
 
       const newArr = [...arr.slice(0, insertIndex), newLeg, updatedLastLeg];
@@ -227,11 +465,11 @@ export function CreateShipmentDialog() {
     });
   }, [legs.length, setLegs]);
 
-  // Remove a middle leg (only middle legs can be removed)
+  // Remove a leg (can remove any leg except first/Manufacturer)
   const removeMiddleLeg = useCallback(
     (index: number) => {
-      if (legs.length <= 1) return; // Can't remove if only 1 leg
-      if (index === 0 || index === legs.length - 1) return; // Can't remove first or last
+      if (legs.length < 2) return; // Can't remove if only 1 leg
+      if (index === 0) return; // Can't remove first leg (Manufacturer/Origin)
 
       setLegs((arr) => {
         const newArr = arr.filter((_, idx) => idx !== index);
@@ -248,10 +486,29 @@ export function CreateShipmentDialog() {
   );
 
   // Helper to format checkpoint label
-  const formatCheckpointLabel = useCallback((cp: CheckpointOption) => {
+  const formatCheckpointLocation = useCallback((cp: CheckpointOption) => {
     const location = [cp.state, cp.country].filter(Boolean).join(", ");
-    return location ? `${cp.name} - ${location}` : cp.name;
+    return location || "Location not specified";
   }, []);
+
+  const formatCheckpointFull = useCallback(
+    (cp?: CheckpointOption) => {
+      if (!cp) return "";
+      const name = cp.name || "Checkpoint";
+      const location = formatCheckpointLocation(cp);
+      return `${name} — ${location}`;
+    },
+    [formatCheckpointLocation]
+  );
+
+  const formatCheckpointDisplay = useCallback(
+    (cp: CheckpointOption) => {
+      const name = cp.name || "Checkpoint";
+      const location = formatCheckpointLocation(cp);
+      return `${name} · ${location}`;
+    },
+    [formatCheckpointLocation]
+  );
 
   // Determine checkpoint options based on leg position
   const getStartCheckpointOptions = useCallback(
@@ -326,11 +583,27 @@ export function CreateShipmentDialog() {
 
   const canRemoveLeg = useCallback(
     (index: number): boolean => {
-      // Can only remove middle legs (not first or last), and must have more than 1 leg
-      return legs.length > 1 && index > 0 && index < legs.length - 1;
+      // Can remove any leg except the first (Manufacturer/Origin)
+      // Minimum 1 leg is allowed (direct Manufacturer → Consumer)
+      // Cannot remove leg at position 0 (always keep Manufacturer origin)
+      return legs.length >= 2 && index > 0;
     },
     [legs.length]
   );
+
+  // Validate that all legs have required fields filled
+  const areAllLegsValid = useMemo(() => {
+    return legs.every((leg) => {
+      // Check required fields: startId, endId, expectedShip, estArrival, timeTolerance
+      return (
+        leg.startId?.trim() &&
+        leg.endId?.trim() &&
+        leg.expectedShip?.trim() &&
+        leg.estArrival?.trim() &&
+        leg.timeTolerance?.trim()
+      );
+    });
+  }, [legs]);
 
   // Early return after all hooks
   if (!manufacturer.enabled || role !== "MANUFACTURER") {
@@ -391,8 +664,9 @@ export function CreateShipmentDialog() {
                       "Select consumer checkpoint..."}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 ml-2 text-muted-foreground transition-transform duration-200 ${destPopoverOpen ? "rotate-180" : ""
-                      }`}
+                    className={`w-5 h-5 ml-2 text-muted-foreground transition-transform duration-200 ${
+                      destPopoverOpen ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
               </PopoverTrigger>
@@ -419,10 +693,11 @@ export function CreateShipmentDialog() {
                         <button
                           key={option.value + option.label}
                           type="button"
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all min-h-[48px] border-b last:border-b-0 ${isSelected
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all min-h-[48px] border-b last:border-b-0 ${
+                            isSelected
                               ? "bg-primary/10 text-primary font-semibold border-primary/20"
                               : "hover:bg-accent/80"
-                            }`}
+                          }`}
                           onClick={() => handleSelectDestination(option)}
                         >
                           <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -516,18 +791,20 @@ export function CreateShipmentDialog() {
                     return (
                       <div
                         key={packageId}
-                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${isSelected
+                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${
+                          isSelected
                             ? "bg-primary/10 border-primary shadow-md scale-[1.01]"
                             : "bg-background border-border/60 hover:bg-accent/50 hover:border-border hover:shadow-sm"
-                          }`}
+                        }`}
                         aria-pressed={isSelected}
                       >
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           <Package
-                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isSelected
+                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                              isSelected
                                 ? "text-primary"
                                 : "text-muted-foreground"
-                              }`}
+                            }`}
                           />
                           <div className="flex flex-col gap-1 flex-1 min-w-0">
                             <span className="font-semibold text-foreground leading-tight">
@@ -545,8 +822,9 @@ export function CreateShipmentDialog() {
                             <span className="text-xs text-muted-foreground">
                               <span className="font-medium">Available:</span>{" "}
                               <span
-                                className={`font-semibold ${isSelected ? "text-primary" : ""
-                                  }`}
+                                className={`font-semibold ${
+                                  isSelected ? "text-primary" : ""
+                                }`}
                               >
                                 {availableQuantity}
                               </span>
@@ -572,8 +850,9 @@ export function CreateShipmentDialog() {
                   <p className="text-xs text-muted-foreground">
                     {selectedPackageIds.length === 0
                       ? "No packages selected"
-                      : `${selectedPackageIds.length} package${selectedPackageIds.length === 1 ? "" : "s"
-                      } selected`}
+                      : `${selectedPackageIds.length} package${
+                          selectedPackageIds.length === 1 ? "" : "s"
+                        } selected`}
                   </p>
                   {selectedPackageIds.length > 0 && (
                     <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -619,6 +898,12 @@ export function CreateShipmentDialog() {
               {legs.map((leg, index) => {
                 const startOptions = getStartCheckpointOptions(index);
                 const endOptions = getEndCheckpointOptions(index);
+                const selectedStart = startOptions.find(
+                  (cp) => String(cp.id) === String(leg.startId)
+                );
+                const selectedEnd = endOptions.find(
+                  (cp) => String(cp.id) === String(leg.endId)
+                );
                 const startLocked = isStartLocked(index);
                 const endLocked = isEndLocked(index);
                 const loadingStart = isLoadingStart(index);
@@ -636,12 +921,13 @@ export function CreateShipmentDialog() {
                     <div className="flex items-center justify-between pb-3 border-b">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${isFirstLeg
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                            isFirstLeg
                               ? "bg-primary text-primary-foreground"
                               : isLastLeg
-                                ? "bg-green-500 text-white"
-                                : "bg-orange-500 text-white"
-                            }`}
+                              ? "bg-green-500 text-white"
+                              : "bg-orange-500 text-white"
+                          }`}
                         >
                           {index + 1}
                         </div>
@@ -713,12 +999,48 @@ export function CreateShipmentDialog() {
                               )
                             }
                             disabled={startLocked}
+                            title={
+                              leg.startId ? formatCheckpointFull(selectedStart) : undefined
+                            }
                           >
                             <SelectTrigger
-                              className={`h-11 border-2 ${startLocked ? "bg-muted/50" : ""
-                                }`}
+                              className={`h-14 border-2 ${
+                                startLocked ? "bg-muted/50" : ""
+                              }`}
                             >
-                              <SelectValue placeholder="Select start checkpoint" />
+                              <div className="flex flex-col text-left w-full leading-tight">
+                                {selectedStart ? (
+                                  <>
+                                    <span className="font-medium truncate">
+                                      {selectedStart.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                      {selectedStart.state && (
+                                        <span className="flex items-center gap-1 truncate">
+                                          <MapPin className="w-3 h-3" />
+                                          <span className="truncate">
+                                            {selectedStart.state}
+                                          </span>
+                                        </span>
+                                      )}
+                                      {selectedStart.country && (
+                                        <span className="flex items-center gap-1 truncate">
+                                          <Globe2 className="w-3 h-3" />
+                                          <span className="truncate">
+                                            {selectedStart.country}
+                                          </span>
+                                        </span>
+                                      )}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    <SelectValue placeholder="Select start checkpoint" />
+                                  </span>
+                                )}
+                              </div>
+                              {/* Hidden value to keep Radix selection rendering happy */}
+                              <SelectValue className="sr-only" />
                             </SelectTrigger>
                             <SelectContent>
                               {startOptions.map((checkpoint) => {
@@ -727,8 +1049,9 @@ export function CreateShipmentDialog() {
                                   <SelectItem
                                     key={`${id}-start-${index}`}
                                     value={id}
+                                    title={formatCheckpointFull(checkpoint)}
                                   >
-                                    {formatCheckpointLabel(checkpoint)}
+                                    {formatCheckpointDisplay(checkpoint)}
                                   </SelectItem>
                                 );
                               })}
@@ -778,6 +1101,12 @@ export function CreateShipmentDialog() {
                               setLegs((arr) =>
                                 arr.map((item, idx) => {
                                   if (idx === index) {
+                                    if (isLastLeg) {
+                                      lastConsumerEndRef.current = {
+                                        dest: destUUID,
+                                        endId: value,
+                                      };
+                                    }
                                     return { ...item, endId: value };
                                   }
                                   if (idx === index + 1) {
@@ -788,12 +1117,48 @@ export function CreateShipmentDialog() {
                               )
                             }
                             disabled={endLocked}
+                            title={
+                              leg.endId ? formatCheckpointFull(selectedEnd) : undefined
+                            }
                           >
                             <SelectTrigger
-                              className={`h-11 border-2 ${endLocked ? "bg-muted/50" : ""
-                                }`}
+                              className={`h-14 border-2 ${
+                                endLocked ? "bg-muted/50" : ""
+                              }`}
                             >
-                              <SelectValue placeholder="Select end checkpoint" />
+                              <div className="flex flex-col text-left w-full leading-tight">
+                                {selectedEnd ? (
+                                  <>
+                                    <span className="font-medium truncate">
+                                      {selectedEnd.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                      {selectedEnd.state && (
+                                        <span className="flex items-center gap-1 truncate">
+                                          <MapPin className="w-3 h-3" />
+                                          <span className="truncate">
+                                            {selectedEnd.state}
+                                          </span>
+                                        </span>
+                                      )}
+                                      {selectedEnd.country && (
+                                        <span className="flex items-center gap-1 truncate">
+                                          <Globe2 className="w-3 h-3" />
+                                          <span className="truncate">
+                                            {selectedEnd.country}
+                                          </span>
+                                        </span>
+                                      )}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    <SelectValue placeholder="Select end checkpoint" />
+                                  </span>
+                                )}
+                              </div>
+                              {/* Hidden value to keep Radix selection rendering happy */}
+                              <SelectValue className="sr-only" />
                             </SelectTrigger>
                             <SelectContent>
                               {endOptions.map((checkpoint) => {
@@ -802,8 +1167,9 @@ export function CreateShipmentDialog() {
                                   <SelectItem
                                     key={`${id}-end-${index}`}
                                     value={id}
+                                    title={formatCheckpointFull(checkpoint)}
                                   >
-                                    {formatCheckpointLabel(checkpoint)}
+                                    {formatCheckpointDisplay(checkpoint)}
                                   </SelectItem>
                                 );
                               })}
@@ -821,18 +1187,25 @@ export function CreateShipmentDialog() {
                         <Input
                           type="datetime-local"
                           value={leg.expectedShip}
-                          onChange={(event) =>
-                            setLegs((arr) =>
-                              arr.map((item, idx) =>
-                                idx === index
-                                  ? {
-                                    ...item,
-                                    expectedShip: event.target.value,
-                                  }
-                                  : item
-                              )
-                            )
+                          min={
+                            index > 0
+                              ? legs[index - 1].estArrival ||
+                                legs[index - 1].expectedShip ||
+                                undefined
+                              : undefined
                           }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setLegs((arr) =>
+                              normalizeLegTimings(
+                                arr.map((item, idx) =>
+                                  idx === index
+                                    ? { ...item, expectedShip: value }
+                                    : item
+                                )
+                              )
+                            );
+                          }}
                           className="h-11 border-2"
                         />
                       </div>
@@ -846,15 +1219,26 @@ export function CreateShipmentDialog() {
                         <Input
                           type="datetime-local"
                           value={leg.estArrival}
-                          onChange={(event) =>
-                            setLegs((arr) =>
-                              arr.map((item, idx) =>
-                                idx === index
-                                  ? { ...item, estArrival: event.target.value }
-                                  : item
-                              )
-                            )
+                          min={
+                            leg.expectedShip ||
+                            (index > 0
+                              ? legs[index - 1].estArrival ||
+                                legs[index - 1].expectedShip ||
+                                undefined
+                              : undefined)
                           }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setLegs((arr) =>
+                              normalizeLegTimings(
+                                arr.map((item, idx) =>
+                                  idx === index
+                                    ? { ...item, estArrival: value }
+                                    : item
+                                )
+                              )
+                            );
+                          }}
                           className="h-11 border-2"
                         />
                       </div>
@@ -873,9 +1257,9 @@ export function CreateShipmentDialog() {
                               arr.map((item, idx) =>
                                 idx === index
                                   ? {
-                                    ...item,
-                                    timeTolerance: event.target.value,
-                                  }
+                                      ...item,
+                                      timeTolerance: event.target.value,
+                                    }
                                   : item
                               )
                             )
@@ -917,7 +1301,10 @@ export function CreateShipmentDialog() {
           <Button
             type="submit"
             disabled={
-              creatingShipment || selectedPackageIds.length === 0 || !destUUID
+              creatingShipment ||
+              selectedPackageIds.length === 0 ||
+              !destUUID ||
+              !areAllLegsValid
             }
             className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
           >
@@ -947,6 +1334,15 @@ export function CreateShipmentDialog() {
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <AlertCircle className="w-3.5 h-3.5" />
                   <span>Please select a destination party</span>
+                </div>
+              )}
+              {!areAllLegsValid && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>
+                    Please complete all leg details (checkpoints, dates, and
+                    time tolerance)
+                  </span>
                 </div>
               )}
             </div>
