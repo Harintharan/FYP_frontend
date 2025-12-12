@@ -19,6 +19,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AlertTriangle, Loader2, ScanLine, ShieldCheck } from "lucide-react";
 import { api } from "@/services/api";
+import { batchService } from "@/services/batchService";
+import { PackageStatusDisplay } from "@/components/package/PackageStatusDisplay";
 
 type PackageStatusResponse = {
   package?: {
@@ -143,7 +145,10 @@ const splitIntoPages = (lines: PdfLine[]) => {
 };
 
 const escapePdfText = (text: string) =>
-  sanitizeToAscii(text).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  sanitizeToAscii(text)
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
 
 const buildPdfContentStream = (pageLines: PdfLine[]) => {
   const topPaddingLines = 2;
@@ -204,9 +209,7 @@ endstream
 endobj`;
   });
 
-  const kids = pages
-    .map((_, idx) => `${pageObjectsStart + idx} 0 R`)
-    .join(" ");
+  const kids = pages.map((_, idx) => `${pageObjectsStart + idx} 0 R`).join(" ");
 
   pdfObjects[2] = `2 0 obj
 << /Type /Pages /Kids [${kids}] /Count ${pages.length} >>
@@ -248,7 +251,8 @@ export default function QRScannerPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastScannedValue, setLastScannedValue] = useState<string | null>(null);
-  const [statusResult, setStatusResult] = useState<PackageStatusResponse | null>(null);
+  const [statusResult, setStatusResult] =
+    useState<PackageStatusResponse | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement | null>(null);
 
@@ -266,7 +270,9 @@ export default function QRScannerPage() {
       setStatusResult(data ?? null);
     } catch (error) {
       console.error("Failed to submit QR payload", error);
-      setSubmissionError("Unable to reach package status service. Please retry.");
+      setSubmissionError(
+        "Unable to reach package status service. Please retry."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -281,8 +287,25 @@ export default function QRScannerPage() {
     }
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!printRef.current || !statusResult) return;
+
+    // try to fetch batch expiry if available
+    let batchExpiry: string | null = null;
+    const batchId = statusResult.package?.batch_id;
+    if (batchId) {
+      try {
+        const b = await batchService.getBatchById(batchId);
+        batchExpiry =
+          b?.expiryDate ??
+          b?.expiry_date ??
+          b?.batch?.expiryDate ??
+          b?.batch?.expiry_date ??
+          null;
+      } catch (e) {
+        // ignore
+      }
+    }
 
     const primary: [number, number, number] = [0.14, 0.32, 0.63];
     const secondary: [number, number, number] = [0.25, 0.55, 0.38];
@@ -295,57 +318,73 @@ export default function QRScannerPage() {
     };
 
     const addSection = (title: string) => {
-      add(title, { font: "bold", size: 13, color: primary, gapBefore: 12 });
+      add(title, { font: "bold", size: 14, color: primary, gapBefore: 12 });
     };
 
-    add("Package Status Report", { font: "bold", size: 16, color: primary });
-    add(`Generated: ${new Date().toLocaleString()}`, { size: 10, color: muted, gapBefore: 4 });
-    add(`Payload: ${lastScannedValue ?? "N/A"}`, { size: 10, color: muted, gapBefore: 4 });
+    add("Package Status Report", { font: "bold", size: 18, color: primary });
+    add(`Generated: ${new Date().toLocaleString()}`, {
+      size: 10,
+      color: muted,
+      gapBefore: 6,
+    });
+    add(`Payload: ${lastScannedValue ?? "N/A"}`, {
+      size: 10,
+      color: muted,
+      gapBefore: 2,
+    });
 
-    addSection("Package");
-    add(`UUID: ${statusResult.package?.package_uuid ?? "N/A"}`, { font: "bold" });
-    add(`Status: ${statusResult.package?.package_accepted ?? "N/A"}`, { color: secondary });
-    add(`Batch: ${statusResult.package?.batch_id ?? "N/A"}`);
+    addSection("Product");
+    add(`Name: ${statusResult.package?.product?.name ?? "Unknown"}`, {
+      font: "bold",
+    });
+    add(`Type: ${statusResult.package?.product?.type ?? "N/A"}`);
+    if (statusResult.package?.product?.temperature_requirements) {
+      add(
+        `Temperature: ${
+          statusResult.package.product.temperature_requirements.min ?? "N/A"
+        } to ${
+          statusResult.package.product.temperature_requirements.max ?? "N/A"
+        }`
+      );
+    }
+
+    addSection("Manufacture & Expiry");
     add(
-      `Created: ${
+      `Manufacture: ${
         statusResult.package?.created_at
           ? new Date(statusResult.package.created_at).toLocaleString()
           : "N/A"
       }`
     );
-
-    addSection("Product");
-    add(`Name: ${statusResult.package?.product?.name ?? "Unknown product"}`, { font: "bold" });
-    add(`Type: ${statusResult.package?.product?.type ?? "N/A"}`);
-    if (statusResult.package?.product?.temperature_requirements) {
-      add(
-        `Temp Range: ${statusResult.package.product.temperature_requirements.min ?? "N/A"} to ${statusResult.package.product.temperature_requirements.max ?? "N/A"}`
-      );
-    }
+    add(
+      `Expiry: ${batchExpiry ? new Date(batchExpiry).toLocaleString() : "N/A"}`
+    );
 
     addSection("Shipment Chain");
     if (statusResult.shipment_chain?.length) {
       statusResult.shipment_chain.forEach((shipment, idx) => {
         add(`Shipment ${idx + 1}: ${shipment.shipment_id ?? "N/A"}`, {
           font: "bold",
-          color: primary,
-          gapBefore: idx === 0 ? 6 : 10,
+          gapBefore: 6,
         });
-        add(`Status: ${shipment.status ?? "N/A"}`, { color: secondary });
+        add(`Status: ${shipment.status ?? "N/A"}`);
         add(
-          `Date: ${
-            shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleString() : "N/A"
+          `Shipped: ${
+            shipment.shipment_date
+              ? new Date(shipment.shipment_date).toLocaleString()
+              : "N/A"
           }`
         );
         if (shipment.segments?.length) {
           shipment.segments.forEach((segment) => {
             add(
-              `• Segment ${segment.segment_order ?? "-"}: ${segment.status ?? "N/A"}`,
-              { gapBefore: 6, font: "bold", size: 12 }
+              `• Segment ${segment.segment_order ?? "-"}: ${
+                segment.status ?? "N/A"
+              }`,
+              { gapBefore: 4 }
             );
-            add(
-              `  From ${segment.from_location?.name ?? "Unknown"} -> ${segment.to_location?.name ?? "Unknown"}`
-            );
+            add(`  From: ${segment.from_location?.name ?? "Unknown"}`);
+            add(`  To: ${segment.to_location?.name ?? "Unknown"}`);
             add(
               `  ETA: ${
                 segment.estimated_arrival_date
@@ -364,29 +403,40 @@ export default function QRScannerPage() {
     const stats = statusResult.breaches?.statistics;
     if (stats) {
       add(
-        `Totals -> Active: ${stats.active ?? 0}, Resolved: ${stats.resolved ?? 0}, Overall: ${
-          stats.total ?? 0
-        }`,
+        `Total breaches: ${stats.total ?? 0}  — Active: ${stats.active ?? 0}`,
         { color: secondary }
       );
     }
 
     if (statusResult.breaches?.records?.length) {
       statusResult.breaches.records.forEach((breach, idx) => {
-        add(
-          `#${idx + 1} ${breach.breach_type ?? "Breach"}`,
-          { font: "bold", color: primary, gapBefore: idx === 0 ? 6 : 8 }
-        );
-        add(`Severity: ${breach.severity ?? "N/A"}`, { color: secondary });
+        add(`#${idx + 1} ${breach.breach_type ?? "Breach"}`, {
+          font: "bold",
+          gapBefore: 6,
+        });
+        if (
+          breach.breach_type === "TEMPERATURE_EXCURSION" &&
+          breach.detected_value
+        ) {
+          add(`Detected value: ${breach.detected_value}°C`);
+          add(
+            `Threshold: ${breach.threshold?.min ?? "N/A"}°C - ${
+              breach.threshold?.max ?? "N/A"
+            }°C`
+          );
+        }
         add(
           `Detected: ${
-            breach.detected_at ? new Date(breach.detected_at).toLocaleString() : "N/A"
+            breach.detected_at
+              ? new Date(breach.detected_at).toLocaleString()
+              : "N/A"
           }`
         );
-        add(`Status: ${breach.status ?? "N/A"}`);
-        if (breach.threshold) {
+        if (breach.location) {
           add(
-            `Threshold -> Min: ${breach.threshold.min ?? "N/A"}, Max: ${breach.threshold.max ?? "N/A"}`
+            `Location: ${breach.location.latitude ?? "N/A"}, ${
+              breach.location.longitude ?? "N/A"
+            }`
           );
         }
       });
@@ -421,8 +471,9 @@ export default function QRScannerPage() {
             All-in-one QR verification hub
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-            Scan encrypted payloads, confirm authenticity, and keep handovers moving.
-            Built for every role, optimized for the devices your teams already use.
+            Scan encrypted payloads, confirm authenticity, and keep handovers
+            moving. Built for every role, optimized for the devices your teams
+            already use.
           </p>
         </header>
 
@@ -434,17 +485,20 @@ export default function QRScannerPage() {
               </p>
               <CardTitle className="text-2xl">Scan encrypted QR</CardTitle>
               <CardDescription>
-                Works across mobile and desktop. Submit encrypted data to validate shipment
-                movement instantly.
+                Works across mobile and desktop. Submit encrypted data to
+                validate shipment movement instantly.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1.5">
-                    <p className="text-sm font-medium text-foreground">Ready to scan?</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Ready to scan?
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Tap the button and point your camera at the encrypted QR label.
+                      Tap the button and point your camera at the encrypted QR
+                      label.
                     </p>
                   </div>
                   <Button
@@ -459,14 +513,17 @@ export default function QRScannerPage() {
               </div>
               {lastScannedValue ? (
                 <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 text-sm">
-                  <p className="text-muted-foreground">Last encrypted payload:</p>
+                  <p className="text-muted-foreground">
+                    Last encrypted payload:
+                  </p>
                   <p className="font-mono break-all text-primary text-xs sm:text-sm">
                     {lastScannedValue}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-                  No scans yet. Your encrypted payload will appear here after the first scan.
+                  No scans yet. Your encrypted payload will appear here after
+                  the first scan.
                 </div>
               )}
 
@@ -478,14 +535,21 @@ export default function QRScannerPage() {
                   <div>
                     <p className="text-sm font-medium">Quick flow</p>
                     <p className="text-xs text-muted-foreground">
-                      Designed so field teams can operate confidently in seconds.
+                      Designed so field teams can operate confidently in
+                      seconds.
                     </p>
                   </div>
                 </div>
                 <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                  <li>Point the camera at the QR label or paste the string manually.</li>
+                  <li>
+                    Point the camera at the QR label or paste the string
+                    manually.
+                  </li>
                   <li>Keep the device steady for best recognition results.</li>
-                  <li>Wait for the verification popup to confirm the segment status.</li>
+                  <li>
+                    Wait for the verification popup to confirm the segment
+                    status.
+                  </li>
                 </ol>
               </div>
             </CardContent>
@@ -508,8 +572,9 @@ export default function QRScannerPage() {
                 </p>
                 <Separator />
                 <p>
-                  Verification details appear in a popup immediately after the payload is submitted.
-                  This works seamlessly on mobile, tablet, and desktop.
+                  Verification details appear in a popup immediately after the
+                  payload is submitted. This works seamlessly on mobile, tablet,
+                  and desktop.
                 </p>
               </CardContent>
             </Card>
@@ -528,11 +593,10 @@ export default function QRScannerPage() {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="mx-4 sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card/95 backdrop-blur">
           <DialogHeader>
-            <DialogTitle>Package status</DialogTitle>
             <DialogDescription>
               {isSubmitting
                 ? "Submitting encrypted payload to backend..."
-                : "Latest response from the status endpoint."}
+                : null}
             </DialogDescription>
           </DialogHeader>
 
@@ -552,112 +616,8 @@ export default function QRScannerPage() {
               <p className="text-sm text-destructive">{submissionError}</p>
             </div>
           ) : statusResult ? (
-            <div className="space-y-4" ref={printRef}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold">
-                    Package UUID: {statusResult.package?.package_uuid ?? "N/A"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Status: {statusResult.package?.package_accepted ?? "N/A"}
-                  </p>
-                </div>
-                <Badge>{statusResult.package?.product?.name ?? "Package"}</Badge>
-              </div>
-
-              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Product</p>
-                <p className="font-medium">{statusResult.package?.product?.name ?? "Unknown product"}</p>
-                <p className="text-muted-foreground">{statusResult.package?.product?.type ?? "Type N/A"}</p>
-                {statusResult.package?.product?.temperature_requirements ? (
-                  <p className="text-xs text-muted-foreground">
-                    Temp: {statusResult.package.product.temperature_requirements.min ?? "N/A"} to{" "}
-                    {statusResult.package.product.temperature_requirements.max ?? "N/A"}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-foreground">Shipment chain</p>
-                  <p className="text-xs text-muted-foreground">
-                    {statusResult.shipment_chain?.length ?? 0} shipment(s)
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  {statusResult.shipment_chain?.map((shipment, idx) => (
-                    <div key={shipment.shipment_id ?? idx} className="rounded-md border border-border/70 bg-background/60 p-2">
-                      <p className="text-xs text-muted-foreground">
-                        Shipment ID: <span className="font-medium text-foreground">{shipment.shipment_id ?? "N/A"}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Status: <span className="font-medium text-foreground">{shipment.status ?? "N/A"}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Date:{" "}
-                        <span className="font-medium text-foreground">
-                          {shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleString() : "N/A"}
-                        </span>
-                      </p>
-                      <Separator className="my-2" />
-                      <div className="space-y-2">
-                        {shipment.segments?.map((segment) => (
-                          <div
-                            key={segment.segment_id}
-                            className="rounded border border-border/50 bg-muted/30 p-2 text-xs text-muted-foreground"
-                          >
-                            <div className="flex justify-between">
-                              <span>Segment {segment.segment_order ?? "-"}</span>
-                              <span className="font-medium text-foreground">{segment.status ?? "N/A"}</span>
-                            </div>
-                            <p>From: {segment.from_location?.name ?? "Unknown"}</p>
-                            <p>To: {segment.to_location?.name ?? "Unknown"}</p>
-                            <p>
-                              ETA:{" "}
-                              {segment.estimated_arrival_date
-                                ? new Date(segment.estimated_arrival_date).toLocaleString()
-                                : "N/A"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-foreground">Breach summary</p>
-                  <Badge variant="secondary">
-                    {statusResult.breaches?.statistics?.active ?? 0} active
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Total: {statusResult.breaches?.statistics?.total ?? 0} | Resolved:{" "}
-                  {statusResult.breaches?.statistics?.resolved ?? 0}
-                </p>
-                <div className="space-y-1">
-                  {statusResult.breaches?.records?.slice(0, 3).map((breach) => (
-                    <div
-                      key={breach.breach_uuid}
-                      className="rounded border border-border/50 bg-background/60 p-2 text-xs text-muted-foreground"
-                    >
-                      <div className="flex justify-between">
-                        <span>{breach.breach_type ?? "Breach"}</span>
-                        <span className="font-medium text-foreground">{breach.severity ?? "N/A"}</span>
-                      </div>
-                      <p>Detected: {breach.detected_at ? new Date(breach.detected_at).toLocaleString() : "N/A"}</p>
-                      <p>Status: {breach.status ?? "N/A"}</p>
-                    </div>
-                  ))}
-                  {(statusResult.breaches?.records?.length ?? 0) > 3 ? (
-                    <p className="text-xs text-muted-foreground">
-                      +{(statusResult.breaches?.records?.length ?? 0) - 3} more breach records
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+            <div ref={printRef}>
+              <PackageStatusDisplay data={statusResult} />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -667,7 +627,11 @@ export default function QRScannerPage() {
 
           {statusResult && !isSubmitting ? (
             <div className="flex justify-end">
-              <Button variant="secondary" className="gap-2" onClick={handleDownloadPdf}>
+              <Button
+                variant="secondary"
+                className="gap-2"
+                onClick={handleDownloadPdf}
+              >
                 Download as PDF
               </Button>
             </div>
