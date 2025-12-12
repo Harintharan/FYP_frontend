@@ -10,17 +10,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
-      // 1. Set host to true to allow external connections (like ngrok)
-      host: true,
+      host: "::",
       port: parseInt(env.VITE_PORT || "8080"),
-
-      // 2. Add HMR configuration for ngrok
-      hmr: {
-        // *** REPLACE THIS WITH YOUR ACTUAL NGROK URL ***
-        host: 'shockproof-norris-transplanetary.ngrok-free.dev',
-        protocol: 'wss',
-        clientPort: 443, // Standard HTTPS port
-      },
     },
     plugins: [react(), mode === "development" && componentTagger()].filter(
       Boolean
