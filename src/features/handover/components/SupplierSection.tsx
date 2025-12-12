@@ -180,7 +180,7 @@ export function SupplierSection() {
   const getSegmentReference = (shipment: SupplierShipmentRecord) =>
     shipment.segmentId ?? shipment.id;
   const statusOrder = supplier.statusOrder;
-  const defaultTab = statusOrder[0] ?? "PENDING";
+  const defaultTab = supplier.activeStatus ?? statusOrder[0] ?? "PENDING";
   const takeoverSegmentIdentifier = takeoverTarget
     ? getSegmentReference(takeoverTarget)
     : null;
@@ -313,7 +313,13 @@ export function SupplierSection() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={defaultTab} className="space-y-6">
+      <Tabs
+        value={supplier.activeStatus}
+        onValueChange={(val) =>
+          supplier.setActiveStatus(val as SupplierShipmentStatus)
+        }
+        className="space-y-6"
+      >
         <TabsList className="flex w-full flex-wrap gap-2">
           {statusOrder.map((status) => {
             const config = STATUS_CONFIG[status];
