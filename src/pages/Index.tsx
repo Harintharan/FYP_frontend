@@ -511,7 +511,6 @@ const ManufacturerDashboard = ({
             )}
           </CardContent>
         </Card> */}
-        
       </div>
 
       {/* Shipment Details Dialog */}
@@ -744,6 +743,28 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
   const [selectedState, setSelectedState] = useState("ALL");
   const [quickAcceptTarget, setQuickAcceptTarget] =
     useState<SupplierShipmentRecord | null>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dashboardService.getSupplierDashboard();
+        setDashboardData(data);
+      } catch (err: any) {
+        console.error("Error fetching supplier dashboard data:", err);
+        setError(err.message || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const getSegmentReference = (shipment: SupplierShipmentRecord) =>
     shipment.segmentId ?? shipment.id;
@@ -751,43 +772,34 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
   const summaryCards = useMemo(
     () => [
       {
-        key: "accepted",
-        title: "Accepted",
-        value: supplier.shipmentsByStatus.ACCEPTED?.length ?? 0,
-        icon: ShieldCheck,
+        key: "totalSegments",
+        title: "Total Shipment-Segments",
+        value: dashboardData?.stats?.totalSegments ?? 0,
+        icon: Truck,
         accent: "from-primary/30 via-primary/5 to-background",
         ring: "ring-primary/20",
         iconTone: "text-primary",
       },
       {
-        key: "delivered",
-        title: "Delivered",
-        value: supplier.shipmentsByStatus.DELIVERED?.length ?? 0,
+        key: "deliveredSegments",
+        title: "Delivered Segments",
+        value: dashboardData?.stats?.deliveredSegments ?? 0,
         icon: CheckCircle2,
-        accent: "from-secondary/30 via-secondary/5 to-background",
-        ring: "ring-secondary/20",
-        iconTone: "text-secondary",
+        accent: "from-green-200/50 via-green-50 to-background",
+        ring: "ring-green-200/40",
+        iconTone: "text-green-600",
       },
       {
-        key: "takenOver",
-        title: "Taken Over",
-        value: supplier.shipmentsByStatus.IN_TRANSIT?.length ?? 0,
+        key: "inTransitSegments",
+        title: "In Transit Segments",
+        value: dashboardData?.stats?.inTransitSegments ?? 0,
         icon: Bus,
         accent: "from-amber-200/50 via-amber-50 to-background",
         ring: "ring-amber-200/40",
         iconTone: "text-amber-500",
       },
-      {
-        key: "handedOver",
-        title: "Handed Over",
-        value: supplier.shipmentsByStatus.CLOSED?.length ?? 0,
-        icon: ArrowUpRight,
-        accent: "from-emerald-200/50 via-emerald-50 to-background",
-        ring: "ring-emerald-200/40",
-        iconTone: "text-emerald-600",
-      },
     ],
-    [supplier.shipmentsByStatus]
+    [dashboardData?.stats]
   );
 
   const pendingShipments = supplier.shipmentsByStatus.PENDING ?? [];
@@ -854,12 +866,31 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
     setQuickAcceptTarget(null);
   };
 
-  const activeAlerts = alerts.filter((alert) => !alert.acknowledged);
+  const activeAlerts = dashboardData?.recentNotifications || [];
+  const liveShipments = dashboardData?.recentShipments?.slice(0, 3) || [];
 
   if (!supplier.enabled) {
     return (
       <div className="rounded-3xl border border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
         Supplier workflows are not available for this account.
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }
@@ -877,17 +908,16 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
             </Badge>
             <div>
               <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                Accept, track, and hand over consignments faster
+                Supplier Operations Center
               </h1>
               <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-                Monitor consignments requiring acceptance, keep an eye on
-                movements, and stay ahead of alerts.
+                Monitor batches, packages, shipments and stay ahead of alerts.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button className="gap-2" onClick={() => navigate("/shipment")}>
-              Open handovers <ArrowUpRight className="h-4 w-4" />
+              View All Shipments <ArrowUpRight className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={() => navigate("/qr-scan")}>
               Scan QR
@@ -1025,6 +1055,273 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent Shipments Section */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {liveShipments.length > 0 ? (
+          liveShipments.map((shipment: any) => (
+            <Card
+              key={shipment.id}
+              className="group relative overflow-hidden border-border/40 hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-xl bg-gradient-to-br from-card via-card to-primary/5"
+              onClick={() => setSelectedShipment(shipment)}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-transparent to-secondary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <CardHeader className="relative space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-semibold">
+                      {shipment.destinationName}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {shipment.destinationState}, {shipment.destinationCountry}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      shipment.status === "IN_TRANSIT"
+                        ? "border-blue-500/50 text-blue-600 bg-blue-50 dark:bg-blue-950"
+                        : shipment.status === "DELIVERED"
+                        ? "border-green-500/50 text-green-600 bg-green-50 dark:bg-green-950"
+                        : shipment.status === "PENDING"
+                        ? "border-amber-500/50 text-amber-600 bg-amber-50 dark:bg-amber-950"
+                        : "border-gray-500/50 text-gray-600 bg-gray-50 dark:bg-gray-950"
+                    }`}
+                  >
+                    {shipment.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="relative space-y-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-foreground">
+                    {shipment.packageCount} Package
+                    {shipment.packageCount !== 1 ? "s" : ""}
+                  </span>
+                  <span className="mx-1">•</span>
+                  <span>
+                    {shipment.segments?.length || 0} Segment
+                    {(shipment.segments?.length || 0) !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {shipment.estimatedDelivery && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-secondary" />
+                    <span className="text-muted-foreground">
+                      ETA:{" "}
+                      {formatDistanceToNow(
+                        new Date(shipment.estimatedDelivery),
+                        { addSuffix: true }
+                      )}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-xs text-primary group-hover:text-primary/80 transition-colors">
+                  <span className="font-medium">View Details</span>
+                  <ArrowUpRight className="w-3 h-3 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card className="md:col-span-2 lg:col-span-3">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Truck className="w-12 h-12 text-muted-foreground/50 mb-4" />
+              <p className="text-sm text-muted-foreground">
+                No recent shipments
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Notifications Section */}
+      {activeAlerts.length > 0 && (
+        <Card className="border-orange-500/20 bg-gradient-to-br from-orange-50/50 to-background dark:from-orange-950/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-orange-500" />
+                <CardTitle className="text-lg">Active Notifications</CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/notifications")}
+              >
+                View all
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeAlerts.slice(0, 5).map((notification: any) => (
+              <div
+                key={notification.id}
+                className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-border/50 hover:bg-accent/50 transition-colors"
+              >
+                <div
+                  className={`w-2 h-2 mt-2 rounded-full ${
+                    notification.severity === "CRITICAL" ||
+                    notification.severity === "ERROR"
+                      ? "bg-red-500 animate-pulse"
+                      : notification.severity === "WARNING"
+                      ? "bg-amber-500"
+                      : "bg-blue-500"
+                  }`}
+                />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium">{notification.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(notification.timestamp), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Shipment Detail Modal */}
+      <Dialog
+        open={Boolean(selectedShipment)}
+        onOpenChange={(open) => !open && setSelectedShipment(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Truck className="w-5 h-5 text-primary" />
+              Shipment Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this shipment
+            </DialogDescription>
+          </DialogHeader>
+          {selectedShipment && (
+            <div className="space-y-6 py-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Shipment ID
+                  </p>
+                  <p className="font-mono text-sm">{selectedShipment.id}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Status
+                  </p>
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      selectedShipment.status === "IN_TRANSIT"
+                        ? "border-blue-500/50 text-blue-600"
+                        : selectedShipment.status === "DELIVERED"
+                        ? "border-green-500/50 text-green-600"
+                        : "border-amber-500/50 text-amber-600"
+                    }`}
+                  >
+                    {selectedShipment.status}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Destination
+                  </p>
+                  <p className="text-sm font-medium">
+                    {selectedShipment.destinationName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedShipment.destinationAddress}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Packages
+                  </p>
+                  <p className="text-sm font-medium">
+                    {selectedShipment.packageCount} Package
+                    {selectedShipment.packageCount !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              {selectedShipment.segments &&
+                selectedShipment.segments.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Route Segments
+                    </p>
+                    <div className="space-y-2">
+                      {selectedShipment.segments.map(
+                        (segment: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-lg border border-border/50 bg-muted/30 space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold">
+                                Segment {segment.segment_order}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {segment.status}
+                              </Badge>
+                            </div>
+                            <div className="grid gap-2 text-sm">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-green-600 mt-0.5" />
+                                <div>
+                                  <p className="font-medium">
+                                    {segment.start_checkpoint?.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {segment.start_checkpoint?.location}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-red-600 mt-0.5" />
+                                <div>
+                                  <p className="font-medium">
+                                    {segment.end_checkpoint?.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {segment.end_checkpoint?.location}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            {segment.estimated_arrival && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                <span>
+                                  ETA:{" "}
+                                  {formatDistanceToNow(
+                                    new Date(segment.estimated_arrival),
+                                    { addSuffix: true }
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedShipment(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={Boolean(quickAcceptTarget)}

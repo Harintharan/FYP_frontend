@@ -14,8 +14,6 @@ import {
   Thermometer,
   Calendar,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { batchService } from "@/services/batchService";
 
 type PackageStatusResponse = {
   package?: {
@@ -23,6 +21,10 @@ type PackageStatusResponse = {
     package_accepted?: string;
     batch_id?: string;
     created_at?: string;
+    batch?: {
+      expiryDate?: string;
+      expiry_date?: string;
+    };
     product?: {
       name?: string;
       type?: string;
@@ -81,19 +83,6 @@ const getStatusColor = (status?: string) => {
       return "bg-blue-100 text-blue-800";
     case "CONFIRMED":
       return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-const getSeverityColor = (severity?: string) => {
-  switch (severity?.toUpperCase()) {
-    case "HIGH":
-      return "bg-red-100 text-red-800";
-    case "MEDIUM":
-      return "bg-orange-100 text-orange-800";
-    case "LOW":
-      return "bg-yellow-100 text-yellow-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -166,20 +155,11 @@ export function PackageStatusDisplay({ data }: PackageStatusDisplayProps) {
   const breachStats = data.breaches?.statistics;
   const breachRecords = data.breaches?.records || [];
   const hasActiveBreaches = (breachStats?.active ?? 0) > 0;
-  const batchId = data.package?.batch_id;
-
-  const { data: batchData, isLoading: loadingBatch } = useQuery({
-    queryKey: ["batchDetails", batchId],
-    queryFn: () => batchService.getBatchById(batchId!),
-    enabled: Boolean(batchId),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const batchExpiry =
-    batchData?.expiryDate ??
-    batchData?.expiry_date ??
-    batchData?.batch?.expiryDate ??
-    batchData?.batch?.expiry_date ??
+    data.package?.batch?.expiry_date ??
+    data.package?.batch?.expiryDate ??
+    (data as any)?.batch?.expiry_date ??
+    (data as any)?.batch?.expiryDate ??
     null;
 
   return (
@@ -285,12 +265,10 @@ export function PackageStatusDisplay({ data }: PackageStatusDisplayProps) {
                 Expiry
               </p>
               <p className="mt-1 text-lg sm:text-xl font-semibold text-foreground">
-                {loadingBatch
-                  ? "Loading..."
-                  : formatDate(batchExpiry ?? undefined)}
+                {formatDate(batchExpiry ?? undefined)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {loadingBatch ? "" : timeUntil(batchExpiry ?? undefined)}
+                {timeUntil(batchExpiry ?? undefined)}
               </p>
             </div>
           </div>
@@ -471,28 +449,6 @@ export function PackageStatusDisplay({ data }: PackageStatusDisplayProps) {
                         {type}: {count}
                       </Badge>
                     ))}
-                  </div>
-                </div>
-              )}
-
-            {/* Breach Severity */}
-            {breachStats.bySeverity &&
-              Object.keys(breachStats.bySeverity).length > 0 && (
-                <div>
-                  <p className="mb-2 text-sm font-semibold text-foreground">
-                    By Severity
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(breachStats.bySeverity).map(
-                      ([severity, count]) => (
-                        <Badge
-                          key={severity}
-                          className={getSeverityColor(severity)}
-                        >
-                          {severity}: {count}
-                        </Badge>
-                      )
-                    )}
                   </div>
                 </div>
               )}

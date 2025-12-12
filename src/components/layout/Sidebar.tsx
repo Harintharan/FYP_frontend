@@ -1,5 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   LayoutDashboard,
   Package,
@@ -17,11 +20,15 @@ import {
   Archive,
   Tag,
   ChevronDown,
+  ChevronRight,
   BellRing,
+  LogOut,
+  Home,
+  Bell,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   className?: string;
@@ -112,6 +119,9 @@ export function Sidebar({
           // { path: "/register", label: "Register", icon: UserPlus },
         ];
 
+      case "CONSUMER":
+        return [{ path: "/qr-scan", label: "QR Scanner", icon: QrCode }];
+
       case "USER":
         return [
           { path: "/qr-scan", label: "QR Scanner", icon: QrCode },
@@ -142,151 +152,238 @@ export function Sidebar({
   }
 
   return (
-    <div
-      className={cn(
-        "bg-card border-r shadow-md flex flex-col transition-all duration-300",
-        isMobile
-          ? "fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-50" // Mobile: Full-width overlay
-          : "fixed left-0 top-16 h-[calc(100vh-4rem)]", // Desktop: Fixed sidebar
-        isMobile ? "" : collapsed ? "w-20" : "w-64",
-        className
+    <>
+      {/* Mobile Backdrop */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in"
+          onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
+        />
       )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        {!collapsed && !isMobile && (
-          <h2 className="font-semibold text-lg">
-            {userRole !== "GUEST" ? `${userRole} Panel` : "Navigation"}
-          </h2>
-        )}
-        {!isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed && setCollapsed(!collapsed)}
-            className="hover:bg-muted"
-          >
-            {collapsed ? (
-              <Menu className="w-5 h-5" />
-            ) : (
-              <X className="w-5 h-5" />
-            )}
-          </Button>
-        )}
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
-            className="hover:bg-muted ml-auto"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        )}
-      </div>
 
-      {/* Main Scrollable Section */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-        {navigationItems.map((item) => {
-          if (item.type === "group") {
-            const isExpanded = expandedItems.has(item.key);
-            const hasActiveChild = item.children.some((child) => {
-              const [path, query] = child.path.split("?");
-              const tab = query.split("=")[1];
-              return (
-                location.pathname === path && searchParams.get("tab") === tab
-              );
-            });
-            return (
-              <div key={item.key}>
-                <Button
-                  onClick={() => {
-                    setExpandedItems((prev) => {
-                      const newSet = new Set(prev);
-                      if (newSet.has(item.key)) newSet.delete(item.key);
-                      else newSet.add(item.key);
-                      return newSet;
-                    });
-                    handleNavClick(item.children[0].path);
-                  }}
-                  variant={hasActiveChild ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-3 h-11 transition-all duration-200",
-                    hasActiveChild
-                      ? "bg-primary/10 text-primary border border-primary/20 glow-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  {(!collapsed || isMobile) && (
-                    <span className="truncate">{item.label}</span>
-                  )}
-                  {(!collapsed || isMobile) && (
-                    <ChevronDown
-                      className={cn(
-                        "w-4 h-4 ml-auto transition-transform",
-                        isExpanded ? "rotate-180" : ""
-                      )}
-                    />
-                  )}
-                </Button>
-                {isExpanded && (!collapsed || isMobile) && (
-                  <div className="ml-4 space-y-1">
-                    {item.children.map((child) => {
-                      const Icon = child.icon;
-                      const [path, query] = child.path.split("?");
-                      const tab = query.split("=")[1];
-                      const isActive =
-                        location.pathname === path &&
-                        searchParams.get("tab") === tab;
-                      return (
-                        <Button
-                          key={child.path}
-                          onClick={() => handleNavClick(child.path)}
-                          variant={isActive ? "secondary" : "ghost"}
-                          className={cn(
-                            "w-full justify-start gap-3 h-10 transition-all duration-200",
-                            isActive
-                              ? "bg-primary/10 text-primary border border-primary/20 glow-primary"
-                              : "text-muted-foreground hover:text-primary"
-                          )}
-                        >
-                          <Icon className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{child.label}</span>
-                        </Button>
-                      );
-                    })}
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "bg-gradient-to-b from-card via-card to-muted/20 border-r border-border/50 shadow-xl flex flex-col transition-all duration-300 ease-in-out",
+          isMobile
+            ? "fixed left-0 top-16 h-[calc(100vh-4rem)] w-72 z-50 animate-in slide-in-from-left"
+            : "fixed left-0 top-16 h-[calc(100vh-4rem)]",
+          isMobile ? "" : collapsed ? "w-20" : "w-72",
+          className
+        )}
+      >
+        {/* Header with Gradient */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 opacity-60" />
+          <div className="relative flex items-center justify-between p-4 border-b border-border/50">
+            {(!collapsed || isMobile) && (
+              <div className="flex items-center gap-3">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-primary/30 rounded-lg blur-sm group-hover:blur transition-all" />
+                  <div className="relative w-10 h-10 bg-gradient-to-br from-primary via-primary to-secondary rounded-lg flex items-center justify-center shadow-lg ring-1 ring-primary/20">
+                    <Home className="w-5 h-5 text-white" />
                   </div>
-                )}
+                </div>
+                <div className="flex flex-col">
+                  <h2 className="font-bold text-sm tracking-tight">
+                    {userRole !== "GUEST" ? userRole : "Menu"}
+                  </h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                    Control Panel
+                  </p>
+                </div>
               </div>
-            );
-          } else {
-            const Icon = item.icon;
-            const isActive =
-              location.pathname === item.path ||
-              location.pathname.startsWith(item.path + "/");
-
-            return (
+            )}
+            {(!collapsed || isMobile) && (
               <Button
-                key={item.path}
-                onClick={() => handleNavClick(item.path)}
-                variant={isActive ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-3 h-11 transition-all duration-200",
-                  isActive
-                    ? "bg-primary/10 text-primary border border-primary/20 glow-primary"
-                    : "text-muted-foreground hover:text-primary"
-                )}
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (isMobile && setMobileMenuOpen) {
+                    setMobileMenuOpen(false);
+                  } else if (setCollapsed) {
+                    setCollapsed(!collapsed);
+                  }
+                }}
+                className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                {(!collapsed || isMobile) && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                <X className="w-4 h-4" />
               </Button>
-            );
-          }
-        })}
-      </div>
-    </div>
+            )}
+            {collapsed && !isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCollapsed && setCollapsed(false)}
+                className="w-full h-8 hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <Separator className="opacity-50" />
+
+        {/* Navigation Section */}
+        <ScrollArea className="flex-1 px-3 py-4">
+          <div className="space-y-2">
+            {navigationItems.map((item, idx) => {
+              if (item.type === "group") {
+                const isExpanded = expandedItems.has(item.key);
+                const hasActiveChild = item.children.some((child) => {
+                  const [path, query] = child.path.split("?");
+                  const tab = query.split("=")[1];
+                  return (
+                    location.pathname === path &&
+                    searchParams.get("tab") === tab
+                  );
+                });
+                return (
+                  <div key={item.key} className="space-y-1">
+                    <Button
+                      onClick={() => {
+                        setExpandedItems((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(item.key)) newSet.delete(item.key);
+                          else newSet.add(item.key);
+                          return newSet;
+                        });
+                      }}
+                      variant="ghost"
+                      className={cn(
+                        "group relative w-full justify-start gap-3 h-12 rounded-xl transition-all duration-200 overflow-hidden",
+                        hasActiveChild
+                          ? "bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold shadow-sm border border-primary/20"
+                          : "hover:bg-muted/50 hover:text-foreground text-muted-foreground",
+                        collapsed && !isMobile && "justify-center"
+                      )}
+                    >
+                      {hasActiveChild && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary rounded-r" />
+                      )}
+                      <div
+                        className={cn(
+                          "flex items-center justify-center rounded-lg transition-all",
+                          hasActiveChild
+                            ? "bg-primary/10 p-2"
+                            : "p-2 group-hover:bg-primary/5"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4 shrink-0" />
+                      </div>
+                      {(!collapsed || isMobile) && (
+                        <>
+                          <span className="flex-1 truncate text-sm font-medium">
+                            {item.label}
+                          </span>
+                          <ChevronRight
+                            className={cn(
+                              "w-4 h-4 transition-transform duration-200 shrink-0",
+                              isExpanded ? "rotate-90" : ""
+                            )}
+                          />
+                        </>
+                      )}
+                    </Button>
+                    {isExpanded && (!collapsed || isMobile) && (
+                      <div className="ml-3 pl-4 border-l-2 border-border/30 space-y-1 animate-in slide-in-from-top-2">
+                        {item.children.map((child) => {
+                          const Icon = child.icon;
+                          const [path, query] = child.path.split("?");
+                          const tab = query.split("=")[1];
+                          const isActive =
+                            location.pathname === path &&
+                            searchParams.get("tab") === tab;
+                          return (
+                            <Button
+                              key={child.path}
+                              onClick={() => handleNavClick(child.path)}
+                              variant="ghost"
+                              className={cn(
+                                "w-full justify-start gap-3 h-10 rounded-lg transition-all duration-200",
+                                isActive
+                                  ? "bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm"
+                                  : "hover:bg-muted/50 hover:text-foreground text-muted-foreground"
+                              )}
+                            >
+                              <Icon className="w-4 h-4 shrink-0" />
+                              <span className="truncate text-sm">
+                                {child.label}
+                              </span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                const Icon = item.icon;
+                const isActive =
+                  location.pathname === item.path ||
+                  location.pathname.startsWith(item.path + "/");
+
+                return (
+                  <Button
+                    key={item.path}
+                    onClick={() => handleNavClick(item.path)}
+                    variant="ghost"
+                    className={cn(
+                      "group relative w-full justify-start gap-3 h-12 rounded-xl transition-all duration-200 overflow-hidden",
+                      isActive
+                        ? "bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold shadow-sm border border-primary/20"
+                        : "hover:bg-muted/50 hover:text-foreground text-muted-foreground",
+                      collapsed && !isMobile && "justify-center"
+                    )}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary rounded-r" />
+                    )}
+                    <div
+                      className={cn(
+                        "flex items-center justify-center rounded-lg transition-all",
+                        isActive
+                          ? "bg-primary/10 p-2"
+                          : "p-2 group-hover:bg-primary/5"
+                      )}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                    </div>
+                    {(!collapsed || isMobile) && (
+                      <span className="truncate text-sm font-medium">
+                        {item.label}
+                      </span>
+                    )}
+                  </Button>
+                );
+              }
+            })}
+          </div>
+        </ScrollArea>
+
+        <Separator className="opacity-50" />
+
+        {/* Footer Section */}
+        <div className="p-3 space-y-2 border-t border-border/50 bg-gradient-to-t from-muted/40 to-transparent">
+          {(!collapsed || isMobile) && (
+            <div className="px-3 py-2.5 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-green-500 rounded-full blur-sm opacity-50" />
+                  <div className="relative w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                </div>
+                <span className="text-xs font-semibold text-foreground">
+                  System Status
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-medium">
+                All systems operational
+              </p>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
   );
 }

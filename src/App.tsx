@@ -108,12 +108,18 @@ const App = () => {
                 </>
               )}
 
+              {userRole === "CONSUMER" && (
+                <>
+                  <Route index element={<QRScannerPage />} />
+                  <Route path="qr-scan" element={<QRScannerPage />} />
+                </>
+              )}
+
               {/* 🧩 USER */}
               {userRole === "USER" && (
                 <>
                   <Route index element={<QRScannerPage />} />
                   <Route path="register" element={<Register />} />
-                  <Route path="qr-scan" element={<QRScannerPage />} />
                   <Route path="qr-scan" element={<QRScannerPage />} />
                 </>
               )}
