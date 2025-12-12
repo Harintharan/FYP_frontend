@@ -308,6 +308,22 @@ export function SupplierSection() {
     setAcceptingSegmentId,
   };
 
+  const visibleStatusOrder = supplier.statusOrder.filter(
+    (status) => status !== "CLOSED" && status !== "CANCELLED"
+  );
+  const activeTab = visibleStatusOrder.includes(supplier.activeStatus)
+    ? supplier.activeStatus
+    : visibleStatusOrder[0];
+
+  useEffect(() => {
+    if (
+      visibleStatusOrder.length > 0 &&
+      !visibleStatusOrder.includes(supplier.activeStatus)
+    ) {
+      supplier.setActiveStatus(visibleStatusOrder[0]);
+    }
+  }, [supplier, visibleStatusOrder]);
+
   if (!canRender) {
     return null;
   }
@@ -315,14 +331,14 @@ export function SupplierSection() {
   return (
     <div className="space-y-6">
       <Tabs
-        value={supplier.activeStatus}
+        value={activeTab}
         onValueChange={(val) =>
           supplier.setActiveStatus(val as SupplierShipmentStatus)
         }
         className="space-y-6"
       >
         <TabsList className="flex w-full flex-wrap gap-2">
-          {statusOrder.map((status) => {
+          {visibleStatusOrder.map((status) => {
             const config = STATUS_CONFIG[status];
             return (
               <TabsTrigger
@@ -343,7 +359,7 @@ export function SupplierSection() {
         />
 
         <SupplierStatusPanels
-          statusOrder={statusOrder}
+          statusOrder={visibleStatusOrder}
           shipmentsByStatus={supplier.shipmentsByStatus}
           loadingByStatus={supplier.loadingByStatus}
           filterShipmentsByArea={supplier.filterShipmentsByArea}

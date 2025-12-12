@@ -53,7 +53,7 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
   const RoleIcon = user ? getRoleIcon(user.role) : User;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center space-x-2 md:space-x-4">
           {/* Hamburger menu for mobile */}
@@ -62,18 +62,23 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
               variant="ghost"
               size="icon"
               onClick={onMenuClick}
-              className="mr-2"
+              className="mr-2 hover:bg-primary/10 transition-colors"
             >
               <Menu className="w-5 h-5" />
             </Button>
           )}
 
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Package className="w-4 h-4 md:w-5 md:h-5 text-white" />
+          <div className="flex items-center space-x-3">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary opacity-75 rounded-lg blur group-hover:blur-md transition-all" />
+              <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                <Package className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              </div>
             </div>
             <div>
-              <h1 className="text-base md:text-xl font-bold">TrackChain</h1>
+              <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                TrackChain
+              </h1>
               <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">
                 Supply Chain DApp
               </p>
@@ -81,13 +86,15 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 md:space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {user && (
-            <div className="flex items-center space-x-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-muted/50">
-              <RoleIcon className="w-4 h-4 text-primary" />
+            <div className="flex items-center space-x-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 shadow-sm hover:shadow-md transition-all">
+              <div className="p-1 rounded-md bg-primary/10">
+                <RoleIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+              </div>
               {!isMobile && (
                 <div className="text-sm">
-                  <p className="font-medium">{role || "User"}</p>
+                  <p className="font-semibold text-xs">{role || "User"}</p>
                 </div>
               )}
             </div>
@@ -97,7 +104,11 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
           <NotificationBell />
 
           {!isMobile && (
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hover:bg-primary/10 transition-colors"
+            >
               <Settings className="w-4 h-4" />
             </Button>
           )}
@@ -106,7 +117,7 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
             variant="ghost"
             size={isMobile ? "icon" : "sm"}
             onClick={handleLogout}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
           >
             <LogOut className="w-4 h-4" />
             {!isMobile && <span className="ml-2">Logout</span>}

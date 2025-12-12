@@ -423,7 +423,7 @@ const handleSaveRegistration = async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
@@ -508,9 +508,9 @@ const handleSaveRegistration = async () => {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
-        <Card className="lg:col-span-2">
+        {/* <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wifi className="h-5 w-5" />
@@ -552,7 +552,7 @@ const handleSaveRegistration = async () => {
               Save Connection Settings
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       <Dialog

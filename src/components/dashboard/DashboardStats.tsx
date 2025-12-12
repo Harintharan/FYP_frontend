@@ -1,11 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppStore } from "@/lib/store";
-import {
-  Truck,
-  Activity,
-  AlertTriangle,
-  Megaphone,
-} from "lucide-react";
+import { Truck, Activity, AlertTriangle, Megaphone } from "lucide-react";
 
 const formatNumber = (value: number) => {
   if (value >= 1000) {
@@ -44,51 +39,78 @@ const statAccent: Record<
   },
 };
 
-export function DashboardStats() {
+interface DashboardStatsProps {
+  dashboardData?: any;
+}
+
+export function DashboardStats({ dashboardData }: DashboardStatsProps) {
   const { shipments, alerts } = useAppStore();
 
-  const totalShipments = shipments.length;
-  const activeShipments = shipments.filter((shipment) =>
-    ["IN_TRANSIT", "PREPARING"].includes(shipment.status),
-  ).length;
-  const activeAlerts = alerts.filter((alert) => !alert.acknowledged).length;
-  const complaintCount = alerts.filter((alert) =>
-    ["CRITICAL", "EMERGENCY"].includes(alert.level) ||
-    alert.type === "RECALL",
-  ).length;
+  // Use live data if available, otherwise fall back to store data
+  const totalShipments =
+    dashboardData?.stats?.totalShipments ?? shipments.length;
+  const activeShipments =
+    dashboardData?.stats?.activeShipments ??
+    shipments.filter((shipment) =>
+      ["IN_TRANSIT", "PREPARING"].includes(shipment.status)
+    ).length;
+  const activeAlerts =
+    dashboardData?.stats?.unreadNotifications ??
+    alerts.filter((alert) => !alert.acknowledged).length;
+  const criticalAlerts =
+    dashboardData?.stats?.criticalAlerts ??
+    alerts.filter(
+      (alert) =>
+        ["CRITICAL", "EMERGENCY"].includes(alert.level) ||
+        alert.type === "RECALL"
+    ).length;
+
+  const totalProducts = dashboardData?.stats?.totalProducts || 0;
+  const deliveredShipments = dashboardData?.stats?.deliveredShipments || 0;
+  const preparingShipments = dashboardData?.stats?.preparingShipments || 0;
 
   const stats = [
     {
       key: "total",
       title: "Total Shipments",
       value: totalShipments,
-      subtext: "Tracked consignments",
-      delta: "+12% this month",
+      subtext: "All tracked consignments",
+      delta:
+        deliveredShipments > 0
+          ? `${deliveredShipments} completed`
+          : "No completed yet",
       icon: Truck,
+      trend: deliveredShipments > 0 ? "up" : "neutral",
     },
     {
       key: "active",
-      title: "Active Shipments",
+      title: "In Transit",
       value: activeShipments,
-      subtext: "Moving through cold-chain",
-      delta: "3 ETA updates today",
+      subtext: "Currently moving",
+      delta:
+        preparingShipments > 0
+          ? `${preparingShipments} pending dispatch`
+          : "None pending",
       icon: Activity,
+      trend: activeShipments > 0 ? "up" : "neutral",
     },
     {
       key: "alerts",
-      title: "Active Alerts",
+      title: "Notifications",
       value: activeAlerts,
-      subtext: "Require immediate attention",
-      delta: "2 critical",
+      subtext: "Unread messages",
+      delta: criticalAlerts > 0 ? `${criticalAlerts} critical` : "All normal",
       icon: AlertTriangle,
+      trend: criticalAlerts > 0 ? "alert" : "neutral",
     },
     {
-      key: "complaints",
-      title: "Regulatory Complaints",
-      value: complaintCount,
-      subtext: "Escalated by partners",
-      delta: "0 unresolved",
+      key: "products",
+      title: "Product Catalog",
+      value: totalProducts,
+      subtext: "Registered products",
+      delta: totalProducts > 0 ? "Active catalog" : "No products yet",
       icon: Megaphone,
+      trend: "neutral",
     },
   ];
 
@@ -100,44 +122,51 @@ export function DashboardStats() {
         return (
           <Card
             key={stat.key}
-            className={`relative overflow-hidden border-none bg-card/90 shadow-card ring-1 ${theme.ring}`}
+            className={`group relative overflow-hidden border-none bg-card/90 shadow-card ring-1 ${theme.ring} transition-all hover:shadow-lg hover:ring-2`}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-background/10 to-background/5" />
+
+            {/* Decorative elements */}
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
+            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-gradient-to-tl from-secondary/5 to-transparent opacity-50" />
+
             <CardHeader className="relative flex flex-col gap-3 pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <span
-                  className={`rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wider ${theme.badge}`}
-                >
-                  Live
-                </span>
+                {stat.trend === "alert" && stat.value > 0 && (
+                  <span className="flex h-2 w-2">
+                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <div
-                  className={`rounded-2xl p-3 ${theme.iconBg} shadow-inner`}
+                  className={`rounded-2xl p-3 ${theme.iconBg} shadow-inner transition-transform group-hover:scale-110`}
                 >
                   <Icon className={`h-6 w-6 ${theme.iconColor}`} />
                 </div>
-                <div>
-                  <p className="text-3xl font-semibold text-foreground">
+                <div className="flex-1">
+                  <p className="text-3xl font-bold text-foreground tabular-nums">
                     {formatNumber(stat.value)}
                   </p>
-                  <p className="text-xs text-muted-foreground">{stat.subtext}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {stat.subtext}
+                  </p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="relative border-t border-dashed border-border/60 pt-4">
-              <p className="text-xs font-medium text-foreground">
-                {stat.delta}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Updated {new Date().toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
+            <CardContent className="relative border-t border-dashed border-border/40 pt-3 pb-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-foreground">
+                  {stat.delta}
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Live
+                </p>
+              </div>
             </CardContent>
           </Card>
         );

@@ -6,14 +6,10 @@ import {
   Loader2,
   Package,
   MapPin,
-  Calendar,
   Truck,
   ArrowRight,
   Clock,
   CheckCircle2,
-  XCircle,
-  PlayCircle,
-  AlertCircle,
 } from "lucide-react";
 import { useHandoverSharedContext, useManufacturerContext } from "../context";
 import { EditShipmentButton } from "./EditShipmentButton";
@@ -22,22 +18,11 @@ import type { ManufacturerShipmentRecord } from "../types";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 
-type ShipmentsByStatus = {
-  PENDING: ManufacturerShipmentRecord[];
-  ACCEPTED: ManufacturerShipmentRecord[];
-  IN_TRANSIT: ManufacturerShipmentRecord[];
-  DELIVERED: ManufacturerShipmentRecord[];
-  CLOSED: ManufacturerShipmentRecord[];
-  CANCELLED: ManufacturerShipmentRecord[];
-};
-
 const STATUS_CONFIG = {
   PENDING: { label: "Pending", icon: Clock, color: "text-yellow-600" },
   ACCEPTED: { label: "Accepted", icon: CheckCircle2, color: "text-blue-600" },
   IN_TRANSIT: { label: "In Transit", icon: Truck, color: "text-purple-600" },
   DELIVERED: { label: "Delivered", icon: Package, color: "text-green-600" },
-  CLOSED: { label: "Closed", icon: CheckCircle2, color: "text-gray-600" },
-  CANCELLED: { label: "Cancelled", icon: XCircle, color: "text-red-600" },
 };
 
 function getStatusVariant(
@@ -163,7 +148,7 @@ export function ManufacturerShipmentsSection() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-6 mb-4">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
                 {Object.entries(STATUS_CONFIG).map(([status, config]) => {
                   const Icon = config.icon;
                   return (
