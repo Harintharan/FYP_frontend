@@ -39,12 +39,14 @@ import {
   CheckCircle2,
   Bus,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   HandoverProvider,
   useSupplierContext,
 } from "@/features/handover/context";
+import { dashboardService } from "@/services/dashboardService";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -119,10 +121,55 @@ const ManufacturerDashboard = ({
   shipments,
   navigate,
 }: ManufacturerDashboardProps) => {
-  const activeAlerts = alerts
-    .filter((alert) => !alert.acknowledged)
-    .slice(0, 4);
-  const liveShipments = shipments.slice(0, 3);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dashboardService.getManufacturerDashboard();
+        setDashboardData(data);
+      } catch (err: any) {
+        console.error("Error fetching dashboard data:", err);
+        setError(err.message || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const activeAlerts = dashboardData?.recentNotifications || [];
+  const liveShipments = dashboardData?.recentShipments?.slice(0, 3) || [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-destructive/50 bg-destructive/10 p-6">
+        <div className="flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <div>
+            <h3 className="font-semibold text-destructive">
+              Error loading dashboard
+            </h3>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -163,19 +210,21 @@ const ManufacturerDashboard = ({
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">On-time rate</p>
-                  <p className="text-3xl font-semibold">96%</p>
+                  <p className="text-sm text-muted-foreground">
+                    Active shipments
+                  </p>
+                  <p className="text-3xl font-semibold">
+                    {dashboardData?.stats?.activeShipments || 0}
+                  </p>
                 </div>
                 <Badge className="bg-primary/10 text-primary">
-                  +4% vs last week
+                  {dashboardData?.stats?.totalShipments || 0} total
                 </Badge>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2 text-foreground">
                   <Clock className="h-4 w-4 text-primary" />
-                  <span>
-                    {liveShipments.length} shipments approaching checkpoints
-                  </span>
+                  <span>{liveShipments.length} recent shipments</span>
                 </div>
                 <div className="flex items-center gap-2 text-foreground">
                   <Activity className="h-4 w-4 text-secondary" />
@@ -187,87 +236,499 @@ const ManufacturerDashboard = ({
         </div>
       </div>
 
-      <DashboardStats />
+      <DashboardStats dashboardData={dashboardData} />
 
       <div className="space-y-6">
         <Card className="border border-border/60 bg-gradient-to-br from-primary/5 via-background to-background shadow-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Live shipments</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              In-transit consignments needing attention
-            </p>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Recent shipments</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Latest shipment activity
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/shipment")}
+              className="text-primary"
+            >
+              View all <ArrowUpRight className="h-4 w-4 ml-1" />
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             {liveShipments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No shipments in transit. Create one to start tracking.
-              </p>
+              <div className="text-center py-8 rounded-2xl border border-dashed border-border/60 bg-muted/10">
+                <Truck className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground mb-1">
+                  No recent shipments
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Create a shipment to start tracking
+                </p>
+              </div>
             ) : (
-              liveShipments.map((shipment, shipmentIdx) => (
-                <div
-                  key={`${shipment.id}-${shipmentIdx}`}
-                  className="rounded-2xl border border-border/70 bg-background/60 p-4"
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="font-semibold">{shipment.id}</div>
-                    <Badge variant="outline">
-                      {shipment.status.replace(/_/g, " ").toLowerCase()}
-                    </Badge>
+              liveShipments.map((shipment, shipmentIdx) => {
+                const segments = shipment.segments || [];
+                const lastSegment = segments[segments.length - 1];
+                const destination = lastSegment?.end_checkpoint || {};
+
+                return (
+                  <div
+                    key={`${shipment.id}-${shipmentIdx}`}
+                    className="group relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-background via-background to-muted/20 p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer"
+                    onClick={() => setSelectedShipment(shipment)}
+                  >
+                    {/* Status badge positioned top-right */}
+                    <div className="absolute top-4 right-4">
+                      <Badge
+                        variant="outline"
+                        className={`${
+                          shipment.status === "DELIVERED"
+                            ? "border-green-500/50 bg-green-500/10 text-green-700"
+                            : shipment.status === "IN_TRANSIT"
+                            ? "border-blue-500/50 bg-blue-500/10 text-blue-700"
+                            : shipment.status === "PENDING"
+                            ? "border-amber-500/50 bg-amber-500/10 text-amber-700"
+                            : "border-border/50 bg-muted/10"
+                        }`}
+                      >
+                        {shipment.status.replace(/_/g, " ").toLowerCase()}
+                      </Badge>
+                    </div>
+
+                    {/* Main content */}
+                    <div className="pr-24">
+                      {/* Shipment reference */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Truck className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-mono text-muted-foreground truncate">
+                            {shipment.id.substring(0, 8)}...
+                            {shipment.id.substring(shipment.id.length - 6)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Destination info */}
+                      <div className="mb-3">
+                        <p className="text-sm font-semibold text-foreground mb-1">
+                          {shipment.destinationName}
+                        </p>
+                        {destination.name && (
+                          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 text-primary flex-shrink-0" />
+                            <span>
+                              {destination.name}
+                              {destination.state && `, ${destination.state}`}
+                              {destination.country &&
+                                `, ${destination.country}`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Stats row */}
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <div className="h-2 w-2 rounded-full bg-primary/30" />
+                          <span>
+                            {segments.length}{" "}
+                            {segments.length === 1 ? "segment" : "segments"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <div className="h-2 w-2 rounded-full bg-secondary/30" />
+                          <span>
+                            {shipment.packageCount}{" "}
+                            {shipment.packageCount === 1
+                              ? "package"
+                              : "packages"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Timing info */}
+                      <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
+                            Created{" "}
+                            {new Date(shipment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {shipment.estimatedDelivery && (
+                          <div className="text-muted-foreground">
+                            ETA:{" "}
+                            {new Date(
+                              shipment.estimatedDelivery
+                            ).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Hover indicator */}
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5 text-primary" />
-                    Route checkpoints: {shipment.route?.length ?? 0}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    ETA:{" "}
-                    {shipment.estimatedDelivery
-                      ? new Date(shipment.estimatedDelivery).toLocaleString()
-                      : "Pending"}
-                  </p>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
 
-        <Card className="border border-border/60 bg-gradient-to-br from-secondary/5 via-background to-background shadow-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Active alerts</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Latest compliance signals across your network
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {activeAlerts.length === 0 ? (
+        {/* <Card className="border border-border/60 bg-gradient-to-br from-secondary/5 via-background to-background shadow-card">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                Active notifications
+                {activeAlerts.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {activeAlerts.length}
+                  </Badge>
+                )}
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                No open alerts right now.
+                Latest alerts and updates
               </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/alerts")}
+              className="text-secondary"
+            >
+              View all <ArrowUpRight className="h-4 w-4 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {activeAlerts.length === 0 ? (
+              <div className="text-center py-8 rounded-2xl border border-dashed border-border/60 bg-muted/10">
+                <CheckCircle2 className="h-12 w-12 mx-auto text-green-500/40 mb-3" />
+                <p className="text-sm font-medium text-foreground mb-1">
+                  All clear!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  No active notifications at the moment
+                </p>
+              </div>
             ) : (
-              activeAlerts.map((alert, alertIdx) => (
-                <div
-                  key={`${alert.id}-${alertIdx}`}
-                  className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 p-3"
-                >
-                  <span
-                    className={`mt-1 h-2.5 w-2.5 rounded-full ${alert.level === "CRITICAL"
-                      ? "bg-destructive"
-                      : alert.level === "WARN"
-                        ? "bg-amber-400"
-                        : "bg-secondary"
-                      }`}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{alert.message}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(alert.ts).toLocaleString()}
-                    </p>
+              activeAlerts.slice(0, 4).map((notification, notifIdx) => {
+                const severityConfig = {
+                  CRITICAL: {
+                    bg: "bg-red-500/10 border-red-500/30 hover:bg-red-500/20",
+                    icon: "bg-red-500",
+                    text: "text-red-700 dark:text-red-400",
+                    pulse: true,
+                  },
+                  ERROR: {
+                    bg: "bg-red-500/10 border-red-500/30 hover:bg-red-500/20",
+                    icon: "bg-red-500",
+                    text: "text-red-700 dark:text-red-400",
+                    pulse: false,
+                  },
+                  WARNING: {
+                    bg: "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20",
+                    icon: "bg-amber-400",
+                    text: "text-amber-700 dark:text-amber-400",
+                    pulse: false,
+                  },
+                  SUCCESS: {
+                    bg: "bg-green-500/10 border-green-500/30 hover:bg-green-500/20",
+                    icon: "bg-green-500",
+                    text: "text-green-700 dark:text-green-400",
+                    pulse: false,
+                  },
+                  INFO: {
+                    bg: "bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20",
+                    icon: "bg-blue-500",
+                    text: "text-blue-700 dark:text-blue-400",
+                    pulse: false,
+                  },
+                };
+
+                const config =
+                  severityConfig[notification.severity] || severityConfig.INFO;
+
+                return (
+                  <div
+                    key={`${notification.id}-${notifIdx}`}
+                    className={`group relative flex items-start gap-3 rounded-xl border ${config.bg} p-3 transition-all cursor-pointer`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      {config.pulse && (
+                        <span className="absolute flex h-3 w-3">
+                          <span
+                            className={`absolute inline-flex h-full w-full animate-ping rounded-full ${config.icon} opacity-75`}
+                          ></span>
+                        </span>
+                      )}
+                      <span
+                        className={`relative inline-flex h-2.5 w-2.5 mt-1 rounded-full ${config.icon}`}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className={`text-sm font-semibold ${config.text}`}>
+                          {notification.title}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0"
+                        >
+                          {notification.type}
+                        </Badge>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                        {notification.message}
+                      </p>
+
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {formatDistanceToNow(
+                            new Date(notification.timestamp),
+                            { addSuffix: true }
+                          )}
+                        </div>
+                        {notification.shipmentId && (
+                          <div className="flex items-center gap-1">
+                            <Truck className="h-3 w-3" />
+                            <span className="font-mono">
+                              {notification.shipmentId.substring(0, 8)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
-        </Card>
+        </Card> */}
+        
       </div>
+
+      {/* Shipment Details Dialog */}
+      <Dialog
+        open={!!selectedShipment}
+        onOpenChange={(open) => !open && setSelectedShipment(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Truck className="h-5 w-5 text-primary" />
+              Shipment Overview
+              {selectedShipment && (
+                <Badge
+                  variant="outline"
+                  className={`${
+                    selectedShipment.status === "DELIVERED"
+                      ? "border-green-500/50 bg-green-500/10 text-green-700"
+                      : selectedShipment.status === "IN_TRANSIT"
+                      ? "border-blue-500/50 bg-blue-500/10 text-blue-700"
+                      : selectedShipment.status === "PENDING"
+                      ? "border-amber-500/50 bg-amber-500/10 text-amber-700"
+                      : "border-border/50 bg-muted/10"
+                  }`}
+                >
+                  {selectedShipment.status.replace(/_/g, " ")}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedShipment && (
+                <span className="font-mono text-xs">
+                  ID: {selectedShipment.id}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedShipment && (
+            <div className="space-y-6 py-4">
+              {/* Progress */}
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <h3 className="font-semibold">Shipment Progress</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Delivery Progress
+                    </span>
+                    <span className="font-semibold text-primary">
+                      {selectedShipment.status === "DELIVERED"
+                        ? "100%"
+                        : selectedShipment.status === "IN_TRANSIT"
+                        ? "50%"
+                        : "0%"}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{
+                        width:
+                          selectedShipment.status === "DELIVERED"
+                            ? "100%"
+                            : selectedShipment.status === "IN_TRANSIT"
+                            ? "50%"
+                            : "0%",
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedShipment.segments?.length || 0} segments •{" "}
+                    {selectedShipment.packageCount}{" "}
+                    {selectedShipment.packageCount === 1
+                      ? "package"
+                      : "packages"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Destination */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/20 p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Destination
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="font-medium">
+                      {selectedShipment.destinationName}
+                    </p>
+                    {selectedShipment.segments?.[
+                      selectedShipment.segments.length - 1
+                    ]?.end_checkpoint && (
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>
+                          {
+                            selectedShipment.segments[
+                              selectedShipment.segments.length - 1
+                            ].end_checkpoint.location
+                          }
+                        </p>
+                        <p>
+                          {
+                            selectedShipment.segments[
+                              selectedShipment.segments.length - 1
+                            ].end_checkpoint.state
+                          }
+                          {selectedShipment.segments[
+                            selectedShipment.segments.length - 1
+                          ].end_checkpoint.country &&
+                            `, ${
+                              selectedShipment.segments[
+                                selectedShipment.segments.length - 1
+                              ].end_checkpoint.country
+                            }`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/20 p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-secondary" />
+                    Timeline
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created:</span>
+                      <span className="font-medium">
+                        {new Date(
+                          selectedShipment.createdAt
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {selectedShipment.estimatedDelivery && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">ETA:</span>
+                        <span className="font-medium">
+                          {new Date(
+                            selectedShipment.estimatedDelivery
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Route Segments */}
+              {selectedShipment.segments &&
+                selectedShipment.segments.length > 0 && (
+                  <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <h3 className="font-semibold mb-3">Route Segments</h3>
+                    <div className="space-y-3">
+                      {selectedShipment.segments.map(
+                        (segment: any, idx: number) => (
+                          <div
+                            key={segment.segment_id}
+                            className="flex items-start gap-3 pb-3 border-b border-border/40 last:border-0 last:pb-0"
+                          >
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium">
+                                  {segment.start_checkpoint.name}
+                                </p>
+                                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
+                                <p className="text-sm font-medium">
+                                  {segment.end_checkpoint.name}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>
+                                  {segment.start_checkpoint.state},{" "}
+                                  {segment.start_checkpoint.country}
+                                </span>
+                                <span>→</span>
+                                <span>
+                                  {segment.end_checkpoint.state},{" "}
+                                  {segment.end_checkpoint.country}
+                                </span>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {segment.status}
+                            </Badge>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedShipment(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedShipment(null);
+                navigate("/shipment");
+              }}
+            >
+              View Full Details
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -356,12 +817,12 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
   const stateOptions =
     selectedCountry === "ALL"
       ? Array.from(
-        new Set(
-          pendingShipments.map(
-            (shipment) => deriveShipmentLocation(shipment).state ?? "Unknown"
+          new Set(
+            pendingShipments.map(
+              (shipment) => deriveShipmentLocation(shipment).state ?? "Unknown"
+            )
           )
-        )
-      ).sort()
+        ).sort()
       : locationMetadata.statesByCountry.get(selectedCountry) ?? [];
 
   const quickAcceptMatches = useMemo(() => {
@@ -516,8 +977,8 @@ const SupplierDashboard = ({ alerts, navigate }: SupplierDashboardProps) => {
                 const location = deriveShipmentLocation(shipment);
                 const etaText = shipment.expectedArrival
                   ? formatDistanceToNow(new Date(shipment.expectedArrival), {
-                    addSuffix: true,
-                  })
+                      addSuffix: true,
+                    })
                   : "ETA unavailable";
                 const segmentIdentifier = getSegmentReference(shipment);
                 return (
