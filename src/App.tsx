@@ -29,7 +29,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const { user, role } = useAppStore();
-  const userRole = user?.role || role;
+  const userRole = role || user?.role;
 
   return (
     <QueryClientProvider client={queryClient}>

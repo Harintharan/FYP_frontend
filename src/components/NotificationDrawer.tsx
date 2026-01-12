@@ -375,7 +375,7 @@ function NotificationDetail({
               {notification.shipmentId && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Shipment ID
+                    📦 Shipment ID
                   </p>
                   <p className="text-sm font-mono mt-1 break-all">
                     {notification.shipmentId.substring(0, 20)}...
@@ -425,12 +425,63 @@ function NotificationDetail({
                 </div>
               )}
 
-              {metadata.supplier_name && (
+              {metadata.breach_time && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Supplier
+                    Breach Time
                   </p>
-                  <p className="text-sm mt-1">{metadata.supplier_name}</p>
+                  <p className="text-sm mt-1">
+                    {new Date(metadata.breach_time).toLocaleString("en-US", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </p>
+                </div>
+              )}
+
+              {metadata.allowed_range && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Allowed Range
+                  </p>
+                  <p className="text-sm mt-1">{metadata.allowed_range}</p>
+                </div>
+              )}
+
+              {metadata.location_latitude && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Latitude
+                  </p>
+                  <p className="text-sm mt-1 font-mono">
+                    {parseFloat(metadata.location_latitude).toFixed(4)}
+                  </p>
+                </div>
+              )}
+
+              {metadata.location_longitude && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Longitude
+                  </p>
+                  <p className="text-sm mt-1 font-mono">
+                    {parseFloat(metadata.location_longitude).toFixed(4)}
+                  </p>
+                </div>
+              )}
+
+              {metadata.location_latitude && metadata.location_longitude && (
+                <div className="col-span-2">
+                  <a
+                    href={`https://www.google.com/maps?q=${parseFloat(
+                      metadata.location_latitude
+                    )},${parseFloat(metadata.location_longitude)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    View on Google Maps →
+                  </a>
                 </div>
               )}
             </div>

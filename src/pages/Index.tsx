@@ -67,8 +67,8 @@ const Index = () => {
 
   // Initialize mock data (for demo)
   useEffect(() => {
-    if (!user) {
-      setUser(mockUsers[0]); // Default manufacturer
+    if (!user && !persistedRole) {
+      setUser(mockUsers[0]); // Default manufacturer (demo only)
     }
 
     if (products.length === 0) {
@@ -82,6 +82,7 @@ const Index = () => {
     }
   }, [
     user,
+    persistedRole,
     products.length,
     shipments.length,
     setUser,
@@ -210,9 +211,6 @@ const ManufacturerDashboard = ({
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button className="gap-2">
-                Open Operations Center <ArrowUpRight className="h-4 w-4" />
-              </Button>
               <Button variant="outline" onClick={() => navigate("/qr-scan")}>
                 Scan QR
               </Button>

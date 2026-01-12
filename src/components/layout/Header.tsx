@@ -1,6 +1,5 @@
 import {
   Bell,
-  Settings,
   User,
   Package,
   Truck,
@@ -31,8 +30,8 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
     navigate("/login");
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
+  const getRoleIcon = (roleName: string) => {
+    switch (roleName) {
       case "MANUFACTURER":
         return Package;
       case "TRANSPORTER":
@@ -50,7 +49,8 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
     }
   };
 
-  const RoleIcon = user ? getRoleIcon(user.role) : User;
+  const userRole = role || user?.role;
+  const RoleIcon = userRole ? getRoleIcon(userRole) : User;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -87,14 +87,14 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-2 md:space-x-3">
-          {user && (
+          {userRole && (
             <div className="flex items-center space-x-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 shadow-sm hover:shadow-md transition-all">
               <div className="p-1 rounded-md bg-primary/10">
                 <RoleIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
               </div>
               {!isMobile && (
                 <div className="text-sm">
-                  <p className="font-semibold text-xs">{role || "User"}</p>
+                  <p className="font-semibold text-xs">{userRole || "User"}</p>
                 </div>
               )}
             </div>
@@ -102,16 +102,6 @@ export function Header({ onMenuClick, isMobile = false }: HeaderProps) {
 
           {/* Real-time Notifications */}
           <NotificationBell />
-
-          {!isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hover:bg-primary/10 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          )}
 
           <Button
             variant="ghost"

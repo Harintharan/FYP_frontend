@@ -12,7 +12,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useHandoverSharedContext, useManufacturerContext } from "../context";
-import { EditShipmentButton } from "./EditShipmentButton";
 import { ViewShipmentButton } from "./ViewShipmentButton";
 import type { ManufacturerShipmentRecord } from "../types";
 import { formatDistanceToNow } from "date-fns";
@@ -231,10 +230,6 @@ export function ManufacturerShipmentsSection() {
                                   <div className="flex gap-2">
                                     <ViewShipmentButton
                                       shipmentId={String(shipment.id)}
-                                    />
-                                    <EditShipmentButton
-                                      shipment={shipment}
-                                      onUpdated={onShipmentsUpdated}
                                     />
                                   </div>
                                 </div>

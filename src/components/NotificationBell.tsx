@@ -365,7 +365,7 @@ function NotificationDetailDialog({
                     notification.metadata.shipment_id) && (
                     <div className="space-y-1.5">
                       <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                        Shipment ID
+                        📦 Shipment ID
                       </span>
                       <div className="relative group cursor-pointer">
                         <p className="font-mono text-xs bg-gradient-to-br from-background to-muted/20 px-3 py-2.5 rounded-lg border-2 border-border/50 shadow-sm break-all select-all hover:border-primary/60 hover:shadow-md transition-all duration-200">
@@ -419,6 +419,54 @@ function NotificationDetailDialog({
                     </div>
                   )}
 
+                  {/* GPS Coordinates - Show if available */}
+                  {(notification.metadata.location_latitude ||
+                    notification.metadata.location_longitude) && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        {notification.metadata.location_latitude && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                              Latitude
+                            </span>
+                            <p className="text-sm font-semibold break-words leading-tight">
+                              {parseFloat(
+                                notification.metadata.location_latitude
+                              ).toFixed(4)}
+                            </p>
+                          </div>
+                        )}
+                        {notification.metadata.location_longitude && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                              Longitude
+                            </span>
+                            <p className="text-sm font-semibold break-words leading-tight">
+                              {parseFloat(
+                                notification.metadata.location_longitude
+                              ).toFixed(4)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {notification.metadata.location_latitude &&
+                        notification.metadata.location_longitude && (
+                          <a
+                            href={`https://www.google.com/maps?q=${parseFloat(
+                              notification.metadata.location_latitude
+                            )},${parseFloat(
+                              notification.metadata.location_longitude
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline inline-block"
+                          >
+                            View on Google Maps →
+                          </a>
+                        )}
+                    </div>
+                  )}
+
                   {/* Other metadata in organized grid */}
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/30">
                     {/* Show start_checkpoint first */}
@@ -443,6 +491,17 @@ function NotificationDetailDialog({
                         </p>
                       </div>
                     )}
+                    {/* Show Allowed Range if available (temperature) */}
+                    {notification.metadata.allowed_range && (
+                      <div className="space-y-1">
+                        <span className="text-xs text-muted-foreground font-medium capitalize">
+                          Allowed Range
+                        </span>
+                        <p className="text-sm font-semibold break-words leading-tight">
+                          {notification.metadata.allowed_range}
+                        </p>
+                      </div>
+                    )}
                     {/* Show all other metadata */}
                     {Object.entries(notification.metadata)
                       .filter(
@@ -453,7 +512,12 @@ function NotificationDetailDialog({
                           key !== "manufacturer_name" &&
                           key !== "consumer_name" &&
                           key !== "start_checkpoint" &&
-                          key !== "end_checkpoint"
+                          key !== "end_checkpoint" &&
+                          key !== "location_latitude" &&
+                          key !== "location_longitude" &&
+                          key !== "allowed_range" &&
+                          key !== "breach_type" &&
+                          key !== "severity"
                       )
                       .map(([key, value]) => (
                         <div key={key} className="space-y-1">
@@ -479,8 +543,8 @@ function NotificationDetailDialog({
 function formatMetadataValue(key: string, value: any): string {
   if (value === null || value === undefined) return "N/A";
 
-  // Format dates
-  if (key.includes("date") || key.includes("at")) {
+  // Format dates and times
+  if (key.includes("date") || key.includes("time") || key.includes("at")) {
     try {
       return new Date(value).toLocaleString("en-US", {
         dateStyle: "medium",

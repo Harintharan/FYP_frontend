@@ -87,8 +87,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   PENDING: {
     label: "Pending",
     title: "Pending consignments",
-    description:
-      "Review shipment details and accept once contents are verified.",
+    description: "",
     loadingTitle: "Loading pending consignments",
     loadingDescription: "Fetching consignments awaiting your acceptance.",
     emptyTitle: "No pending consignments",
@@ -99,7 +98,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   ACCEPTED: {
     label: "Accepted",
     title: "Accepted consignments",
-    description: "Plan the next actions for consignments you have accepted.",
+    description: "",
     loadingTitle: "Loading accepted consignments",
     loadingDescription: "Fetching accepted consignments.",
     emptyTitle: "No accepted consignments",
@@ -111,7 +110,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   IN_TRANSIT: {
     label: "In transit",
     title: "In-transit consignments",
-    description: "Track consignments moving through logistics checkpoints.",
+    description: "",
     loadingTitle: "Loading in-transit consignments",
     loadingDescription: "Fetching consignments currently on the move.",
     emptyTitle: "No consignments in transit",
@@ -123,7 +122,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   DELIVERED: {
     label: "Delivered",
     title: "Delivered consignments",
-    description: "Confirm deliveries as they arrive at their destinations.",
+    description: "",
     loadingTitle: "Loading delivered consignments",
     loadingDescription: "Fetching consignments marked as delivered.",
     emptyTitle: "No delivered consignments",
@@ -135,7 +134,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   CLOSED: {
     label: "Closed",
     title: "Closed consignments",
-    description: "Review closed consignments and download records when needed.",
+    description: "",
     loadingTitle: "Loading closed consignments",
     loadingDescription: "Fetching consignments that have been closed.",
     emptyTitle: "No closed consignments",
@@ -146,7 +145,7 @@ const STATUS_CONFIG: Record<SupplierShipmentStatus, StatusConfig> = {
   CANCELLED: {
     label: "Cancelled",
     title: "Cancelled consignments",
-    description: "Review consignments that were cancelled or rejected.",
+    description: "",
     loadingTitle: "Loading cancelled consignments",
     loadingDescription: "Fetching consignments that were cancelled.",
     emptyTitle: "No cancelled consignments",
@@ -462,9 +461,7 @@ function SupplierSectionFilters({
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground sm:justify-end">
-        <span className="max-w-xs">
-          Filters supplier consignments across all tabs by logistics area.
-        </span>
+        <span className="max-w-xs"></span>
         {hasAreaFilter && (
           <Button variant="ghost" size="sm" onClick={() => setAreaQuery("")}>
             Clear
@@ -935,9 +932,11 @@ function SupplierSectionHeader({
   description,
 }: SupplierSectionHeaderProps) {
   return (
-    <div className="space-y-1">
+    <div className="mb-3 space-y-1">
       <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      {description ? (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      ) : null}
     </div>
   );
 }
