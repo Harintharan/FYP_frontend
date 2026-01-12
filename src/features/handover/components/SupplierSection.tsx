@@ -311,14 +311,19 @@ export function SupplierSection() {
   const visibleStatusOrder = supplier.statusOrder.filter(
     (status) => status !== "CLOSED" && status !== "CANCELLED"
   );
-  const activeTab = visibleStatusOrder.includes(supplier.activeStatus)
+  const activeTab = (visibleStatusOrder as SupplierShipmentStatus[]).includes(
+    supplier.activeStatus
+  )
     ? supplier.activeStatus
     : visibleStatusOrder[0];
 
+  // Always call hooks at the top level, not conditionally
   useEffect(() => {
     if (
       visibleStatusOrder.length > 0 &&
-      !visibleStatusOrder.includes(supplier.activeStatus)
+      !(visibleStatusOrder as SupplierShipmentStatus[]).includes(
+        supplier.activeStatus
+      )
     ) {
       supplier.setActiveStatus(visibleStatusOrder[0]);
     }
@@ -594,15 +599,17 @@ const SupplierShipmentActions = ({
     setAcceptingSegmentId,
   } = context;
   const queryClient = useQueryClient();
-  if (!supplier.enabled) return null;
   const segmentIdentifier = shipment.segmentId ?? shipment.id;
 
+  // Always call useQuery, but control fetching with 'enabled'
   const dialogOpen = acceptDialogSegmentId === segmentIdentifier;
   const { data: segmentDetail, isLoading: loadingSegmentDetail } = useQuery({
     queryKey: ["shipmentSegmentDetail", segmentIdentifier],
     queryFn: () => shipmentService.getSegmentById(segmentIdentifier),
     enabled: dialogOpen && Boolean(segmentIdentifier),
   });
+
+  if (!supplier.enabled) return null;
 
   const allowAction = (
     flag: keyof NonNullable<SupplierShipmentRecord["actions"]>
@@ -1156,12 +1163,12 @@ function LoaderIndicator() {
 
 function SupplierHandoverDialog() {
   const supplier = useSupplierContext();
+  const { showError } = useAppToast();
   const [handoverLocating, setHandoverLocating] = useState(false);
   const [handoverLocationError, setHandoverLocationError] = useState<
     string | null
   >(null);
 
-  if (!supplier.enabled) return null;
   const coordsMissing =
     supplier.handoverForm.latitude.trim().length === 0 ||
     supplier.handoverForm.longitude.trim().length === 0;
@@ -1197,6 +1204,7 @@ function SupplierHandoverDialog() {
   };
 
   useEffect(() => {
+    if (!supplier.enabled) return;
     if (supplier.handoverDialogOpen) {
       requestHandoverLocation();
     } else {
@@ -1204,7 +1212,9 @@ function SupplierHandoverDialog() {
       setHandoverLocating(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supplier.handoverDialogOpen]);
+  }, [supplier.handoverDialogOpen, supplier.enabled]);
+
+  if (!supplier.enabled) return null;
 
   return (
     <Dialog
