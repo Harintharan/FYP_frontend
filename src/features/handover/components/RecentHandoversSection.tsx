@@ -10,28 +10,28 @@ export function RecentHandoversSection() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent handovers</CardTitle>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-lg">Recent handovers</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2">
+      <CardContent className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 p-3 sm:p-6 pt-0 sm:pt-0">
         {recentHandovers.map((handover) => (
           <div
             key={handover.id}
-            className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm"
+            className="rounded-lg border border-border/60 bg-muted/20 p-3 sm:p-4 text-xs sm:text-sm"
           >
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-medium text-foreground">{handover.productName}</p>
-              <span className="text-xs text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
+              <p className="font-medium text-foreground truncate">{handover.productName}</p>
+              <span className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatDistanceToNow(handover.timestamp, { addSuffix: true })}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               From {handover.from.slice(0, 6)}… to {handover.to.slice(0, 6)}…
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               Checkpoint: {handover.checkpoint}
             </p>
-            <p className="mt-2 text-xs uppercase text-primary">{handover.status}</p>
+            <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs uppercase text-primary">{handover.status}</p>
           </div>
         ))}
       </CardContent>

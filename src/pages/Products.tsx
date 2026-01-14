@@ -88,58 +88,60 @@ export default function Products() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="mx-auto max-w-6xl px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-10 space-y-4 sm:space-y-6">
+        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Products</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Products</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Browse registered products, filter by category, and review
               handling requirements.
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleRefresh}>
+            <Button variant="outline" size="sm" className="sm:size-default" onClick={handleRefresh}>
               Refresh
             </Button>
             {user?.role === "MANUFACTURER" && (
               <Button
-                className="gap-2"
+                size="sm"
+                className="gap-2 sm:size-default"
                 onClick={() => navigate("/products/create")}
               >
-                <Plus className="h-4 w-4" />
-                Create Product
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Create Product</span>
+                <span className="sm:hidden">Create</span>
               </Button>
             )}
           </div>
         </div>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Filters</CardTitle>
+          <CardHeader className="p-3 sm:p-4 lg:p-6 pb-2">
+            <CardTitle className="text-sm sm:text-base">Filters</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0 grid gap-3 sm:gap-4 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label className="text-sm font-medium">Search</label>
+              <label className="text-xs sm:text-sm font-medium">Search</label>
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search by product name or category..."
-                className="mt-1"
+                className="mt-1 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Category</label>
+              <label className="text-xs sm:text-sm font-medium">Category</label>
               {loadingCategories ? (
-                <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading categories...
+                <div className="mt-2 flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                  Loading...
                 </div>
               ) : (
                 <Select
                   value={categorySelectValue}
                   onValueChange={handleCategoryFilterChange}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 text-sm">
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
@@ -158,34 +160,34 @@ export default function Products() {
 
         {loadingProducts ? (
           <Card>
-            <CardContent className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+            <CardContent className="flex items-center justify-center gap-2 py-8 sm:py-12 text-xs sm:text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading products...
             </CardContent>
           </Card>
         ) : filteredProducts.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
+            <CardContent className="py-8 sm:py-12 text-center text-xs sm:text-sm text-muted-foreground">
               {products.length === 0
                 ? "No products found. Create your first product to get started."
                 : "No products match your filters."}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product) => (
               <Card key={product.id} className="border border-border/60">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">
+                <CardHeader className="p-3 sm:p-4 pb-2">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg line-clamp-1">
                     {product.productName}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3 text-xs sm:text-sm">
                   <div>
-                    <p className="text-muted-foreground text-xs uppercase">
+                    <p className="text-muted-foreground text-[10px] sm:text-xs uppercase">
                       Category
                     </p>
-                    <p className="font-medium">
+                    <p className="font-medium truncate">
                       {product.productCategory?.name ??
                         product.productCategoryName ??
                         categoryLookup[product.productCategoryId] ??
@@ -194,7 +196,7 @@ export default function Products() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs uppercase">
                         Start Temp
                       </p>
                       <p className="font-medium">
@@ -202,7 +204,7 @@ export default function Products() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs uppercase">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs uppercase">
                         End Temp
                       </p>
                       <p className="font-medium">
@@ -211,10 +213,10 @@ export default function Products() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs uppercase">
+                    <p className="text-muted-foreground text-[10px] sm:text-xs uppercase">
                       Handling Instructions
                     </p>
-                    <p className="font-medium whitespace-pre-wrap">
+                    <p className="font-medium whitespace-pre-wrap line-clamp-2 sm:line-clamp-3">
                       {product.handlingInstructions ?? "-"}
                     </p>
                   </div>

@@ -80,59 +80,59 @@ const stats = [
 
 export default function Analytics() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Analytics Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Analytics Dashboard</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Comprehensive insights into vaccine distribution and cold chain
           performance
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {stats.map((stat) => (
           <Card key={stat.title}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-2">
-                <stat.icon className="h-5 w-5 text-muted-foreground" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                 <div
-                  className={`flex items-center gap-1 text-sm ${
+                  className={`flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm ${
                     stat.trend === "up" ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {stat.trend === "up" ? (
-                    <TrendingUp className="h-4 w-4" />
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   ) : (
-                    <TrendingDown className="h-4 w-4" />
+                    <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
                   )}
                   <span>{stat.change}</span>
                 </div>
               </div>
-              <p className="text-2xl font-bold mb-1">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-lg sm:text-2xl font-bold mb-0.5 sm:mb-1">{stat.value}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{stat.title}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="distribution" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="distribution">Distribution</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          <TabsTrigger value="vaccines">Vaccine Types</TabsTrigger>
+      <Tabs defaultValue="distribution" className="space-y-3 sm:space-y-4">
+        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
+          <TabsTrigger value="distribution" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Distribution</TabsTrigger>
+          <TabsTrigger value="compliance" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Compliance</TabsTrigger>
+          <TabsTrigger value="vaccines" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Vaccines</TabsTrigger>
         </TabsList>
 
         {/* Distribution Tab */}
-        <TabsContent value="distribution" className="space-y-4">
+        <TabsContent value="distribution" className="space-y-3 sm:space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Monthly Distribution & Compliance</CardTitle>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base lg:text-lg">Monthly Distribution & Compliance</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+            <CardContent className="p-2 sm:p-6 pt-0 sm:pt-0">
+              <ResponsiveContainer width="100%" height={280} className="sm:!h-[400px]">
                 <LineChart data={distributionData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
@@ -163,13 +163,13 @@ export default function Analytics() {
         </TabsContent>
 
         {/* Compliance Tab */}
-        <TabsContent value="compliance" className="space-y-4">
+        <TabsContent value="compliance" className="space-y-3 sm:space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Temperature Compliance Tracking</CardTitle>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-sm sm:text-base lg:text-lg">Temperature Compliance Tracking</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+            <CardContent className="p-2 sm:p-6 pt-0 sm:pt-0">
+              <ResponsiveContainer width="100%" height={280} className="sm:!h-[400px]">
                 <BarChart data={temperatureComplianceData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="week" />
@@ -193,22 +193,22 @@ export default function Analytics() {
         </TabsContent>
 
         {/* Vaccine Types Tab */}
-        <TabsContent value="vaccines" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="vaccines" className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Vaccine Distribution by Type</CardTitle>
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="text-sm sm:text-base lg:text-lg">Vaccine Distribution by Type</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
+              <CardContent className="p-2 sm:p-6 pt-0 sm:pt-0">
+                <ResponsiveContainer width="100%" height={280} className="sm:!h-[400px]">
                   <PieChart>
                     <Pie
                       data={vaccineTypeData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}%`}
-                      outerRadius={120}
+                      label={({ name, value }) => `${value}%`}
+                      outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -223,17 +223,17 @@ export default function Analytics() {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Vaccine Type Statistics</CardTitle>
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="text-sm sm:text-base lg:text-lg">Vaccine Type Statistics</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4">
                 {vaccineTypeData.map((vaccine) => (
-                  <div key={vaccine.name} className="space-y-2">
+                  <div key={vaccine.name} className="space-y-1.5 sm:space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{vaccine.name}</span>
-                      <span className="text-sm font-bold">{vaccine.value}%</span>
+                      <span className="text-xs sm:text-sm font-medium">{vaccine.name}</span>
+                      <span className="text-xs sm:text-sm font-bold">{vaccine.value}%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-1.5 sm:h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full transition-all"
                         style={{

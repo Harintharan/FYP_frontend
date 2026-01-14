@@ -377,77 +377,77 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Settings</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Configure your application preferences and connection settings
         </p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+          <CardHeader className="p-3 sm:p-4 lg:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
               User Profile
             </CardTitle>
             <Button
               variant="outline"
               size="sm"
-              className="gap-1"
+              className="gap-1 text-xs sm:text-sm h-7 sm:h-8 self-start sm:self-auto"
               onClick={handleOpenProfileDialog}
               disabled={isProfileLoading}
             >
-              <SettingsIcon className="h-4 w-4" />
+              <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Edit
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm">
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0 space-y-3 sm:space-y-4 text-xs sm:text-sm">
             {isProfileLoading ? (
               <p className="text-muted-foreground">
                 Loading profile information…
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <p className="text-muted-foreground">Organization</p>
-                  <p className="text-base font-medium">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Organization</p>
+                  <p className="text-sm sm:text-base font-medium truncate">
                     {registration?.identification.legalName || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Registration Type</p>
-                  <Badge variant="secondary" className="mt-1">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Registration Type</p>
+                  <Badge variant="secondary" className="mt-1 text-[10px] sm:text-xs">
                     {registration?.type || "N/A"}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Contact Person</p>
-                  <p className="text-base font-medium">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Contact Person</p>
+                  <p className="text-sm sm:text-base font-medium">
                     {registration?.contact.personName || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="text-base font-medium">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Email</p>
+                  <p className="text-sm sm:text-base font-medium truncate">
                     {registration?.contact.email || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Phone</p>
-                  <p className="text-base font-medium">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Phone</p>
+                  <p className="text-sm sm:text-base font-medium">
                     {registration?.contact.phone || "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Address</p>
-                  <p className="text-base font-medium">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs">Address</p>
+                  <p className="text-sm sm:text-base font-medium line-clamp-2">
                     {registration?.contact.address || "—"}
                   </p>
                 </div>
                 {user?.role && (
                   <div>
-                    <p className="text-muted-foreground">Role</p>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Role</p>
                     <Badge variant="outline" className="mt-1">
                       {user.role}
                     </Badge>
@@ -603,31 +603,31 @@ const Settings = () => {
           if (!open) handleCloseProfileDialog();
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle>Edit Registration Profile</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-4xl max-h-[90vh] rounded-xl sm:rounded-lg p-3 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-base sm:text-lg">Edit Registration Profile</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Update your organization information. Changes are saved to the
               registry.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="overflow-y-auto max-h-[calc(85vh-180px)] px-1">
-            <div className="space-y-6 py-2">
+          <div className="overflow-y-auto max-h-[calc(90vh-180px)] px-0.5 sm:px-1">
+            <div className="space-y-4 sm:space-y-6 py-2">
               {/* Essential Information Card */}
               <Card className="border-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Essential Information
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-legal-name"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Organization Name{" "}
                         <span className="text-red-500">*</span>
@@ -642,13 +642,13 @@ const Settings = () => {
                           )
                         }
                         placeholder="Acme Manufacturing Ltd."
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-type"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Registration Type{" "}
                         <span className="text-red-500">*</span>
@@ -663,16 +663,16 @@ const Settings = () => {
                           }))
                         }
                         placeholder="MANUFACTURER"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         e.g., MANUFACTURER, DISTRIBUTOR, RETAILER
                       </p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-contact-name"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Contact Person <span className="text-red-500">*</span>
                       </Label>
@@ -683,13 +683,13 @@ const Settings = () => {
                           updateContactField("personName", event.target.value)
                         }
                         placeholder="Jane Doe"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-email"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Email Address <span className="text-red-500">*</span>
                       </Label>
@@ -701,13 +701,13 @@ const Settings = () => {
                           updateContactField("email", event.target.value)
                         }
                         placeholder="jane.doe@company.com"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-phone"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Phone Number
                       </Label>
@@ -718,13 +718,13 @@ const Settings = () => {
                           updateContactField("phone", event.target.value)
                         }
                         placeholder="+94 77 123 4567"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-designation"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Job Title
                       </Label>
@@ -735,7 +735,7 @@ const Settings = () => {
                           updateContactField("designation", event.target.value)
                         }
                         placeholder="Supply Chain Director"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
                   </div>
@@ -744,18 +744,18 @@ const Settings = () => {
 
               {/* Company Details Card */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <SettingsIcon className="h-4 w-4" />
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                    <SettingsIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Company Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-business-reg"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Registration Number
                       </Label>
@@ -771,13 +771,13 @@ const Settings = () => {
                           )
                         }
                         placeholder="REG-2024-12345"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-country"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Country
                       </Label>
@@ -794,13 +794,13 @@ const Settings = () => {
                           )
                         }
                         placeholder="Sri Lanka"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
                       <Label
                         htmlFor="edit-address"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Business Address
                       </Label>
@@ -812,7 +812,7 @@ const Settings = () => {
                         }
                         placeholder="123 Industrial Park, Colombo 03"
                         rows={2}
-                        className="resize-none"
+                        className="resize-none text-sm"
                       />
                     </div>
                   </div>
@@ -821,17 +821,17 @@ const Settings = () => {
 
               {/* Products & Certifications Card */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="text-sm sm:text-base">
                     Products & Certifications
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-product-categories"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Product Categories
                       </Label>
@@ -849,16 +849,16 @@ const Settings = () => {
                         }
                         placeholder="Vaccines&#10;Medical Devices&#10;Pharmaceuticals"
                         rows={4}
-                        className="resize-none font-mono text-sm"
+                        className="resize-none font-mono text-xs sm:text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         One category per line
                       </p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-certifications"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Certifications
                       </Label>
@@ -875,9 +875,9 @@ const Settings = () => {
                         }
                         placeholder="ISO 9001:2015&#10;GMP Certified&#10;WHO Prequalified"
                         rows={4}
-                        className="resize-none font-mono text-sm"
+                        className="resize-none font-mono text-xs sm:text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         One certification per line
                       </p>
                     </div>
@@ -887,15 +887,15 @@ const Settings = () => {
 
               {/* Checkpoint Location Card */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Facility Location</CardTitle>
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="text-sm sm:text-base">Facility Location</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2 md:col-span-2">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
                       <Label
                         htmlFor="edit-checkpoint-name"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Facility Name
                       </Label>
@@ -906,13 +906,13 @@ const Settings = () => {
                           updateCheckpointField("name", event.target.value)
                         }
                         placeholder="Colombo Main Facility"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
                       <Label
                         htmlFor="edit-checkpoint-address"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Street Address
                       </Label>
@@ -924,13 +924,13 @@ const Settings = () => {
                         }
                         placeholder="456 Factory Road, Industrial Zone"
                         rows={2}
-                        className="resize-none"
+                        className="resize-none text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-checkpoint-state"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         State / Province
                       </Label>
@@ -941,13 +941,13 @@ const Settings = () => {
                           updateCheckpointField("state", event.target.value)
                         }
                         placeholder="Western Province"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-checkpoint-country"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Country
                       </Label>
@@ -958,13 +958,13 @@ const Settings = () => {
                           updateCheckpointField("country", event.target.value)
                         }
                         placeholder="Sri Lanka"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-checkpoint-latitude"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Latitude
                       </Label>
@@ -975,13 +975,13 @@ const Settings = () => {
                           updateCheckpointField("latitude", event.target.value)
                         }
                         placeholder="6.9271"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-checkpoint-longitude"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Longitude
                       </Label>
@@ -992,7 +992,7 @@ const Settings = () => {
                           updateCheckpointField("longitude", event.target.value)
                         }
                         placeholder="79.8612"
-                        className="h-10"
+                        className="h-9 sm:h-10 text-sm"
                       />
                     </div>
                   </div>
@@ -1001,17 +1001,17 @@ const Settings = () => {
 
               {/* Advanced: Blockchain Data Card */}
               <Card className="border-dashed">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-muted-foreground">
+                <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                  <CardTitle className="text-sm sm:text-base text-muted-foreground">
                     Advanced: Blockchain Data
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-identification-public-key"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Organization Public Key
                       </Label>
@@ -1025,13 +1025,13 @@ const Settings = () => {
                           )
                         }
                         placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-                        className="h-10 font-mono text-xs"
+                        className="h-9 sm:h-10 font-mono text-[10px] sm:text-xs"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <Label
                         htmlFor="edit-metadata-public-key"
-                        className="text-sm font-medium"
+                        className="text-xs sm:text-sm font-medium"
                       >
                         Metadata Public Key
                       </Label>
@@ -1042,14 +1042,14 @@ const Settings = () => {
                           updateMetadataField("publicKey", event.target.value)
                         }
                         placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-                        className="h-10 font-mono text-xs"
+                        className="h-9 sm:h-10 font-mono text-[10px] sm:text-xs"
                       />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-1.5 sm:space-y-2">
                         <Label
                           htmlFor="edit-smart-contract-role"
-                          className="text-sm font-medium"
+                          className="text-xs sm:text-sm font-medium"
                         >
                           Smart Contract Role
                         </Label>
@@ -1065,13 +1065,13 @@ const Settings = () => {
                             )
                           }
                           placeholder="MANUFACTURER"
-                          className="h-10"
+                          className="h-9 sm:h-10 text-sm"
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         <Label
                           htmlFor="edit-date-of-registration"
-                          className="text-sm font-medium"
+                          className="text-xs sm:text-sm font-medium"
                         >
                           Registration Date
                         </Label>
@@ -1090,7 +1090,7 @@ const Settings = () => {
                               event.target.value
                             )
                           }
-                          className="h-10"
+                          className="h-9 sm:h-10 text-sm"
                         />
                       </div>
                     </div>
@@ -1100,27 +1100,28 @@ const Settings = () => {
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2 sm:pt-4">
             <Button
               variant="outline"
               onClick={handleCloseProfileDialog}
               disabled={isProfileSaving}
+              className="w-full sm:w-auto order-2 sm:order-1 h-9 sm:h-10 text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveRegistration}
               disabled={isProfileSaving}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto order-1 sm:order-2 h-9 sm:h-10 text-sm"
             >
               {isProfileSaving ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
+                  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Save Changes
                 </>
               )}

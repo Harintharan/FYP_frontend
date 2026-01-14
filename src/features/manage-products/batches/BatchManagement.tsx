@@ -353,17 +353,17 @@ export function BatchManagement() {
 
     return (
       <div className="rounded-lg border border-border/60">
-        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
-          <Table className="min-w-full">
+        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <Table className="min-w-[700px] sm:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Batch</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Facility</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Production window</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs sm:text-sm">Batch</TableHead>
+                <TableHead className="text-xs sm:text-sm">Product</TableHead>
+                <TableHead className="text-xs sm:text-sm hidden md:table-cell">Facility</TableHead>
+                <TableHead className="text-xs sm:text-sm">Quantity</TableHead>
+                <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Production window</TableHead>
+                <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Expiry</TableHead>
+                <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -392,24 +392,25 @@ export function BatchManagement() {
                   : "Not specified";
                 return (
                   <TableRow key={batch.id}>
-                    <TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm font-medium">
                       {batch.batchCode || `Batch ${batch.id}`}
                     </TableCell>
-                    <TableCell>{productName}</TableCell>
-                    <TableCell>{batch.facility || "Not specified"}</TableCell>
-                    <TableCell>
-                      {batch.quantityProduced || "Not specified"}
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">{productName}</TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden md:table-cell">{batch.facility || "Not specified"}</TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
+                      {batch.quantityProduced || "N/A"}
                     </TableCell>
-                    <TableCell>{productionWindow}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden lg:table-cell">{productionWindow}</TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
                       {formatFriendlyDateTime(batch.expiryDate)}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setViewingBatch(batch)}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           View
                         </Button>
@@ -444,6 +445,7 @@ export function BatchManagement() {
                             });
                           }}
                           disabled={!manufacturerUUID}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           Edit
                         </Button>
@@ -460,16 +462,16 @@ export function BatchManagement() {
   };
 
   return (
-    <section className="space-y-6">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="space-y-4 sm:space-y-6">
+      <header className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Batches</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Batches</h2>
           {/* <p className="text-sm text-muted-foreground">
             Monitor production batches and connect them to downstream packages.
           </p> */}
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 lg:justify-end">
-          <div className="sm:w-64">
+        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center lg:justify-end">
+          <div className="w-full sm:w-64">
             <label htmlFor="batch-filter" className="sr-only">
               Search batches
             </label>
@@ -478,6 +480,7 @@ export function BatchManagement() {
               value={batchFilter}
               onChange={(event) => setBatchFilter(event.target.value)}
               placeholder="Search batches..."
+              className="h-9 sm:h-10 text-sm"
             />
           </div>
           <Button
@@ -485,7 +488,7 @@ export function BatchManagement() {
               setIsCreateDialogOpen(true);
               setCreateForm(emptyBatchForm(manufacturerUUID));
             }}
-            className="gap-2"
+            className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
             disabled={!manufacturerUUID}
           >
             <PlusCircle className="h-4 w-4" />
@@ -497,16 +500,16 @@ export function BatchManagement() {
       {renderBatches()}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Batch</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Batch</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Capture production details for traceability.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleCreateSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="batch-product" className="text-sm font-medium">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleCreateSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="batch-product" className="text-xs sm:text-sm font-medium">
                 Product
               </label>
               <Select
@@ -530,8 +533,8 @@ export function BatchManagement() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="batch-facility" className="text-sm font-medium">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="batch-facility" className="text-xs sm:text-sm font-medium">
                 Facility
               </label>
               <Input
@@ -544,12 +547,13 @@ export function BatchManagement() {
                     facility: event.target.value,
                   }))
                 }
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="batch-start" className="text-sm font-medium">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="batch-start" className="text-xs sm:text-sm font-medium">
                   Production start
                 </label>
                 <Input
@@ -562,10 +566,11 @@ export function BatchManagement() {
                       productionStartTime: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label htmlFor="batch-end" className="text-sm font-medium">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="batch-end" className="text-xs sm:text-sm font-medium">
                   Production end
                 </label>
                 <Input
@@ -578,13 +583,14 @@ export function BatchManagement() {
                       productionEndTime: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="batch-quantity" className="text-sm font-medium">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="batch-quantity" className="text-xs sm:text-sm font-medium">
                   Quantity produced
                 </label>
                 <Input
@@ -597,10 +603,11 @@ export function BatchManagement() {
                       quantityProduced: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label htmlFor="batch-expiry" className="text-sm font-medium">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="batch-expiry" className="text-xs sm:text-sm font-medium">
                   Expiry date
                 </label>
                 <Input
@@ -613,21 +620,23 @@ export function BatchManagement() {
                       expiryDate: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
@@ -644,18 +653,18 @@ export function BatchManagement() {
         open={Boolean(editingBatch)}
         onOpenChange={(open) => (!open ? setEditingBatch(null) : null)}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Edit Batch</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Batch</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Update production details for this batch.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
-            <div className="space-y-2">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleEditSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-batch-product"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Product
               </label>
@@ -678,10 +687,10 @@ export function BatchManagement() {
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-batch-facility"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Facility
               </label>
@@ -694,14 +703,15 @@ export function BatchManagement() {
                     facility: event.target.value,
                   }))
                 }
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="edit-batch-start"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Production start
                 </label>
@@ -715,10 +725,11 @@ export function BatchManagement() {
                       productionStartTime: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <label htmlFor="edit-batch-end" className="text-sm font-medium">
+              <div className="space-y-1.5 sm:space-y-2">
+                <label htmlFor="edit-batch-end" className="text-xs sm:text-sm font-medium">
                   Production end
                 </label>
                 <Input
@@ -731,15 +742,16 @@ export function BatchManagement() {
                       productionEndTime: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="edit-batch-quantity"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Quantity produced
                 </label>
@@ -752,12 +764,13 @@ export function BatchManagement() {
                       quantityProduced: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="edit-batch-expiry"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Expiry date
                 </label>
@@ -771,21 +784,23 @@ export function BatchManagement() {
                       expiryDate: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingBatch(null)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
@@ -802,15 +817,15 @@ export function BatchManagement() {
         open={Boolean(viewingBatch)}
         onOpenChange={(open) => (!open ? setViewingBatch(null) : null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl truncate">
               {viewingBatch?.batchCode || `Batch ${viewingBatch?.id}`}
             </DialogTitle>
-            <DialogDescription>Batch details</DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">Batch details</DialogDescription>
           </DialogHeader>
           {viewingBatch ? (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2.5 sm:space-y-3 text-xs sm:text-sm">
               <div>
                 <p className="text-muted-foreground">Product</p>
                 <p className="text-foreground">

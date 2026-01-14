@@ -115,7 +115,7 @@ export function DashboardStats({ dashboardData }: DashboardStatsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => {
         const Icon = stat.icon;
         const theme = statAccent[stat.key] ?? statAccent.total;
@@ -126,13 +126,13 @@ export function DashboardStats({ dashboardData }: DashboardStatsProps) {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-background/10 to-background/5" />
 
-            {/* Decorative elements */}
-            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
-            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-gradient-to-tl from-secondary/5 to-transparent opacity-50" />
+            {/* Decorative elements - hidden on small screens */}
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/5 to-transparent opacity-50 hidden sm:block" />
+            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-gradient-to-tl from-secondary/5 to-transparent opacity-50 hidden sm:block" />
 
-            <CardHeader className="relative flex flex-col gap-3 pb-3">
+            <CardHeader className="relative flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground line-clamp-1">
                   {stat.title}
                 </CardTitle>
                 {stat.trend === "alert" && stat.value > 0 && (
@@ -142,28 +142,28 @@ export function DashboardStats({ dashboardData }: DashboardStatsProps) {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <div
-                  className={`rounded-2xl p-3 ${theme.iconBg} shadow-inner transition-transform group-hover:scale-110`}
+                  className={`rounded-xl sm:rounded-2xl p-2 sm:p-3 ${theme.iconBg} shadow-inner transition-transform group-hover:scale-110`}
                 >
-                  <Icon className={`h-6 w-6 ${theme.iconColor}`} />
+                  <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${theme.iconColor}`} />
                 </div>
-                <div className="flex-1">
-                  <p className="text-3xl font-bold text-foreground tabular-nums">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tabular-nums">
                     {formatNumber(stat.value)}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                     {stat.subtext}
                   </p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="relative border-t border-dashed border-border/40 pt-3 pb-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-foreground">
+            <CardContent className="relative border-t border-dashed border-border/40 pt-2 sm:pt-3 pb-2 sm:pb-3 px-3 sm:px-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] sm:text-xs font-medium text-foreground truncate">
                   {stat.delta}
                 </p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                <p className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider flex-shrink-0">
                   Live
                 </p>
               </div>

@@ -70,18 +70,20 @@ export function ViewShipmentButton({
       <Button
         size="sm"
         variant="outline"
+        className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
         onClick={() => setOpen(true)}
         disabled={!shipmentId && !segmentId}
       >
         {isLoading ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Loading...
+            <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin mr-1.5 sm:mr-2" />
+            <span className="hidden sm:inline">Loading...</span>
+            <span className="sm:hidden">...</span>
           </>
         ) : (
           <>
-            <Eye className="h-4 w-4 mr-2" />
-            View
+            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">View</span>
           </>
         )}
       </Button>

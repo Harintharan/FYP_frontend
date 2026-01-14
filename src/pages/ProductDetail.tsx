@@ -97,34 +97,35 @@ const ProductDetail = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/products')}
-          className="gap-2"
+          className="gap-2 h-9 sm:h-10 text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Products
+          <span className="hidden sm:inline">Back to Products</span>
+          <span className="sm:hidden">Back</span>
         </Button>
       </div>
 
       {/* Product Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Shield className="h-5 w-5" />
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-lg">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
               Authenticity
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
+          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+            <div className="space-y-1.5 sm:space-y-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
                 ✓ Verified
               </Badge>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Product authenticity confirmed
               </p>
             </div>
@@ -132,21 +133,21 @@ const ProductDetail = () => {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="h-5 w-5" />
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-lg">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
               Current Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+            <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-2">
                 {getStatusIcon(product.status)}
-                <Badge variant="secondary" className={getStatusColor(product.status)}>
+                <Badge variant="secondary" className={`${getStatusColor(product.status)} text-xs`}>
                   {product.status}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {product.currentHolder ? 
                   `Holder: ${product.currentHolder.slice(0, 8)}...` : 
                   'No current holder'
@@ -157,21 +158,21 @@ const ProductDetail = () => {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Activity className="h-5 w-5" />
+          <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-lg">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
               Condition
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+            <div className="space-y-1.5 sm:space-y-2">
               <Badge 
                 variant={hasTemperatureAlerts ? "destructive" : "secondary"}
-                className={hasTemperatureAlerts ? "" : "bg-green-100 text-green-800"}
+                className={`text-xs ${hasTemperatureAlerts ? "" : "bg-green-100 text-green-800"}`}
               >
                 {hasTemperatureAlerts ? "⚠️ Alerts" : "✓ Good"}
               </Badge>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {hasTemperatureAlerts ? 
                   "Temperature alerts detected" : 
                   "All conditions normal"
@@ -184,19 +185,19 @@ const ProductDetail = () => {
 
       {/* Product Details */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
             <div>
-              <CardTitle className="text-2xl">{product.name}</CardTitle>
-              <p className="text-muted-foreground">Product ID: {product.id}</p>
+              <CardTitle className="text-lg sm:text-xl lg:text-2xl">{product.name}</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Product ID: {product.id}</p>
             </div>
-            <Badge variant="secondary" className={getStatusColor(product.status)}>
+            <Badge variant="secondary" className={`${getStatusColor(product.status)} text-xs self-start sm:self-auto`}>
               {product.status}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
             <div>
               <span className="font-medium">Batch Number:</span> {product.batchNumber}
             </div>
@@ -209,7 +210,7 @@ const ProductDetail = () => {
             <div>
               <span className="font-medium">Expiration Date:</span> {product.expirationDate}
             </div>
-            <div>
+            <div className="truncate">
               <span className="font-medium">Creator:</span> {product.creator.slice(0, 12)}...
             </div>
           </div>
@@ -217,48 +218,48 @@ const ProductDetail = () => {
       </Card>
 
       {/* Tabs for detailed information */}
-      <Tabs defaultValue="timeline" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
-          <TabsTrigger value="map">GPS Tracking</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+      <Tabs defaultValue="timeline" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10">
+          <TabsTrigger value="timeline" className="text-xs sm:text-sm">Timeline</TabsTrigger>
+          <TabsTrigger value="telemetry" className="text-xs sm:text-sm">Telemetry</TabsTrigger>
+          <TabsTrigger value="map" className="text-xs sm:text-sm"><span className="hidden sm:inline">GPS </span>Tracking</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs sm:text-sm">Documents</TabsTrigger>
         </TabsList>
 
         {/* Provenance Timeline */}
-        <TabsContent value="timeline" className="space-y-4">
+        <TabsContent value="timeline" className="space-y-3 sm:space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Provenance Timeline</CardTitle>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Provenance Timeline</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4">
                 {custodyEvents.map((event, index) => (
-                  <div key={index} className="flex gap-4 pb-4 border-b last:border-b-0">
+                  <div key={index} className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b last:border-b-0">
                     <div className="flex flex-col items-center">
-                      <div className="w-3 h-3 bg-primary rounded-full"></div>
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-primary rounded-full"></div>
                       {index < custodyEvents.length - 1 && (
-                        <div className="w-px h-12 bg-border mt-2"></div>
+                        <div className="w-px h-10 sm:h-12 bg-border mt-2"></div>
                       )}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0">
+                        <p className="font-medium text-sm">
                           {event.from ? 'Transfer' : 'Creation'}
                         </p>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
                           {new Date(event.ts).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {event.note}
                       </p>
                       {event.checkpoint && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] sm:text-xs">
                           {event.checkpoint}
                         </Badge>
                       )}
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
                         {event.from && (
                           <div>From: {event.from.slice(0, 8)}...</div>
                         )}
@@ -273,7 +274,7 @@ const ProductDetail = () => {
         </TabsContent>
 
         {/* Telemetry Charts */}
-        <TabsContent value="telemetry" className="space-y-4">
+        <TabsContent value="telemetry" className="space-y-3 sm:space-y-4">
           <TelemetryChart 
             data={productTelemetry}
             temperatureUnit={temperatureUnit}
@@ -281,23 +282,23 @@ const ProductDetail = () => {
           
           {/* Door Events */}
           <Card>
-            <CardHeader>
-              <CardTitle>Door Events</CardTitle>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Door Events</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
               {productTelemetry.filter(p => p.doorOpen !== undefined).length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm">
                   No door event data available
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {productTelemetry
                     .filter(p => p.doorOpen !== undefined)
                     .slice(-10)
                     .map((point, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span>{new Date(point.ts).toLocaleString()}</span>
-                        <Badge variant={point.doorOpen ? "destructive" : "secondary"}>
+                      <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="truncate">{new Date(point.ts).toLocaleString()}</span>
+                        <Badge variant={point.doorOpen ? "destructive" : "secondary"} className="text-xs ml-2">
                           {point.doorOpen ? "Door Opened" : "Door Closed"}
                         </Badge>
                       </div>
@@ -317,17 +318,17 @@ const ProductDetail = () => {
         {/* Documents */}
         <TabsContent value="documents">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                 Documents & Media
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No documents uploaded yet</p>
-                <p className="text-sm">Documents and media files will appear here</p>
+            <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+              <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm">No documents uploaded yet</p>
+                <p className="text-xs sm:text-sm">Documents and media files will appear here</p>
               </div>
             </CardContent>
           </Card>

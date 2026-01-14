@@ -1,16 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { AlertTable } from "@/components/AlertTable";
 
 export default function SupplierAlertsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <AlertTriangle className="h-8 w-8 text-destructive" />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
         <div>
-          <h1 className="text-3xl font-bold">Alerts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Alerts</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Monitor condition breaches during your shipment segments
           </p>
         </div>
@@ -18,13 +18,7 @@ export default function SupplierAlertsPage() {
 
       {/* Alerts Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Shipment Condition Breaches
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
           <AlertTable
             apiEndpoint="/api/alerts/supplier"
             columns={[

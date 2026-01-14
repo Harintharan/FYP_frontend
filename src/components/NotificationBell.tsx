@@ -80,13 +80,13 @@ export function NotificationBell() {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[420px] p-0 shadow-xl" align="end">
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg">Notifications</h3>
+        <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[420px] max-w-[420px] p-0 shadow-xl" align="end">
+          <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h3 className="font-semibold text-base sm:text-lg">Notifications</h3>
               {unreadCount > 0 && (
-                <Badge variant="secondary" className="ml-1">
+                <Badge variant="secondary" className="ml-1 text-xs">
                   {unreadCount} new
                 </Badge>
               )}
@@ -96,21 +96,21 @@ export function NotificationBell() {
                 variant="ghost"
                 size="sm"
                 onClick={handleMarkAllRead}
-                className="text-xs hover:bg-primary/10 gap-1"
+                className="text-xs hover:bg-primary/10 gap-1 h-7 sm:h-8 px-2 sm:px-3"
               >
                 <CheckCheck className="h-3 w-3" />
-                Mark all read
+                <span className="hidden sm:inline">Mark all read</span>
               </Button>
             )}
           </div>
-          <ScrollArea className="h-[480px]">
+          <ScrollArea className="h-[400px] sm:h-[480px]">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                <div className="rounded-full bg-muted p-4 mb-3">
-                  <Bell className="h-8 w-8" />
+              <div className="flex flex-col items-center justify-center h-32 sm:h-40 text-muted-foreground">
+                <div className="rounded-full bg-muted p-3 sm:p-4 mb-2 sm:mb-3">
+                  <Bell className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
-                <p className="text-sm font-medium">No notifications yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                <p className="text-xs sm:text-sm font-medium">No notifications yet</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground/70 mt-1">
                   You're all caught up!
                 </p>
               </div>
@@ -130,9 +130,9 @@ export function NotificationBell() {
             )}
           </ScrollArea>
           {!isConnected && (
-            <div className="px-4 py-2.5 bg-yellow-50 dark:bg-yellow-950 border-t border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+            <div className="px-3 sm:px-4 py-2 sm:py-2.5 bg-yellow-50 dark:bg-yellow-950 border-t border-yellow-200 dark:border-yellow-800 text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
               <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse" />
-              Reconnecting to notification server...
+              <span className="truncate">Reconnecting...</span>
             </div>
           )}
         </PopoverContent>
@@ -213,39 +213,39 @@ function NotificationItem({
   return (
     <div
       className={cn(
-        "px-4 py-3.5 hover:bg-accent/50 cursor-pointer transition-all duration-200 border-l-4",
+        "px-3 sm:px-4 py-2.5 sm:py-3.5 hover:bg-accent/50 cursor-pointer transition-all duration-200 border-l-4",
         !notification.read ? config.bgColor : "bg-muted/20",
         config.borderColor,
         notification.read && "opacity-60"
       )}
       onClick={onClick}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 sm:gap-3">
         {/* Severity Icon */}
         <div className={cn("flex-shrink-0 mt-0.5", config.iconColor)}>
-          <SeverityIcon className="h-5 w-5" />
+          <SeverityIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {!notification.read && (
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 animate-pulse" />
+              <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary flex-shrink-0 animate-pulse" />
             )}
-            <h4 className="font-semibold text-sm leading-tight flex-1">
+            <h4 className="font-semibold text-xs sm:text-sm leading-tight flex-1 line-clamp-1">
               {notification.title}
             </h4>
           </div>
 
-          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2 sm:line-clamp-3">
             {notification.message}
           </p>
 
-          <div className="flex items-center gap-2 pt-1">
-            <Badge className={cn("text-xs font-medium", config.badgeBg)}>
+          <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
+            <Badge className={cn("text-[10px] sm:text-xs font-medium", config.badgeBg)}>
               {notification.severity}
             </Badge>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
               <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/40" />
               {formatDistanceToNow(new Date(notification.createdAt), {
                 addSuffix: true,
@@ -262,9 +262,9 @@ function NotificationItem({
             e.stopPropagation();
             onDismiss();
           }}
-          className="flex-shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-destructive/10"
+          className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground hover:bg-destructive/10"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3 w-3 sm:h-4 sm:w-4" />
         </Button>
       </div>
     </div>
@@ -326,21 +326,21 @@ function NotificationDetailDialog({
 
   return (
     <Dialog open={!!notification} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2 sm:gap-3">
             <div className={cn("flex-shrink-0 mt-0.5", config.iconColor)}>
-              <SeverityIcon className="h-6 w-6" />
+              <SeverityIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div className="flex-1 space-y-2">
-              <DialogTitle className="text-xl">
+            <div className="flex-1 space-y-1.5 sm:space-y-2">
+              <DialogTitle className="text-base sm:text-xl">
                 {notification.title}
               </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Badge className={cn("text-xs font-medium", config.badgeBg)}>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <Badge className={cn("text-[10px] sm:text-xs font-medium", config.badgeBg)}>
                   {notification.severity}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(notification.createdAt), {
                     addSuffix: true,
                   })}
@@ -350,25 +350,25 @@ function NotificationDetailDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
-          <DialogDescription className="text-base leading-relaxed whitespace-pre-wrap">
+        <div className="space-y-3 sm:space-y-4 pt-2">
+          <DialogDescription className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
             {notification.message}
           </DialogDescription>
 
           {notification.metadata &&
             Object.keys(notification.metadata).length > 0 && (
-              <div className={cn("rounded-lg p-4 space-y-3", config.bgColor)}>
-                <h4 className="font-semibold text-sm">Additional Details</h4>
-                <div className="space-y-3">
+              <div className={cn("rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3", config.bgColor)}>
+                <h4 className="font-semibold text-xs sm:text-sm">Additional Details</h4>
+                <div className="space-y-2 sm:space-y-3">
                   {/* Shipment ID - Always show first if present */}
                   {(notification.shipmentId ||
                     notification.metadata.shipment_id) && (
-                    <div className="space-y-1.5">
-                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    <div className="space-y-1 sm:space-y-1.5">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">
                         📦 Shipment ID
                       </span>
                       <div className="relative group cursor-pointer">
-                        <p className="font-mono text-xs bg-gradient-to-br from-background to-muted/20 px-3 py-2.5 rounded-lg border-2 border-border/50 shadow-sm break-all select-all hover:border-primary/60 hover:shadow-md transition-all duration-200">
+                        <p className="font-mono text-[10px] sm:text-xs bg-gradient-to-br from-background to-muted/20 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg border-2 border-border/50 shadow-sm break-all select-all hover:border-primary/60 hover:shadow-md transition-all duration-200">
                           {notification.shipmentId ||
                             notification.metadata.shipment_id}
                         </p>
@@ -379,12 +379,12 @@ function NotificationDetailDialog({
 
                   {/* Segment ID - Show if present */}
                   {notification.segmentId && (
-                    <div className="space-y-1.5">
-                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    <div className="space-y-1 sm:space-y-1.5">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">
                         Segment ID
                       </span>
                       <div className="relative group cursor-pointer">
-                        <p className="font-mono text-xs bg-gradient-to-br from-background to-muted/20 px-3 py-2.5 rounded-lg border-2 border-border/50 shadow-sm break-all select-all hover:border-primary/60 hover:shadow-md transition-all duration-200">
+                        <p className="font-mono text-[10px] sm:text-xs bg-gradient-to-br from-background to-muted/20 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg border-2 border-border/50 shadow-sm break-all select-all hover:border-primary/60 hover:shadow-md transition-all duration-200">
                           {notification.segmentId}
                         </p>
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -395,23 +395,23 @@ function NotificationDetailDialog({
                   {/* Consumer and Manufacturer Names - Show separately if present */}
                   {(notification.metadata.consumer_name ||
                     notification.metadata.manufacturer_name) && (
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/30">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 pt-2 border-t border-border/30">
                       {notification.metadata.consumer_name && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-muted-foreground font-medium capitalize">
+                        <div className="space-y-0.5 sm:space-y-1">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                             Consumer Name
                           </span>
-                          <p className="text-sm font-semibold break-words leading-tight">
+                          <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                             {notification.metadata.consumer_name}
                           </p>
                         </div>
                       )}
                       {notification.metadata.manufacturer_name && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-muted-foreground font-medium capitalize">
+                        <div className="space-y-0.5 sm:space-y-1">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                             Manufacturer Name
                           </span>
-                          <p className="text-sm font-semibold break-words leading-tight">
+                          <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                             {notification.metadata.manufacturer_name}
                           </p>
                         </div>
@@ -422,14 +422,14 @@ function NotificationDetailDialog({
                   {/* GPS Coordinates - Show if available */}
                   {(notification.metadata.location_latitude ||
                     notification.metadata.location_longitude) && (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         {notification.metadata.location_latitude && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                          <div className="space-y-0.5 sm:space-y-1">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">
                               Latitude
                             </span>
-                            <p className="text-sm font-semibold break-words leading-tight">
+                            <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                               {parseFloat(
                                 notification.metadata.location_latitude
                               ).toFixed(4)}
@@ -437,11 +437,11 @@ function NotificationDetailDialog({
                           </div>
                         )}
                         {notification.metadata.location_longitude && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                          <div className="space-y-0.5 sm:space-y-1">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">
                               Longitude
                             </span>
-                            <p className="text-sm font-semibold break-words leading-tight">
+                            <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                               {parseFloat(
                                 notification.metadata.location_longitude
                               ).toFixed(4)}
@@ -459,7 +459,7 @@ function NotificationDetailDialog({
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline inline-block"
+                            className="text-[10px] sm:text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline inline-block"
                           >
                             View on Google Maps →
                           </a>
@@ -468,36 +468,36 @@ function NotificationDetailDialog({
                   )}
 
                   {/* Other metadata in organized grid */}
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/30">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 pt-2 border-t border-border/30">
                     {/* Show start_checkpoint first */}
                     {notification.metadata.start_checkpoint && (
-                      <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground font-medium capitalize">
+                      <div className="space-y-0.5 sm:space-y-1">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                           Start Checkpoint
                         </span>
-                        <p className="text-sm font-semibold break-words leading-tight">
+                        <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                           {notification.metadata.start_checkpoint}
                         </p>
                       </div>
                     )}
                     {/* Then show end_checkpoint */}
                     {notification.metadata.end_checkpoint && (
-                      <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground font-medium capitalize">
+                      <div className="space-y-0.5 sm:space-y-1">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                           End Checkpoint
                         </span>
-                        <p className="text-sm font-semibold break-words leading-tight">
+                        <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                           {notification.metadata.end_checkpoint}
                         </p>
                       </div>
                     )}
                     {/* Show Allowed Range if available (temperature) */}
                     {notification.metadata.allowed_range && (
-                      <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground font-medium capitalize">
+                      <div className="space-y-0.5 sm:space-y-1">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                           Allowed Range
                         </span>
-                        <p className="text-sm font-semibold break-words leading-tight">
+                        <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                           {notification.metadata.allowed_range}
                         </p>
                       </div>
@@ -520,11 +520,11 @@ function NotificationDetailDialog({
                           key !== "severity"
                       )
                       .map(([key, value]) => (
-                        <div key={key} className="space-y-1">
-                          <span className="text-xs text-muted-foreground font-medium capitalize">
+                        <div key={key} className="space-y-0.5 sm:space-y-1">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium capitalize">
                             {key.replace(/_/g, " ")}
                           </span>
-                          <p className="text-sm font-semibold break-words leading-tight">
+                          <p className="text-xs sm:text-sm font-semibold break-words leading-tight">
                             {formatMetadataValue(key, value)}
                           </p>
                         </div>

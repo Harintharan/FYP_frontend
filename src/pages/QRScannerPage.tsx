@@ -508,80 +508,80 @@ export default function QRScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -left-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 -right-40 w-64 sm:w-96 h-64 sm:h-96 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-64 sm:w-96 h-64 sm:h-96 bg-purple-500/10 rounded-full blur-3xl" />
       </div>
 
       {/* Main Content Container */}
       <div className="relative w-full max-w-3xl">
         {/* White Card Container */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 sm:p-12 space-y-8">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 md:p-12 space-y-4 sm:space-y-6 md:space-y-8">
           {/* Hero Section */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">
+          <div className="text-center space-y-2 sm:space-y-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-slate-900">
               Verify Package Status
             </h1>
-            <p className="text-base sm:text-lg text-slate-600 font-medium">
+            <p className="text-sm sm:text-base md:text-lg text-slate-600 font-medium">
               Scan QR codes to check shipment status
             </p>
           </div>
 
           {/* Scanner Card */}
           <Card className="border-0 bg-gradient-to-br from-blue-50 to-blue-100/50 shadow-md hover:shadow-lg transition-all duration-300">
-            <CardContent className="pt-6 pb-6">
+            <CardContent className="p-4 sm:pt-6 sm:pb-6">
               {/* Primary Action Button */}
               <Button
                 size="lg"
-                className="w-full gap-3 h-16 text-lg font-bold shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-white"
+                className="w-full gap-2 sm:gap-3 h-12 sm:h-14 md:h-16 text-sm sm:text-base md:text-lg font-bold shadow-lg hover:shadow-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-white"
                 onClick={() => setScannerOpen(true)}
               >
-                <ScanLine className="h-6 w-6" />
+                <ScanLine className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span>Start Scanner</span>
               </Button>
             </CardContent>
           </Card>
 
           {/* Quick Steps */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="group rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/80 to-blue-100/50 hover:from-blue-100/80 hover:to-blue-150/60 p-6 transition-all duration-300 shadow-md hover:shadow-lg">
-              <div className="flex gap-4 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:shadow-lg transition-shadow">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="group rounded-xl sm:rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/80 to-blue-100/50 hover:from-blue-100/80 hover:to-blue-150/60 p-4 sm:p-6 transition-all duration-300 shadow-md hover:shadow-lg">
+              <div className="flex gap-3 sm:gap-4 items-start">
+                <div className="flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-md group-hover:shadow-lg transition-shadow">
                   1
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-bold text-slate-900">Scan QR</p>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">
+                  <p className="text-sm sm:text-base font-bold text-slate-900">Scan QR</p>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-1.5 leading-relaxed font-medium">
                     Point camera at label
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="group rounded-2xl border border-green-200 bg-gradient-to-br from-green-50/80 to-green-100/50 hover:from-green-100/80 hover:to-green-150/60 p-6 transition-all duration-300 shadow-md hover:shadow-lg">
-              <div className="flex gap-4 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:shadow-lg transition-shadow">
+            <div className="group rounded-xl sm:rounded-2xl border border-green-200 bg-gradient-to-br from-green-50/80 to-green-100/50 hover:from-green-100/80 hover:to-green-150/60 p-4 sm:p-6 transition-all duration-300 shadow-md hover:shadow-lg">
+              <div className="flex gap-3 sm:gap-4 items-start">
+                <div className="flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-md group-hover:shadow-lg transition-shadow">
                   2
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-bold text-slate-900">Verify</p>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">
+                  <p className="text-sm sm:text-base font-bold text-slate-900">Verify</p>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-1.5 leading-relaxed font-medium">
                     Instant verification
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="group rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/80 to-purple-100/50 hover:from-purple-100/80 hover:to-purple-150/60 p-6 transition-all duration-300 shadow-md hover:shadow-lg">
-              <div className="flex gap-4 items-start">
-                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:shadow-lg transition-shadow">
+            <div className="group rounded-xl sm:rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50/80 to-purple-100/50 hover:from-purple-100/80 hover:to-purple-150/60 p-4 sm:p-6 transition-all duration-300 shadow-md hover:shadow-lg">
+              <div className="flex gap-3 sm:gap-4 items-start">
+                <div className="flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-md group-hover:shadow-lg transition-shadow">
                   3
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-bold text-slate-900">Export</p>
-                  <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-medium">
+                  <p className="text-sm sm:text-base font-bold text-slate-900">Export</p>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1 sm:mt-1.5 leading-relaxed font-medium">
                     Download as PDF
                   </p>
                 </div>
@@ -600,57 +600,57 @@ export default function QRScannerPage() {
       ) : null}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="mx-2 w-full sm:max-w-2xl lg:max-w-4xl max-h-[85vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl p-3 sm:p-6">
           {isSubmitting ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-12">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <div className="text-center space-y-2">
-                <p className="font-medium">Verifying Package</p>
-                <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 py-8 sm:py-12">
+              <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 animate-spin text-primary" />
+              <div className="text-center space-y-1 sm:space-y-2">
+                <p className="font-medium text-sm sm:text-base">Verifying Package</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Checking blockchain and shipment data...
                 </p>
               </div>
             </div>
           ) : submissionError ? (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 flex flex-col gap-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 sm:p-6 flex flex-col gap-3 sm:gap-4">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-destructive">
+                  <p className="font-semibold text-destructive text-sm sm:text-base">
                     Verification Failed
                   </p>
-                  <p className="text-sm text-destructive/90 mt-1">
+                  <p className="text-xs sm:text-sm text-destructive/90 mt-1">
                     {submissionError}
                   </p>
                 </div>
               </div>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full text-sm"
                 onClick={() => handleDialogChange(false)}
               >
                 Try Again
               </Button>
             </div>
           ) : statusResult ? (
-            <div ref={printRef} className="space-y-4">
+            <div ref={printRef} className="space-y-3 sm:space-y-4">
               <PackageStatusDisplay data={statusResult} />
-              <div className="flex gap-2 pt-4">
+              <div className="flex flex-col sm:flex-row gap-2 pt-3 sm:pt-4">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 text-sm h-9 sm:h-10"
                   onClick={() => handleDialogChange(false)}
                 >
                   Close
                 </Button>
-                <Button className="flex-1" onClick={handleDownloadPdf}>
+                <Button className="flex-1 text-sm h-9 sm:h-10" onClick={handleDownloadPdf}>
                   Download PDF
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Scan a QR code to view verification details
               </p>
             </div>

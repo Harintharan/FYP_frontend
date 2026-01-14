@@ -255,14 +255,14 @@ export function ProductManagement() {
 
     return (
       <div className="rounded-lg border border-border/60">
-        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
-          <Table className="min-w-full">
+        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <Table className="min-w-[500px] sm:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Temperature range</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs sm:text-sm">Product</TableHead>
+                <TableHead className="text-xs sm:text-sm">Category</TableHead>
+                <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Temperature range</TableHead>
+                <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -277,22 +277,23 @@ export function ProductManagement() {
                     : "Not specified";
                 return (
                   <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="font-medium text-foreground">
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="font-medium text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                         {product.productName}
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
                         {product.handlingInstructions || "No handling notes"}
                       </p>
                     </TableCell>
-                    <TableCell>{categoryLabel}</TableCell>
-                    <TableCell>{tempLabel}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">{categoryLabel}</TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">{tempLabel}</TableCell>
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setViewingProduct(product)}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           View
                         </Button>
@@ -314,6 +315,7 @@ export function ProductManagement() {
                                 product.handlingInstructions ?? "",
                             });
                           }}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           Edit
                         </Button>
@@ -330,13 +332,13 @@ export function ProductManagement() {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-4 sm:space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Products</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Products</h2>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="sm:w-48">
+        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
+          <div className="w-full sm:w-48">
             <label htmlFor="product-search-filter" className="sr-only">
               Search products
             </label>
@@ -345,9 +347,10 @@ export function ProductManagement() {
               value={productSearch}
               onChange={(event) => setProductSearch(event.target.value)}
               placeholder="Search products..."
+              className="h-9 sm:h-10 text-sm"
             />
           </div>
-          <div className="sm:w-52">
+          <div className="w-full sm:w-52">
             <label htmlFor="product-category-filter" className="sr-only">
               Category filter
             </label>
@@ -356,7 +359,7 @@ export function ProductManagement() {
               onValueChange={setCategoryFilter}
               disabled={loadingCategories && categories.length === 0}
             >
-              <SelectTrigger id="product-category-filter">
+              <SelectTrigger id="product-category-filter" className="h-9 sm:h-10">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -369,7 +372,7 @@ export function ProductManagement() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto">
             <PlusCircle className="h-4 w-4" />
             Create Product
           </Button>
@@ -379,16 +382,16 @@ export function ProductManagement() {
       {renderProducts()}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Product</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Product</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Capture the critical handling details for your new product.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleCreateSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="product-name" className="text-sm font-medium">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleCreateSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="product-name" className="text-xs sm:text-sm font-medium">
                 Product name
               </label>
               <Input
@@ -402,10 +405,11 @@ export function ProductManagement() {
                   }))
                 }
                 required
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="product-category" className="text-sm font-medium">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="product-category" className="text-xs sm:text-sm font-medium">
                 Category
               </label>
               <Select
@@ -430,11 +434,11 @@ export function ProductManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="product-temp-start"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Required start temperature
                 </label>
@@ -448,12 +452,13 @@ export function ProductManagement() {
                       requiredStartTemp: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="product-temp-end"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Required end temperature
                 </label>
@@ -467,13 +472,14 @@ export function ProductManagement() {
                       requiredEndTemp: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="product-instructions"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Handling instructions
               </label>
@@ -487,19 +493,21 @@ export function ProductManagement() {
                     handlingInstructions: event.target.value,
                   }))
                 }
+                className="text-sm min-h-[80px] sm:min-h-[100px]"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
@@ -516,18 +524,18 @@ export function ProductManagement() {
         open={Boolean(editingProduct)}
         onOpenChange={(open) => (!open ? setEditingProduct(null) : null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Product</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Adjust product details to keep information accurate.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
-            <div className="space-y-2">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleEditSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-product-name"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Product name
               </label>
@@ -541,12 +549,13 @@ export function ProductManagement() {
                   }))
                 }
                 required
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-product-category"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Category
               </label>
@@ -572,11 +581,11 @@ export function ProductManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="edit-product-temp-start"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Required start temperature
                 </label>
@@ -589,12 +598,13 @@ export function ProductManagement() {
                       requiredStartTemp: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <label
                   htmlFor="edit-product-temp-end"
-                  className="text-sm font-medium"
+                  className="text-xs sm:text-sm font-medium"
                 >
                   Required end temperature
                 </label>
@@ -607,13 +617,14 @@ export function ProductManagement() {
                       requiredEndTemp: event.target.value,
                     }))
                   }
+                  className="h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-product-instructions"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Handling instructions
               </label>
@@ -626,19 +637,21 @@ export function ProductManagement() {
                     handlingInstructions: event.target.value,
                   }))
                 }
+                className="text-sm min-h-[80px] sm:min-h-[100px]"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingProduct(null)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
@@ -655,14 +668,14 @@ export function ProductManagement() {
         open={Boolean(viewingProduct)}
         onOpenChange={(open) => (!open ? setViewingProduct(null) : null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{viewingProduct?.productName}</DialogTitle>
-            <DialogDescription>Product details</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl truncate">{viewingProduct?.productName}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Product details</DialogDescription>
           </DialogHeader>
           {viewingProduct ? (
-            <div className="space-y-4">
-              <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid gap-2 sm:gap-3 text-xs sm:text-sm sm:grid-cols-2">
                 {[
                   {
                     label: "Category",
@@ -682,9 +695,9 @@ export function ProductManagement() {
                 ].map((detail) => (
                   <div
                     key={detail.label}
-                    className="rounded-lg border border-border/60 bg-background px-4 py-3"
+                    className="rounded-lg border border-border/60 bg-background px-3 sm:px-4 py-2.5 sm:py-3"
                   >
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {detail.label}
                     </p>
                     <p className="font-medium text-foreground">
@@ -694,8 +707,8 @@ export function ProductManagement() {
                 ))}
               </div>
 
-              <div className="rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-lg border border-border/60 bg-muted/40 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm">
+                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Handling instructions
                 </p>
                 <p className="text-foreground">
@@ -704,7 +717,7 @@ export function ProductManagement() {
                 </p>
               </div>
 
-              <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="grid gap-2 sm:gap-3 text-xs sm:text-sm sm:grid-cols-2">
                 {[
                   {
                     label: "Created",
@@ -717,9 +730,9 @@ export function ProductManagement() {
                 ].map((detail) => (
                   <div
                     key={detail.label}
-                    className="rounded-lg border border-border/60 bg-background px-4 py-3"
+                    className="rounded-lg border border-border/60 bg-background px-3 sm:px-4 py-2.5 sm:py-3"
                   >
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {detail.label}
                     </p>
                     <p className="font-medium text-foreground">

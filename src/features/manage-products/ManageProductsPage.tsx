@@ -37,7 +37,7 @@ export function ManageProductsPage() {
   }, [searchParams, role]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* <header className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Manage Products</h1>
         <p className="text-sm text-muted-foreground">
@@ -61,25 +61,25 @@ export function ManageProductsPage() {
 
         <TabsContent
           value="packages"
-          className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+          className="mt-4 sm:mt-6 focus-visible:outline-none focus-visible:ring-0"
         >
           <PackageManagement />
         </TabsContent>
         <TabsContent
           value="batches"
-          className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+          className="mt-4 sm:mt-6 focus-visible:outline-none focus-visible:ring-0"
         >
           <BatchManagement />
         </TabsContent>
         <TabsContent
           value="products"
-          className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+          className="mt-4 sm:mt-6 focus-visible:outline-none focus-visible:ring-0"
         >
           <ProductManagement />
         </TabsContent>
         <TabsContent
           value="categories"
-          className="mt-6 focus-visible:outline-none focus-visible:ring-0"
+          className="mt-4 sm:mt-6 focus-visible:outline-none focus-visible:ring-0"
         >
           <CategoryManagement />
         </TabsContent>

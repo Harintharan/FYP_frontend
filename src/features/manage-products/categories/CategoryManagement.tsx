@@ -197,34 +197,35 @@ export function CategoryManagement() {
     }
 
     return (
-      <div className="overflow-x-auto rounded-lg border border-border/60">
+      <div className="overflow-x-auto rounded-lg border border-border/60 -mx-3 sm:mx-0 px-3 sm:px-0">
         <div className="max-h-[60vh] overflow-y-auto">
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs sm:text-sm">Category</TableHead>
+                <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCategories.map((category) => (
                 <TableRow key={category.id}>
-                  <TableCell>
-                    <div className="font-medium text-foreground">
+                  <TableCell className="py-2 sm:py-4">
+                    <div className="font-medium text-foreground text-xs sm:text-sm">
                       {category.name}
                     </div>
                     {category.description ? (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-[10px] sm:text-sm text-muted-foreground truncate max-w-[150px] sm:max-w-none">
                         {category.description}
                       </p>
                     ) : null}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
+                  <TableCell className="py-2 sm:py-4">
+                    <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setViewingCategory(category)}
+                        className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                       >
                         View
                       </Button>
@@ -237,6 +238,7 @@ export function CategoryManagement() {
                             name: category.name ?? "",
                           });
                         }}
+                        className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                       >
                         Edit
                       </Button>
@@ -259,15 +261,15 @@ export function CategoryManagement() {
   ]);
 
   return (
-    <section className="space-y-6">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="space-y-4 sm:space-y-6">
+      <header className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
             Product Categories
           </h2>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 lg:justify-end">
-          <div className="sm:w-64">
+        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center lg:justify-end">
+          <div className="w-full sm:w-64">
             <label htmlFor="category-filter" className="sr-only">
               Search categories
             </label>
@@ -276,9 +278,10 @@ export function CategoryManagement() {
               value={categorySearch}
               onChange={(event) => setCategorySearch(event.target.value)}
               placeholder="Search categories..."
+              className="h-9 sm:h-10 text-sm"
             />
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto">
             <PlusCircle className="h-4 w-4" />
             Create Category
           </Button>
@@ -288,16 +291,16 @@ export function CategoryManagement() {
       {tableContent}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Category</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Category</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Provide a clear name so your team can reuse this category.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleCreateSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="category-name" className="text-sm font-medium">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleCreateSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="category-name" className="text-xs sm:text-sm font-medium">
                 Name
               </label>
               <Input
@@ -311,20 +314,22 @@ export function CategoryManagement() {
                   }))
                 }
                 required
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 {createMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -340,15 +345,15 @@ export function CategoryManagement() {
         open={Boolean(editingCategory)}
         onOpenChange={(open) => (!open ? setEditingCategory(null) : null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Edit Category</DialogTitle>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
-            <div className="space-y-2">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleEditSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-category-name"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Name
               </label>
@@ -362,20 +367,22 @@ export function CategoryManagement() {
                   }))
                 }
                 required
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingCategory(null)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -391,19 +398,19 @@ export function CategoryManagement() {
         open={Boolean(viewingCategory)}
         onOpenChange={(open) => (!open ? setViewingCategory(null) : null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{viewingCategory?.name}</DialogTitle>
-            <DialogDescription>Category details</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl truncate">{viewingCategory?.name}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Category details</DialogDescription>
           </DialogHeader>
           {viewingCategory ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {viewingCategory.description ? (
-                <div className="rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-border/60 bg-muted/40 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-muted-foreground">
                   {viewingCategory.description}
                 </div>
               ) : null}
-              <div className="grid gap-3 text-sm">
+              <div className="grid gap-2 sm:gap-3 text-xs sm:text-sm">
                 {[
                   {
                     label: "Created",
@@ -416,7 +423,7 @@ export function CategoryManagement() {
                 ].map((detail) => (
                   <div
                     key={detail.label}
-                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3"
+                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-3 sm:px-4 py-2.5 sm:py-3"
                   >
                     <span className="text-muted-foreground">
                       {detail.label}

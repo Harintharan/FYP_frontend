@@ -267,28 +267,29 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
         <Input
-          placeholder="Search by Package ID or Segment/Shipment ID..."
+          placeholder="Search by Package ID..."
           value={searchTerm}
           onChange={handleSearch}
-          className="pl-10 py-6 text-base"
+          className="pl-9 sm:pl-10 py-4 sm:py-6 text-sm sm:text-base"
         />
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
           {error}
         </div>
       )}
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
-        <Table>
+      <div className="-mx-3 sm:mx-0 border sm:rounded-lg overflow-hidden shadow-sm bg-white">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[600px] sm:min-w-0">
           <TableHeader className="bg-gradient-to-r from-slate-100 to-slate-50 border-b">
             <TableRow className="hover:bg-transparent">
               {columns.includes("packageId") && (
@@ -518,14 +519,15 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
               ))
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && !loading && (
-        <div className="flex justify-center">
+        <div className="flex justify-center overflow-x-auto pb-2">
           <Pagination>
-            <PaginationContent>
+            <PaginationContent className="gap-0.5 sm:gap-1">
               {currentPage > 1 && (
                 <PaginationItem>
                   <PaginationPrevious
@@ -569,7 +571,7 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
 
       {/* Summary */}
       {!loading && alerts.length > 0 && (
-        <div className="text-xs text-slate-500 text-center bg-slate-50 rounded-lg py-3">
+        <div className="text-[10px] sm:text-xs text-slate-500 text-center bg-slate-50 rounded-lg py-2 sm:py-3">
           Page {currentPage} of {totalPages} | {alerts.length} alerts shown
         </div>
       )}
@@ -579,17 +581,17 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
         open={!!selectedAlert}
         onOpenChange={(open) => !open && setSelectedAlert(null)}
       >
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 bg-white rounded-2xl">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 bg-white rounded-xl sm:rounded-2xl">
           {selectedAlert && (
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* Alert Header with Description */}
-              <div className="mb-4">
-                <div className="flex items-start gap-3 mb-1">
-                  <div className="text-2xl flex-shrink-0">
+              <div className="mb-3 sm:mb-4">
+                <div className="flex items-start gap-2 sm:gap-3 mb-1">
+                  <div className="text-xl sm:text-2xl flex-shrink-0">
                     {selectedAlert.severity === "CRITICAL" ? "⚠️" : "🌡️"}
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-lg font-bold text-slate-900">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900">
                       {selectedAlert.alertType}
                     </h2>
                   </div>
@@ -597,7 +599,7 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
               </div>
 
               {/* Severity & Time */}
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
                 <Badge
                   variant={getSeverityColor(selectedAlert.severity)}
                   className={
@@ -624,22 +626,22 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
 
               {/* Additional Details Section */}
               <div
-                className={`rounded-xl p-4 space-y-3 ${getSeverityBgClass(
+                className={`rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3 ${getSeverityBgClass(
                   selectedAlert.severity
                 )}`}
               >
-                <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
                   <span>📋</span>
                   Additional Details
                 </h3>
 
                 {/* Package ID */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 uppercase">
+                  <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                     Package ID
                   </label>
                   <div className="flex items-center gap-2 mt-1">
-                    <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg border border-slate-300 flex-1 overflow-hidden text-slate-900">
+                    <code className="text-[10px] sm:text-xs font-mono bg-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-300 flex-1 overflow-hidden text-slate-900 truncate">
                       {selectedAlert.packageId}
                     </code>
                     <button
@@ -652,7 +654,7 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                       className="text-slate-400 hover:text-slate-600 flex-shrink-0"
                       title="Copy"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                   {copied === "detail-packageId" && (
@@ -665,11 +667,11 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                 {/* Shipment/Segment IDs - Full Width */}
                 {selectedAlert.shipmentId && (
                   <div>
-                    <label className="text-xs font-bold text-slate-600 uppercase">
+                    <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                       Shipment ID
                     </label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg border border-slate-300 flex-1 text-slate-900 break-words">
+                      <code className="text-[10px] sm:text-xs font-mono bg-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-300 flex-1 text-slate-900 break-all">
                         {selectedAlert.shipmentId}
                       </code>
                       <button
@@ -682,7 +684,7 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                         className="text-slate-400 hover:text-slate-600 flex-shrink-0"
                         title="Copy"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                     {copied === "detail-shipmentId" && (
@@ -694,11 +696,11 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                 )}
                 {selectedAlert.segmentId && (
                   <div>
-                    <label className="text-xs font-bold text-slate-600 uppercase">
+                    <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                       Segment ID
                     </label>
                     <div className="flex items-center gap-2 mt-1">
-                      <code className="text-xs font-mono bg-white px-3 py-2 rounded-lg border border-slate-300 flex-1 text-slate-900 break-words">
+                      <code className="text-[10px] sm:text-xs font-mono bg-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-300 flex-1 text-slate-900 break-all">
                         {selectedAlert.segmentId}
                       </code>
                       <button
@@ -711,7 +713,7 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                         className="text-slate-400 hover:text-slate-600 flex-shrink-0"
                         title="Copy"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                     {copied === "detail-segmentId" && (
@@ -724,19 +726,19 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
 
                 {/* Location - One Line */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 uppercase">
+                  <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                     Location
                   </label>
-                  <div className="flex items-center justify-between gap-2 mt-1">
-                    <div className="bg-white rounded-lg border border-slate-300 px-3 py-2 flex-1">
-                      <span className="text-xs text-slate-600">Latitude</span>
-                      <div className="text-xs font-mono font-bold text-slate-900">
+                  <div className="flex items-center justify-between gap-1.5 sm:gap-2 mt-1">
+                    <div className="bg-white rounded-lg border border-slate-300 px-2 sm:px-3 py-1.5 sm:py-2 flex-1 min-w-0">
+                      <span className="text-[10px] sm:text-xs text-slate-600">Lat</span>
+                      <div className="text-[10px] sm:text-xs font-mono font-bold text-slate-900 truncate">
                         {selectedAlert.location.latitude.toFixed(4)}
                       </div>
                     </div>
-                    <div className="bg-white rounded-lg border border-slate-300 px-3 py-2 flex-1">
-                      <span className="text-xs text-slate-600">Longitude</span>
-                      <div className="text-xs font-mono font-bold text-slate-900">
+                    <div className="bg-white rounded-lg border border-slate-300 px-2 sm:px-3 py-1.5 sm:py-2 flex-1 min-w-0">
+                      <span className="text-[10px] sm:text-xs text-slate-600">Long</span>
+                      <div className="text-[10px] sm:text-xs font-mono font-bold text-slate-900 truncate">
                         {selectedAlert.location.longitude.toFixed(4)}
                       </div>
                     </div>
@@ -744,10 +746,10 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                       href={`https://www.google.com/maps?q=${selectedAlert.location.latitude},${selectedAlert.location.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 flex-shrink-0"
+                      className="text-blue-600 hover:text-blue-700 flex-shrink-0 p-1.5 sm:p-2 bg-blue-50 rounded-lg"
                       title="View Map"
                     >
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                     </a>
                   </div>
                 </div>
@@ -756,17 +758,17 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                 {selectedAlert.alertType.includes("Temperature") &&
                   selectedAlert.expectedMinValue !== undefined &&
                   selectedAlert.expectedMaxValue !== undefined && (
-                    <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
-                      <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2 mb-3">
+                    <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 sm:p-4">
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2 mb-2 sm:mb-3">
                         <span>🌡️</span>
                         Temperature Measurement
                       </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white rounded-lg border-2 border-orange-200 p-3">
-                          <label className="text-xs font-bold text-orange-600 uppercase block mb-2">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        <div className="bg-white rounded-lg border-2 border-orange-200 p-2 sm:p-3">
+                          <label className="text-[10px] sm:text-xs font-bold text-orange-600 uppercase block mb-1 sm:mb-2">
                             Allowed Range
                           </label>
-                          <div className="text-base font-mono font-bold text-slate-900">
+                          <div className="text-sm sm:text-base font-mono font-bold text-slate-900">
                             {formatTemperature(selectedAlert.expectedMinValue)}°
                             -{" "}
                             {formatTemperature(selectedAlert.expectedMaxValue)}
@@ -774,11 +776,11 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                           </div>
                         </div>
                         {selectedAlert.measuredAvgValue !== undefined && (
-                          <div className="bg-red-50 rounded-lg border-2 border-red-300 p-3">
-                            <label className="text-xs font-bold text-red-600 uppercase block mb-2">
+                          <div className="bg-red-50 rounded-lg border-2 border-red-300 p-2 sm:p-3">
+                            <label className="text-[10px] sm:text-xs font-bold text-red-600 uppercase block mb-1 sm:mb-2">
                               Measured Value
                             </label>
-                            <div className="text-base font-mono font-bold text-red-700">
+                            <div className="text-sm sm:text-base font-mono font-bold text-red-700">
                               {formatTemperature(
                                 selectedAlert.measuredAvgValue
                               )}
@@ -792,21 +794,21 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
 
                 {/* Duration & Certainty */}
                 {selectedAlert.durationSeconds !== undefined && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-600 uppercase">
+                      <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                         Duration
                       </label>
-                      <div className="text-sm font-bold text-slate-900 mt-1 bg-white px-3 py-2 rounded-lg border border-slate-300 text-center">
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 mt-1 bg-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-300 text-center">
                         {formatDuration(selectedAlert.durationSeconds)}
                       </div>
                     </div>
                     {selectedAlert.breachCertainty && (
                       <div>
-                        <label className="text-xs font-bold text-slate-600 uppercase">
+                        <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase">
                           Certainty
                         </label>
-                        <div className="text-xs font-bold text-green-700 mt-1 bg-green-50 px-3 py-2 rounded-lg border border-green-300 text-center">
+                        <div className="text-[10px] sm:text-xs font-bold text-green-700 mt-1 bg-green-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-green-300 text-center">
                           ✓ {selectedAlert.breachCertainty}
                         </div>
                       </div>

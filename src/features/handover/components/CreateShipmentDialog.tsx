@@ -613,18 +613,18 @@ export function CreateShipmentDialog() {
   return (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 shadow-md hover:shadow-lg transition-all">
+        <Button className="gap-2 shadow-md hover:shadow-lg transition-all h-9 sm:h-10 text-sm w-full sm:w-auto">
           <Plus className="w-4 h-4" />
           New Shipment
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <TruckIcon className="w-6 h-6 text-primary" />
+      <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col rounded-xl sm:rounded-lg p-3 sm:p-6">
+        <DialogHeader className="pb-3 sm:pb-4 border-b">
+          <DialogTitle className="text-lg sm:text-2xl flex items-center gap-2">
+            <TruckIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             Create Shipment
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-1">
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
             Configure your shipment route, select packages, and define
             checkpoint legs
           </DialogDescription>
@@ -632,17 +632,17 @@ export function CreateShipmentDialog() {
 
         <form
           onSubmit={handleCreateShipment}
-          className="flex-1 overflow-y-auto space-y-6 py-4 px-1"
+          className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-3 sm:py-4 px-0.5 sm:px-1"
         >
           {/* Destination Party Section */}
-          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              <label className="text-sm font-semibold">
+          <div className="space-y-2 sm:space-y-3 rounded-lg border border-border/60 p-3 sm:p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <label className="text-xs sm:text-sm font-semibold">
                 Destination Party (Consumer)
               </label>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
               Select the consumer checkpoint where this shipment will be
               delivered
             </p>
@@ -650,7 +650,7 @@ export function CreateShipmentDialog() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between border-2 rounded-lg px-4 py-3.5 bg-background text-left text-sm hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-h-[48px] shadow-sm"
+                  className="w-full flex items-center justify-between border-2 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3.5 bg-background text-left text-xs sm:text-sm hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all min-h-[44px] sm:min-h-[48px] shadow-sm"
                   onClick={() => setDestPopoverOpen((v) => !v)}
                 >
                   <span
@@ -746,25 +746,25 @@ export function CreateShipmentDialog() {
           </div>
 
           {/* Packages Section */}
-          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="w-5 h-5 text-primary" />
-              <p className="text-sm font-semibold">Select Packages</p>
+          <div className="space-y-2 sm:space-y-3 rounded-lg border border-border/60 p-3 sm:p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <p className="text-xs sm:text-sm font-semibold">Select Packages</p>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
               Choose the package UUIDs that should be included in this shipment
             </p>
 
             {loadingManufacturerPackages ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
-                <Loader2 className="w-5 h-5 animate-spin" />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm py-3 sm:py-4 justify-center">
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 Loading packages...
               </div>
             ) : availablePackages.length === 0 ? (
-              <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+              <div className="p-3 sm:p-4 rounded-lg bg-muted/30 border border-dashed">
                 <div className="flex items-start gap-2 text-muted-foreground">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     No registered packages found for this manufacturer. Register
                     packages before creating a shipment.
                   </p>
@@ -772,7 +772,7 @@ export function CreateShipmentDialog() {
               </div>
             ) : (
               <>
-                <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+                <div className="max-h-52 sm:max-h-64 overflow-y-auto space-y-2 pr-1 sm:pr-2">
                   {availablePackages.map((pkg) => {
                     const rawId = pkg.package_uuid ?? pkg.id;
                     if (!rawId) return null;
@@ -791,35 +791,35 @@ export function CreateShipmentDialog() {
                     return (
                       <div
                         key={packageId}
-                        className={`flex items-start justify-between gap-3 rounded-lg border-2 px-4 py-3 text-sm transition-all cursor-pointer group ${
+                        className={`flex items-start justify-between gap-2 sm:gap-3 rounded-lg border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-all cursor-pointer group ${
                           isSelected
                             ? "bg-primary/10 border-primary shadow-md scale-[1.01]"
                             : "bg-background border-border/60 hover:bg-accent/50 hover:border-border hover:shadow-sm"
                         }`}
                         aria-pressed={isSelected}
                       >
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                           <Package
-                            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                            className={`w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0 ${
                               isSelected
                                 ? "text-primary"
                                 : "text-muted-foreground"
                             }`}
                           />
-                          <div className="flex flex-col gap-1 flex-1 min-w-0">
-                            <span className="font-semibold text-foreground leading-tight">
+                          <div className="flex flex-col gap-0.5 sm:gap-1 flex-1 min-w-0">
+                            <span className="font-semibold text-foreground leading-tight text-xs sm:text-sm">
                               {label}
                             </span>
-                            <span className="text-xs text-muted-foreground font-mono">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">
                               {packageId.slice(0, 12)}...{packageId.slice(-6)}
                             </span>
                             {productName && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
                                 <span className="font-medium">Product:</span>{" "}
                                 {productName}
                               </span>
                             )}
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">
                               <span className="font-medium">Available:</span>{" "}
                               <span
                                 className={`font-semibold ${
@@ -837,7 +837,7 @@ export function CreateShipmentDialog() {
                             togglePackageSelection(packageId, checked === true);
                           }}
                           aria-label={`Select package ${label}`}
-                          className="flex-shrink-0 mt-1 h-5 w-5"
+                          className="flex-shrink-0 mt-1 h-4 w-4 sm:h-5 sm:w-5"
                           onClick={(e) => {
                             e.stopPropagation();
                           }}
@@ -847,7 +847,7 @@ export function CreateShipmentDialog() {
                   })}
                 </div>
                 <div className="pt-2 mt-2 border-t flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     {selectedPackageIds.length === 0
                       ? "No packages selected"
                       : `${selectedPackageIds.length} package${
@@ -855,8 +855,8 @@ export function CreateShipmentDialog() {
                         } selected`}
                   </p>
                   {selectedPackageIds.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-primary">
+                      <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       Ready to ship
                     </div>
                   )}
@@ -866,27 +866,27 @@ export function CreateShipmentDialog() {
           </div>
 
           {/* Route Checkpoint Legs Section */}
-          <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              <p className="text-sm font-semibold">Route Checkpoint Legs</p>
+          <div className="space-y-2 sm:space-y-3 rounded-lg border border-border/60 p-3 sm:p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <p className="text-xs sm:text-sm font-semibold">Route Checkpoint Legs</p>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">
               Define the shipment route from your checkpoint to the consumer.
               Add warehouse stops if needed
             </p>
 
             {/* Manufacturer checkpoint status */}
             {loadingManufacturerCheckpoints ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm py-3 justify-center">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm py-2 sm:py-3 justify-center">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading your checkpoints...
               </div>
             ) : manufacturerCheckpoints.length === 0 ? (
-              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30">
+              <div className="p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/30">
                 <div className="flex items-start gap-2 text-destructive">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">
+                  <p className="text-xs sm:text-sm">
                     No checkpoints found for your account. Please register a
                     checkpoint first.
                   </p>
@@ -894,7 +894,7 @@ export function CreateShipmentDialog() {
               </div>
             ) : null}
 
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {legs.map((leg, index) => {
                 const startOptions = getStartCheckpointOptions(index);
                 const endOptions = getEndCheckpointOptions(index);
@@ -915,13 +915,13 @@ export function CreateShipmentDialog() {
                 return (
                   <div
                     key={`leg-${index}`}
-                    className="rounded-lg border-2 border-border/60 p-4 space-y-4 bg-background shadow-sm hover:shadow-md transition-shadow"
+                    className="rounded-lg border-2 border-border/60 p-3 sm:p-4 space-y-3 sm:space-y-4 bg-background shadow-sm hover:shadow-md transition-shadow"
                   >
                     {/* Leg Header */}
-                    <div className="flex items-center justify-between pb-3 border-b">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between pb-2 sm:pb-3 border-b">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                          className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
                             isFirstLeg
                               ? "bg-primary text-primary-foreground"
                               : isLastLeg
@@ -932,10 +932,10 @@ export function CreateShipmentDialog() {
                           {index + 1}
                         </div>
                         <div>
-                          <span className="text-sm font-semibold block">
+                          <span className="text-xs sm:text-sm font-semibold block">
                             Leg {index + 1}
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[10px] sm:text-xs text-muted-foreground">
                             {getLegTypeLabel(index)}
                           </span>
                         </div>
@@ -946,39 +946,39 @@ export function CreateShipmentDialog() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeMiddleLeg(index)}
-                          className="h-8 px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Remove
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Remove</span>
                         </Button>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
                       {/* Start Checkpoint */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5" />
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 sm:gap-1.5">
+                          <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           Start Checkpoint
-                          {startLocked && <Lock className="w-3 h-3" />}
+                          {startLocked && <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                           {isFirstLeg && (
-                            <span className="text-xs ml-1">(Manufacturer)</span>
+                            <span className="text-[10px] sm:text-xs ml-1">(Manufacturer)</span>
                           )}
                           {isMiddleLeg && (
-                            <span className="text-xs ml-1">(Warehouse)</span>
+                            <span className="text-[10px] sm:text-xs ml-1">(Warehouse)</span>
                           )}
                         </label>
                         {loadingStart ? (
-                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                          <div className="flex items-center gap-2 h-10 sm:h-11 px-3 border-2 rounded-lg bg-muted/20">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               Loading...
                             </span>
                           </div>
                         ) : startOptions.length === 0 ? (
-                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                          <div className="flex items-center gap-2 h-10 sm:h-11 px-3 border-2 rounded-lg bg-muted/20">
                             <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               No checkpoints available
                             </span>
                           </div>
@@ -1004,17 +1004,17 @@ export function CreateShipmentDialog() {
                             }
                           >
                             <SelectTrigger
-                              className={`h-14 border-2 ${
+                              className={`h-12 sm:h-14 border-2 ${
                                 startLocked ? "bg-muted/50" : ""
                               }`}
                             >
                               <div className="flex flex-col text-left w-full leading-tight">
                                 {selectedStart ? (
                                   <>
-                                    <span className="font-medium truncate">
+                                    <span className="font-medium truncate text-xs sm:text-sm">
                                       {selectedStart.name}
                                     </span>
-                                    <span className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 sm:gap-2 truncate">
                                       {selectedStart.state && (
                                         <span className="flex items-center gap-1 truncate">
                                           <MapPin className="w-3 h-3" />
@@ -1061,36 +1061,36 @@ export function CreateShipmentDialog() {
                       </div>
 
                       {/* End Checkpoint */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5" />
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 sm:gap-1.5">
+                          <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           End Checkpoint
-                          {endLocked && <Lock className="w-3 h-3" />}
+                          {endLocked && <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                           {isLastLeg && (
-                            <span className="text-xs ml-1">(Consumer)</span>
+                            <span className="text-[10px] sm:text-xs ml-1">(Consumer)</span>
                           )}
                           {!isLastLeg && (
-                            <span className="text-xs ml-1">(Warehouse)</span>
+                            <span className="text-[10px] sm:text-xs ml-1">(Warehouse)</span>
                           )}
                         </label>
                         {loadingEnd ? (
-                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                          <div className="flex items-center gap-2 h-10 sm:h-11 px-3 border-2 rounded-lg bg-muted/20">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               Loading...
                             </span>
                           </div>
                         ) : isLastLeg && !destUUID ? (
-                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                          <div className="flex items-center gap-2 h-10 sm:h-11 px-3 border-2 rounded-lg bg-muted/20">
                             <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               Select destination party first
                             </span>
                           </div>
                         ) : endOptions.length === 0 ? (
-                          <div className="flex items-center gap-2 h-11 px-3 border-2 rounded-lg bg-muted/20">
+                          <div className="flex items-center gap-2 h-10 sm:h-11 px-3 border-2 rounded-lg bg-muted/20">
                             <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               No checkpoints available
                             </span>
                           </div>
@@ -1122,17 +1122,17 @@ export function CreateShipmentDialog() {
                             }
                           >
                             <SelectTrigger
-                              className={`h-14 border-2 ${
+                              className={`h-12 sm:h-14 border-2 ${
                                 endLocked ? "bg-muted/50" : ""
                               }`}
                             >
                               <div className="flex flex-col text-left w-full leading-tight">
                                 {selectedEnd ? (
                                   <>
-                                    <span className="font-medium truncate">
+                                    <span className="font-medium truncate text-xs sm:text-sm">
                                       {selectedEnd.name}
                                     </span>
-                                    <span className="text-xs text-muted-foreground flex items-center gap-2 truncate">
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 sm:gap-2 truncate">
                                       {selectedEnd.state && (
                                         <span className="flex items-center gap-1 truncate">
                                           <MapPin className="w-3 h-3" />
@@ -1179,9 +1179,9 @@ export function CreateShipmentDialog() {
                       </div>
 
                       {/* Expected Ship Date */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 sm:gap-1.5">
+                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           Expected Ship Date
                         </label>
                         <Input
@@ -1206,14 +1206,14 @@ export function CreateShipmentDialog() {
                               )
                             );
                           }}
-                          className="h-11 border-2"
+                          className="h-10 sm:h-11 border-2 text-xs sm:text-sm"
                         />
                       </div>
 
                       {/* Estimated Arrival */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 sm:gap-1.5">
+                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           Estimated Arrival
                         </label>
                         <Input
@@ -1239,14 +1239,14 @@ export function CreateShipmentDialog() {
                               )
                             );
                           }}
-                          className="h-11 border-2"
+                          className="h-10 sm:h-11 border-2 text-xs sm:text-sm"
                         />
                       </div>
 
                       {/* Time Tolerance */}
-                      <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
+                      <div className="md:col-span-2 space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center gap-1 sm:gap-1.5">
+                          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           Time Tolerance
                         </label>
                         <Input
@@ -1264,7 +1264,7 @@ export function CreateShipmentDialog() {
                               )
                             )
                           }
-                          className="h-11 border-2"
+                          className="h-10 sm:h-11 border-2 text-xs sm:text-sm"
                         />
                       </div>
                     </div>
@@ -1280,15 +1280,15 @@ export function CreateShipmentDialog() {
               size="default"
               onClick={addMiddleLeg}
               disabled={warehouseCheckpoints.length === 0}
-              className="w-full border-2 border-dashed hover:bg-accent/50 hover:border-primary transition-all h-11"
+              className="w-full border-2 border-dashed hover:bg-accent/50 hover:border-primary transition-all h-10 sm:h-11 text-xs sm:text-sm"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               Add Warehouse Stop
             </Button>
             {warehouseCheckpoints.length === 0 &&
               !loadingWarehouseCheckpoints && (
-                <div className="flex items-start gap-2 text-muted-foreground text-xs px-2">
-                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 text-muted-foreground text-[10px] sm:text-xs px-2">
+                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 mt-0.5 flex-shrink-0" />
                   <p>
                     No warehouse checkpoints available to add intermediate
                     stops.
@@ -1306,16 +1306,16 @@ export function CreateShipmentDialog() {
               !destUUID ||
               !areAllLegsValid
             }
-            className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="w-full h-11 sm:h-12 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             {creatingShipment ? (
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 Creating Shipment...
               </span>
             ) : (
               <span className="inline-flex items-center gap-2">
-                <TruckIcon className="w-5 h-5" />
+                <TruckIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 Create Shipment
               </span>
             )}
@@ -1323,22 +1323,22 @@ export function CreateShipmentDialog() {
 
           {/* Validation messages */}
           {!creatingShipment && (
-            <div className="space-y-1 text-xs">
+            <div className="space-y-1 text-[10px] sm:text-xs">
               {selectedPackageIds.length === 0 && (
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>Please select at least one package</span>
                 </div>
               )}
               {!destUUID && (
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>Please select a destination party</span>
                 </div>
               )}
               {!areAllLegsValid && (
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                  <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>
                     Please complete all leg details (checkpoints, dates, and
                     time tolerance)

@@ -224,7 +224,7 @@ function SensorTypeSelector({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
+        <PopoverContent className="w-[280px] sm:w-[320px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search sensor types..." />
             <CommandList>
@@ -279,18 +279,18 @@ function SensorTypeSelector({
         </PopoverContent>
       </Popover>
       {selected.length > 0 ? (
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-2">
           {selected.map((sensor) => (
             <Badge
               key={sensor}
               variant="secondary"
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-xs sm:text-sm py-0.5 sm:py-1"
             >
               {sensor}
               <button
                 type="button"
                 onClick={() => toggleSensor(sensor)}
-                className="rounded-full p-0.5 hover:text-destructive"
+                className="rounded-full p-0.5 hover:text-destructive touch-manipulation"
                 aria-label={`Remove ${sensor}`}
               >
                 <X className="h-3 w-3" />
@@ -604,16 +604,16 @@ export function PackageManagement() {
 
     return (
       <div className="rounded-lg border border-border/60">
-        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
-          <Table className="min-w-full">
+        <div className="max-h-[60vh] overflow-y-auto overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <Table className="min-w-[640px] sm:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Package</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Sensors</TableHead>
-                <TableHead>QR</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-xs sm:text-sm">Package</TableHead>
+                <TableHead className="text-xs sm:text-sm">Quantity</TableHead>
+                <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Sensors</TableHead>
+                <TableHead className="text-xs sm:text-sm">QR</TableHead>
+                <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -633,36 +633,38 @@ export function PackageManagement() {
                 const qrPayload = getMockQrPayload(pkg);
                 return (
                   <TableRow key={pkg.id}>
-                    <TableCell>
-                      <div className="font-medium text-foreground">
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="font-medium text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                         {pkg.packageCode || `Package ${pkg.id}`}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Product: {productLabel} - {batchLabel}
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
+                        {productLabel}
                       </p>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-foreground">
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="text-foreground text-xs sm:text-sm">
                         {pkg.quantity ?? "N/A"}
                       </div>
                     </TableCell>
-                    <TableCell>{pkg.status ?? "Not specified"}</TableCell>
-                    <TableCell>{sensorsToLabel(pkg.sensorTypes)}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">{pkg.status ?? "Not specified"}</TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">{sensorsToLabel(pkg.sensorTypes)}</TableCell>
+                    <TableCell className="py-2 sm:py-4">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setQrPreviewPackage(pkg)}
+                        className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                       >
-                        View QR
+                        QR
                       </Button>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
+                    <TableCell className="py-2 sm:py-4">
+                      <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setViewingPackage(pkg)}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           View
                         </Button>
@@ -680,6 +682,7 @@ export function PackageManagement() {
                               ),
                             });
                           }}
+                          className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                         >
                           Edit
                         </Button>
@@ -696,17 +699,17 @@ export function PackageManagement() {
   };
 
   return (
-    <section className="space-y-6">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="space-y-4 sm:space-y-6">
+      <header className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Packages</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Packages</h2>
           {/* <p className="text-sm text-muted-foreground">
             Register packages as they leave production and keep package metadata
             up to date.
           </p> */}
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 lg:justify-end">
-          <div className="sm:w-64">
+        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center lg:justify-end">
+          <div className="w-full sm:w-64">
             <label htmlFor="package-filter" className="sr-only">
               Search packages
             </label>
@@ -715,11 +718,12 @@ export function PackageManagement() {
               value={packageFilter}
               onChange={(event) => setPackageFilter(event.target.value)}
               placeholder="Search packages..."
+              className="h-9 sm:h-10 text-sm"
             />
           </div>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="gap-2"
+            className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
             disabled={
               !manufacturerUUID || loadingBatches || Boolean(batchesError)
             }
@@ -733,16 +737,16 @@ export function PackageManagement() {
       {renderPackages()}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Package</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Package</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Link a new package to its production batch.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleCreateSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="package-batch" className="text-sm font-medium">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleCreateSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="package-batch" className="text-xs sm:text-sm font-medium">
                 Batch
               </label>
               <Select
@@ -766,8 +770,8 @@ export function PackageManagement() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="package-mac" className="text-sm font-medium">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="package-mac" className="text-xs sm:text-sm font-medium">
                 Microprocessor MAC
               </label>
               <Input
@@ -780,11 +784,12 @@ export function PackageManagement() {
                     microprocessorMac: event.target.value,
                   }))
                 }
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sensors</label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium">Sensors</label>
               <SensorTypeSelector
                 selected={createForm.sensorTypes}
                 onChange={(next) =>
@@ -806,17 +811,18 @@ export function PackageManagement() {
               ) : null}
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
@@ -833,16 +839,16 @@ export function PackageManagement() {
         open={Boolean(editingPackage)}
         onOpenChange={(open) => (!open ? setEditingPackage(null) : null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Edit Package</DialogTitle>
-            <DialogDescription>Update package metadata.</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Package</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Update package metadata.</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
-            <div className="space-y-2">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleEditSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-package-code"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Package code
               </label>
@@ -855,13 +861,14 @@ export function PackageManagement() {
                     packageCode: event.target.value,
                   }))
                 }
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-package-status"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Status
               </label>
@@ -874,11 +881,12 @@ export function PackageManagement() {
                     status: event.target.value,
                   }))
                 }
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Sensors</label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-xs sm:text-sm font-medium">Sensors</label>
               <SensorTypeSelector
                 selected={editSensorSelections}
                 onChange={(next) =>
@@ -897,10 +905,10 @@ export function PackageManagement() {
               ) : null}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <label
                 htmlFor="edit-package-notes"
-                className="text-sm font-medium"
+                className="text-xs sm:text-sm font-medium"
               >
                 Notes
               </label>
@@ -913,20 +921,22 @@ export function PackageManagement() {
                     notes: event.target.value,
                   }))
                 }
+                className="text-sm min-h-[80px] sm:min-h-[100px]"
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditingPackage(null)}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
@@ -943,16 +953,16 @@ export function PackageManagement() {
         open={isSensorTypeDialogOpen}
         onOpenChange={setIsSensorTypeDialogOpen}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Add sensor type</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Add sensor type</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Create a reusable sensor type for your organisation.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleSensorTypeSubmit}>
-            <div className="space-y-2">
-              <label htmlFor="new-sensor-type" className="text-sm font-medium">
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleSensorTypeSubmit}>
+            <div className="space-y-1.5 sm:space-y-2">
+              <label htmlFor="new-sensor-type" className="text-xs sm:text-sm font-medium">
                 Sensor type name
               </label>
               <Input
@@ -962,9 +972,10 @@ export function PackageManagement() {
                 value={newSensorTypeName}
                 onChange={(event) => setNewSensorTypeName(event.target.value)}
                 disabled={createSensorTypeMutation.isPending}
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -973,12 +984,13 @@ export function PackageManagement() {
                   setNewSensorTypeName("");
                 }}
                 disabled={createSensorTypeMutation.isPending}
+                className="h-9 sm:h-10 text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="gap-2"
+                className="gap-2 h-9 sm:h-10 text-sm w-full sm:w-auto"
                 disabled={createSensorTypeMutation.isPending}
               >
                 {createSensorTypeMutation.isPending ? (
@@ -995,15 +1007,15 @@ export function PackageManagement() {
         open={Boolean(viewingPackage)}
         onOpenChange={(open) => (!open ? setViewingPackage(null) : null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl truncate">
               {viewingPackage?.packageCode || `Package ${viewingPackage?.id}`}
             </DialogTitle>
-            <DialogDescription>Package details</DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">Package details</DialogDescription>
           </DialogHeader>
           {viewingPackage ? (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2.5 sm:space-y-3 text-xs sm:text-sm">
               <div>
                 <p className="text-muted-foreground">Batch</p>
                 <p className="text-foreground">
@@ -1081,24 +1093,24 @@ export function PackageManagement() {
         open={Boolean(qrPreviewPackage)}
         onOpenChange={(open) => (!open ? setQrPreviewPackage(null) : null)}
       >
-        <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-sm max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl truncate">
               {qrPreviewPackage?.packageCode ||
                 `Package ${qrPreviewPackage?.id}`}
             </DialogTitle>
-            <DialogDescription>Package QR code</DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">Package QR code</DialogDescription>
           </DialogHeader>
           {qrPreviewPackage ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               <div className="flex justify-center">
                 <QRCodeGenerator
                   data={getMockQrPayload(qrPreviewPackage)}
                   title="Package QR"
-                  size={200}
+                  size={180}
                 />
               </div>
-              <div className="rounded-md border bg-muted/40 p-2 text-[11px] font-mono break-all">
+              <div className="rounded-md border bg-muted/40 p-2 text-[10px] sm:text-[11px] font-mono break-all">
                 {getMockQrPayload(qrPreviewPackage)}
               </div>
             </div>

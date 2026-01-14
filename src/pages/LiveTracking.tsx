@@ -40,33 +40,33 @@ export default function LiveTracking() {
   const [selectedShipment, setSelectedShipment] = useState(activeShipments[0]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Live Tracking</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">Live Tracking</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Monitor vaccine shipments in real-time with GPS and temperature tracking
         </p>
       </div>
 
       {/* Tabs Section */}
-      <Tabs defaultValue="map" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="map">Map View</TabsTrigger>
-          <TabsTrigger value="telemetry">Temperature Monitor</TabsTrigger>
+      <Tabs defaultValue="map" className="space-y-3 sm:space-y-4">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="map" className="flex-1 sm:flex-none text-xs sm:text-sm">Map View</TabsTrigger>
+          <TabsTrigger value="telemetry" className="flex-1 sm:flex-none text-xs sm:text-sm">Temperature</TabsTrigger>
         </TabsList>
 
         {/* --- MAP TAB --- */}
-        <TabsContent value="map" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TabsContent value="map" className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {/* Map Section */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 order-2 lg:order-1">
               <Card>
-                <CardHeader>
-                  <CardTitle>Shipment Location</CardTitle>
+                <CardHeader className="p-3 sm:p-4 lg:p-6">
+                  <CardTitle className="text-sm sm:text-base">Shipment Location</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-[500px]">
+                <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+                  <div className="h-[300px] sm:h-[400px] lg:h-[500px]">
                     <MapTracker telemetryData={mockTelemetryData} />
                   </div>
                 </CardContent>
@@ -74,16 +74,16 @@ export default function LiveTracking() {
             </div>
 
             {/* Active Shipments + Details */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4 order-1 lg:order-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Active Shipments</CardTitle>
+                <CardHeader className="p-3 sm:p-4">
+                  <CardTitle className="text-sm sm:text-base">Active Shipments</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3">
                   {activeShipments.map((shipment) => (
                     <div
                       key={shipment.id}
-                      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                      className={`p-3 sm:p-4 rounded-lg border cursor-pointer transition-colors ${
                         selectedShipment.id === shipment.id
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-accent"
@@ -91,23 +91,23 @@ export default function LiveTracking() {
                       onClick={() => setSelectedShipment(shipment)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">{shipment.id}</span>
-                        <Badge variant="outline">{shipment.status}</Badge>
+                        <span className="font-semibold text-sm sm:text-base">{shipment.id}</span>
+                        <Badge variant="outline" className="text-[10px] sm:text-xs">{shipment.status}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-1">
                         {shipment.product}
                       </p>
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1 text-xs sm:text-sm">
                         <div className="flex items-center gap-2">
-                          <Thermometer className="h-4 w-4" />
+                          <Thermometer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span>{shipment.currentTemp}°C</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{shipment.destination}</span>
+                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="truncate">{shipment.destination}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span>ETA: {shipment.eta}</span>
                         </div>
                       </div>
@@ -117,30 +117,30 @@ export default function LiveTracking() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Shipment Details</CardTitle>
+                <CardHeader className="p-3 sm:p-4">
+                  <CardTitle className="text-sm sm:text-base">Shipment Details</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3">
                   <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Product</p>
-                      <p className="font-medium">{selectedShipment.product}</p>
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm text-muted-foreground">Product</p>
+                      <p className="font-medium text-xs sm:text-sm truncate">{selectedShipment.product}</p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Batch Number</p>
-                    <p className="font-medium">{selectedShipment.batchNumber}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Batch Number</p>
+                    <p className="font-medium text-xs sm:text-sm">{selectedShipment.batchNumber}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Current Temperature</p>
-                    <p className="font-medium text-2xl">
+                    <p className="text-xs sm:text-sm text-muted-foreground">Current Temperature</p>
+                    <p className="font-medium text-xl sm:text-2xl">
                       {selectedShipment.currentTemp}°C
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge className="mt-1">{selectedShipment.status}</Badge>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Status</p>
+                    <Badge className="mt-1 text-xs">{selectedShipment.status}</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -149,7 +149,7 @@ export default function LiveTracking() {
         </TabsContent>
 
         {/* --- TELEMETRY TAB --- */}
-        <TabsContent value="telemetry" className="space-y-4">
+        <TabsContent value="telemetry" className="space-y-3 sm:space-y-4">
           <TelemetryChart
             data={mockTelemetryData}
             temperatureUnit="C"

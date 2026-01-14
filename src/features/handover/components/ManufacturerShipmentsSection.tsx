@@ -127,17 +127,17 @@ export function ManufacturerShipmentsSection() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
             My Shipments
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
           {loadingMyShipments ? (
-            <div className="flex items-center gap-2 py-8 text-muted-foreground">
+            <div className="flex items-center gap-2 py-6 sm:py-8 text-muted-foreground text-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading shipments...
             </div>
@@ -147,16 +147,16 @@ export function ManufacturerShipmentsSection() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-4 mb-4">
+              <TabsList className="grid w-full grid-cols-4 mb-3 sm:mb-4 h-9 sm:h-10">
                 {Object.entries(STATUS_CONFIG).map(([status, config]) => {
                   const Icon = config.icon;
                   return (
                     <TabsTrigger
                       key={status}
                       value={status}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 text-xs sm:text-sm px-1 sm:px-3"
                     >
-                      <Icon className={`h-3.5 w-3.5 ${config.color}`} />
+                      <Icon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${config.color}`} />
                       <span className="hidden sm:inline">{config.label}</span>
                     </TabsTrigger>
                   );
@@ -166,9 +166,9 @@ export function ManufacturerShipmentsSection() {
               {Object.keys(STATUS_CONFIG).map((status) => (
                 <TabsContent key={status} value={status} className="mt-0">
                   {activeShipments.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                      <p className="mt-2 text-sm text-muted-foreground">
+                    <div className="py-6 sm:py-8 text-center">
+                      <Package className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50" />
+                      <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
                         No{" "}
                         {STATUS_CONFIG[
                           status as keyof typeof STATUS_CONFIG
@@ -177,7 +177,7 @@ export function ManufacturerShipmentsSection() {
                       </p>
                     </div>
                   ) : (
-                    <div className="max-h-[32rem] space-y-4 overflow-y-auto pr-2">
+                    <div className="max-h-[28rem] sm:max-h-[32rem] space-y-3 sm:space-y-4 overflow-y-auto pr-1 sm:pr-2">
                       {activeShipments.map(
                         (shipment: ManufacturerShipmentRecord) => {
                           const hasSegments =
@@ -194,30 +194,31 @@ export function ManufacturerShipmentsSection() {
                               key={shipment.id}
                               className="overflow-hidden border-l-4 border-l-primary/20"
                             >
-                              <CardContent className="p-4">
+                              <CardContent className="p-3 sm:p-4">
                                 {/* Header */}
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                                   <div className="flex-1 space-y-1">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-semibold text-foreground">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="font-semibold text-foreground text-sm">
                                         Shipment #{shipment.id.slice(0, 8)}
                                       </p>
                                       <Badge
                                         variant={getStatusVariant(
                                           shipment.status
                                         )}
+                                        className="text-xs"
                                       >
                                         {shipment.status ?? "PREPARING"}
                                       </Badge>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                                       To:{" "}
                                       {shipment.destinationPartyName ??
                                         shipment.destinationPartyUUID ??
                                         "Unknown"}
                                     </p>
                                     {shipment.createdAt && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                                         <Clock className="inline h-3 w-3 mr-1" />
                                         Created{" "}
                                         {formatDistanceToNow(
@@ -236,11 +237,11 @@ export function ManufacturerShipmentsSection() {
 
                                 {/* Route Information */}
                                 {hasSegments && (
-                                  <div className="mt-3 rounded-lg bg-muted/30 p-3">
-                                    <div className="flex items-start gap-2 text-sm">
-                                      <MapPin className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                  <div className="mt-2 sm:mt-3 rounded-lg bg-muted/30 p-2 sm:p-3">
+                                    <div className="flex items-start gap-2 text-xs sm:text-sm">
+                                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1">
-                                        <div className="font-medium">
+                                        <div className="font-medium truncate">
                                           {formatCheckpointLocation(
                                             firstSegment?.startCheckpoint
                                           )}
@@ -248,12 +249,12 @@ export function ManufacturerShipmentsSection() {
                                       </div>
                                     </div>
                                     <div className="flex items-center justify-center py-1">
-                                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                      <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                                     </div>
-                                    <div className="flex items-start gap-2 text-sm">
-                                      <MapPin className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                    <div className="flex items-start gap-2 text-xs sm:text-sm">
+                                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600 mt-0.5 flex-shrink-0" />
                                       <div className="flex-1">
-                                        <div className="font-medium">
+                                        <div className="font-medium truncate">
                                           {lastSegment?.endCheckpoint?.name && (
                                             <div>
                                               {lastSegment.endCheckpoint.name}

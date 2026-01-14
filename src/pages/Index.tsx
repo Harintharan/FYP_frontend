@@ -190,59 +190,59 @@ const ManufacturerDashboard = ({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-primary/20 via-background to-background p-6 sm:p-10 shadow-card">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl lg:rounded-3xl border border-border/40 bg-gradient-to-br from-primary/20 via-background to-background p-4 sm:p-6 lg:p-10 shadow-card">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.6),_transparent_55%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-4">
+        <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3 sm:space-y-4">
             <Badge
               variant="outline"
-              className="w-fit border-primary/30 text-primary"
+              className="w-fit border-primary/30 text-primary text-xs"
             >
               Manufacturer dashboard
             </Badge>
             <div>
-              <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-semibold leading-tight">
                 Keep every shipment compliant and on schedule
               </h1>
-              <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+              <p className="mt-2 sm:mt-3 text-xs sm:text-sm lg:text-base text-muted-foreground">
                 Monitor live cold-chain activities, quickly respond to alerts,
                 and share updates with partners in real time.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={() => navigate("/qr-scan")}>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <Button variant="outline" size="sm" className="sm:size-default" onClick={() => navigate("/qr-scan")}>
                 Scan QR
               </Button>
             </div>
           </div>
-          <Card className="w-full max-w-sm border-none bg-background/80 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">
+          <Card className="w-full lg:max-w-sm border-none bg-background/80 shadow-lg mt-2 lg:mt-0">
+            <CardHeader className="p-3 sm:p-4 pb-2">
+              <CardTitle className="text-xs sm:text-sm text-muted-foreground">
                 Live logistics snapshot
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-3 sm:p-4 pt-0 space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Active shipments
                   </p>
-                  <p className="text-3xl font-semibold">
+                  <p className="text-2xl sm:text-3xl font-semibold">
                     {dashboardData?.stats?.activeShipments || 0}
                   </p>
                 </div>
-                <Badge className="bg-primary/10 text-primary">
+                <Badge className="bg-primary/10 text-primary text-xs">
                   {dashboardData?.stats?.totalShipments || 0} total
                 </Badge>
               </div>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div className="flex items-center gap-2 text-foreground">
-                  <Clock className="h-4 w-4 text-primary" />
+                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                   <span>{liveShipments.length} recent shipments</span>
                 </div>
                 <div className="flex items-center gap-2 text-foreground">
-                  <Activity className="h-4 w-4 text-secondary" />
+                  <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-secondary" />
                   <span>{activeAlerts.length} alerts awaiting response</span>
                 </div>
               </div>
@@ -253,12 +253,12 @@ const ManufacturerDashboard = ({
 
       <DashboardStats dashboardData={dashboardData} />
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Card className="border border-border/60 bg-gradient-to-br from-primary/5 via-background to-background shadow-card">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardHeader className="p-3 sm:p-4 lg:p-6 pb-2 sm:pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <CardTitle className="text-lg">Recent shipments</CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <CardTitle className="text-base sm:text-lg">Recent shipments</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Latest shipment activity
               </p>
             </div>
@@ -266,19 +266,19 @@ const ManufacturerDashboard = ({
               variant="ghost"
               size="sm"
               onClick={() => navigate("/shipment")}
-              className="text-primary"
+              className="text-primary self-start sm:self-auto"
             >
-              View all <ArrowUpRight className="h-4 w-4 ml-1" />
+              View all <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1" />
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0 space-y-3">
             {liveShipments.length === 0 ? (
-              <div className="text-center py-8 rounded-2xl border border-dashed border-border/60 bg-muted/10">
-                <Truck className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground mb-1">
+              <div className="text-center py-6 sm:py-8 rounded-xl sm:rounded-2xl border border-dashed border-border/60 bg-muted/10">
+                <Truck className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground/40 mb-2 sm:mb-3" />
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">
                   No recent shipments
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Create a shipment to start tracking
                 </p>
               </div>
@@ -291,14 +291,14 @@ const ManufacturerDashboard = ({
                 return (
                   <div
                     key={`${shipment.id}-${shipmentIdx}`}
-                    className="group relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-background via-background to-muted/20 p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer"
+                    className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-border/70 bg-gradient-to-br from-background via-background to-muted/20 p-3 sm:p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer"
                     onClick={() => setSelectedShipment(shipment)}
                   >
                     {/* Status badge positioned top-right */}
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
                       <Badge
                         variant="outline"
-                        className={`${
+                        className={`text-[10px] sm:text-xs ${
                           shipment.status === "DELIVERED"
                             ? "border-green-500/50 bg-green-500/10 text-green-700"
                             : shipment.status === "IN_TRANSIT"
@@ -313,14 +313,14 @@ const ManufacturerDashboard = ({
                     </div>
 
                     {/* Main content */}
-                    <div className="pr-24">
+                    <div className="pr-16 sm:pr-24">
                       {/* Shipment reference */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Truck className="h-4 w-4 text-primary" />
+                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10">
+                          <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-mono text-muted-foreground truncate">
+                          <p className="text-xs sm:text-sm font-mono text-muted-foreground truncate">
                             {shipment.id.substring(0, 8)}...
                             {shipment.id.substring(shipment.id.length - 6)}
                           </p>
@@ -328,14 +328,14 @@ const ManufacturerDashboard = ({
                       </div>
 
                       {/* Destination info */}
-                      <div className="mb-3">
-                        <p className="text-sm font-semibold text-foreground mb-1">
+                      <div className="mb-2 sm:mb-3">
+                        <p className="text-xs sm:text-sm font-semibold text-foreground mb-1">
                           {shipment.destinationName}
                         </p>
                         {destination.name && (
-                          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5 mt-0.5 text-primary flex-shrink-0" />
-                            <span>
+                          <div className="flex items-start gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 text-primary flex-shrink-0" />
+                            <span className="line-clamp-2">
                               {destination.name}
                               {destination.state && `, ${destination.state}`}
                               {destination.country &&
@@ -346,16 +346,16 @@ const ManufacturerDashboard = ({
                       </div>
 
                       {/* Stats row */}
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <div className="h-2 w-2 rounded-full bg-primary/30" />
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs">
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary/30" />
                           <span>
                             {segments.length}{" "}
                             {segments.length === 1 ? "segment" : "segments"}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <div className="h-2 w-2 rounded-full bg-secondary/30" />
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-secondary/30" />
                           <span>
                             {shipment.packageCount}{" "}
                             {shipment.packageCount === 1
@@ -366,9 +366,9 @@ const ManufacturerDashboard = ({
                       </div>
 
                       {/* Timing info */}
-                      <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
+                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-[10px] sm:text-xs">
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                          <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           <span>
                             Created{" "}
                             {new Date(shipment.createdAt).toLocaleDateString()}

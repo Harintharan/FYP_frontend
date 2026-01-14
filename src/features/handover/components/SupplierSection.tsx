@@ -439,22 +439,22 @@ export function SupplierSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Tabs
         value={activeTab}
         onValueChange={(val) =>
           supplier.setActiveStatus(val as SupplierShipmentStatus)
         }
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
-        <TabsList className="flex w-full flex-wrap gap-2">
+        <TabsList className="flex w-full flex-wrap gap-1.5 sm:gap-2 h-auto p-1">
           {visibleStatusOrder.map((status) => {
             const config = STATUS_CONFIG[status];
             return (
               <TabsTrigger
                 key={status}
                 value={status}
-                className="flex-1 min-w-[120px] sm:flex-none sm:min-w-[140px]"
+                className="flex-1 min-w-[70px] sm:min-w-[100px] md:min-w-[120px] text-xs sm:text-sm py-1.5 sm:py-2"
               >
                 {config.label}
               </TabsTrigger>
@@ -483,28 +483,28 @@ export function SupplierSection() {
         open={takeoverDialogOpen}
         onOpenChange={handleTakeoverDialogChange}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Confirm segment takeover</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Confirm segment takeover</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               We will use your current location for this takeover request.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-3 sm:space-y-4 py-2">
             <div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Segment ID:{" "}
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground break-all">
                   {takeoverSegmentIdentifier ?? "N/A"}
                 </span>
               </p>
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Location status</label>
-              <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
+              <label className="text-xs sm:text-sm font-medium">Location status</label>
+              <div className="rounded-md border border-border/60 bg-muted/30 px-2.5 sm:px-3 py-2 text-xs sm:text-sm">
                 {takeoverLocating ? (
                   <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                     Fetching your GPS location...
                   </span>
                 ) : takeoverLocationError ? (
@@ -517,24 +517,25 @@ export function SupplierSection() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Your browser location is captured automatically and will be sent
                 with this takeover.
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
             <Button
               variant="ghost"
               onClick={closeTakeoverDialog}
               disabled={takeoverBusy}
+              className="w-full sm:w-auto order-2 sm:order-1 h-9 sm:h-10 text-sm"
             >
               Cancel
             </Button>
-            <Button onClick={handleConfirmTakeover} disabled={takeoverDisabled}>
+            <Button onClick={handleConfirmTakeover} disabled={takeoverDisabled} className="w-full sm:w-auto order-1 sm:order-2 h-9 sm:h-10 text-sm">
               {takeoverBusy ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                   Taking over...
                 </span>
               ) : (
@@ -550,23 +551,23 @@ export function SupplierSection() {
         open={takeoverErrorDialogOpen}
         onOpenChange={setTakeoverErrorDialogOpen}
       >
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader className="gap-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
+        <AlertDialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full max-w-sm rounded-xl sm:rounded-lg p-4 sm:p-6">
+          <AlertDialogHeader className="gap-3 sm:gap-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />
               <div>
-                <AlertDialogTitle className="text-lg">
+                <AlertDialogTitle className="text-base sm:text-lg">
                   Location Verification Failed
                 </AlertDialogTitle>
               </div>
             </div>
           </AlertDialogHeader>
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-sm text-destructive">
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-destructive">
             {takeoverError}
           </div>
           <AlertDialogFooter>
             <AlertDialogAction
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white h-9 sm:h-10 text-sm"
               onClick={() => setTakeoverErrorDialogOpen(false)}
             >
               Close
@@ -592,18 +593,18 @@ function SupplierSectionFilters({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="relative w-full sm:max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-2.5 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={areaQuery}
           onChange={(event) => setAreaQuery(event.target.value)}
-          placeholder="Search by area, checkpoint, or delivery zone"
-          className="pl-9"
+          placeholder="Search area, checkpoint..."
+          className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm"
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground sm:justify-end">
         <span className="max-w-xs"></span>
         {hasAreaFilter && (
-          <Button variant="ghost" size="sm" onClick={() => setAreaQuery("")}>
+          <Button variant="ghost" size="sm" onClick={() => setAreaQuery("")} className="h-8 text-xs">
             Clear
           </Button>
         )}
@@ -665,7 +666,7 @@ const SupplierStatusPanels = ({
               description={emptyDescription}
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {filteredShipments.map((shipment) => {
                 const segmentIdentifier = shipment.segmentId ?? shipment.id;
                 return (
@@ -877,37 +878,38 @@ const SupplierShipmentActions = ({
           <AlertDialogTrigger asChild>
             <Button
               size="sm"
-              className="gap-2"
+              className="gap-1.5 sm:gap-2 h-8 sm:h-9 text-xs sm:text-sm"
               disabled={isAccepting || !canAccept}
               onClick={() => setAcceptDialogSegmentId(segmentIdentifier)}
             >
               {isAccepting ? (
                 <>
                   <LoaderIndicator />
-                  Accepting...
+                  <span className="hidden sm:inline">Accepting...</span>
+                  <span className="sm:hidden">...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Accept
                 </>
               )}
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
             <AlertDialogHeader>
-              <AlertDialogTitle>
+              <AlertDialogTitle className="text-base sm:text-lg break-all">
                 Accept segment {segmentIdentifier}?
               </AlertDialogTitle>
             </AlertDialogHeader>
-            <div className="space-y-3 text-sm text-muted-foreground">
+            <div className="space-y-2.5 sm:space-y-3 text-xs sm:text-sm text-muted-foreground">
               <p>
                 Review the segment details before accepting. The manufacturer
                 will be notified.
               </p>
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-foreground shadow-inner">
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-xs text-muted-foreground">
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 sm:p-4 text-foreground shadow-inner">
+                <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
+                  <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[120px_1fr] items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
                     <span>Shipment ID</span>
                     <span className="font-semibold text-foreground truncate">
                       {segmentDetail?.shipmentId ??
@@ -915,41 +917,41 @@ const SupplierShipmentActions = ({
                         segmentIdentifier}
                     </span>
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-xs text-muted-foreground">
+                  <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[120px_1fr] items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
                     <span>Segment ID</span>
                     <span className="font-semibold text-foreground truncate">
                       {segmentIdentifier}
                     </span>
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-xs text-muted-foreground">
+                  <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[120px_1fr] items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
                     <span>From</span>
                     <span className="font-semibold text-foreground break-words">
                       {startLocation}
                     </span>
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-xs text-muted-foreground">
+                  <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[120px_1fr] items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
                     <span>To</span>
                     <span className="font-semibold text-foreground break-words">
                       {endLocation}
                     </span>
                   </div>
-                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-xs text-muted-foreground">
-                    <span>Expected arrival</span>
+                  <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[120px_1fr] items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                    <span>Expected</span>
                     <span className="font-semibold text-foreground">
                       {expectedArrivalAbsolute ?? arrivalText}
                     </span>
                   </div>
-                  <div className="border-t pt-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                  <div className="border-t pt-2.5 sm:pt-3">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-wide text-muted-foreground mb-1">
                       Items
                     </p>
                     {loadingSegmentDetail ? (
-                      <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground inline-flex items-center gap-2">
                         <LoaderIndicator />
                         Loading items...
                       </p>
                     ) : itemPreview.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         No items listed
                       </p>
                     ) : (
@@ -957,18 +959,18 @@ const SupplierShipmentActions = ({
                         {itemPreview.map((item, idx) => (
                           <div
                             key={`${segmentIdentifier}-preview-${idx}`}
-                            className="flex justify-between text-sm"
+                            className="flex justify-between text-xs sm:text-sm"
                           >
-                            <span className="font-medium text-foreground">
+                            <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-none">
                               {item.productName}
                             </span>
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground flex-shrink-0 ml-2">
                               x{item.quantity}
                             </span>
                           </div>
                         ))}
                         {remainingItems > 0 && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
                             +{remainingItems} more item
                             {remainingItems > 1 ? "s" : ""}
                           </p>
@@ -979,8 +981,8 @@ const SupplierShipmentActions = ({
                 </div>
               </div>
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isAccepting}>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+              <AlertDialogCancel disabled={isAccepting} className="w-full sm:w-auto order-2 sm:order-1 h-9 sm:h-10 text-sm">
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
@@ -989,6 +991,7 @@ const SupplierShipmentActions = ({
                   handleAccept();
                 }}
                 disabled={!canAccept || isAccepting}
+                className="w-full sm:w-auto order-1 sm:order-2 h-9 sm:h-10 text-sm"
               >
                 {isAccepting ? (
                   <span className="inline-flex items-center gap-2">
@@ -1012,14 +1015,15 @@ const SupplierShipmentActions = ({
       return (
         <Button
           size="sm"
-          className="gap-2"
+          className="gap-1.5 sm:gap-2 h-8 sm:h-9 text-xs sm:text-sm"
           disabled={isTakingOver || !canTakeover}
           onClick={() => openTakeoverDialog(shipment)}
         >
           {isTakingOver ? (
             <>
               <LoaderIndicator />
-              Taking over...
+              <span className="hidden sm:inline">Taking over...</span>
+              <span className="sm:hidden">...</span>
             </>
           ) : (
             "Take Over"
@@ -1034,6 +1038,7 @@ const SupplierShipmentActions = ({
           size="sm"
           onClick={() => openHandoverDialog(shipment)}
           disabled={!canHandover}
+          className="h-8 sm:h-9 text-xs sm:text-sm"
         >
           Handover
         </Button>
@@ -1045,8 +1050,10 @@ const SupplierShipmentActions = ({
           size="sm"
           variant="secondary"
           onClick={() => handleDownloadProof(shipment)}
+          className="h-8 sm:h-9 text-xs sm:text-sm"
         >
-          Download Proof
+          <span className="hidden sm:inline">Download Proof</span>
+          <span className="sm:hidden">Proof</span>
         </Button>
       );
     case "CANCELLED":
@@ -1055,8 +1062,10 @@ const SupplierShipmentActions = ({
           size="sm"
           variant="secondary"
           onClick={() => handleReportIssue(shipment)}
+          className="h-8 sm:h-9 text-xs sm:text-sm"
         >
-          Report Issue
+          <span className="hidden sm:inline">Report Issue</span>
+          <span className="sm:hidden">Report</span>
         </Button>
       );
     default:
@@ -1074,10 +1083,10 @@ function SupplierSectionHeader({
   description,
 }: SupplierSectionHeaderProps) {
   return (
-    <div className="mb-3 space-y-1">
-      <h3 className="text-lg font-semibold">{title}</h3>
+    <div className="mb-2 sm:mb-3 space-y-0.5 sm:space-y-1">
+      <h3 className="text-base sm:text-lg font-semibold">{title}</h3>
       {description ? (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
       ) : null}
     </div>
   );
@@ -1098,13 +1107,13 @@ function SupplierEmptyState({
 }: SupplierEmptyStateProps) {
   return (
     <Card className="border-dashed border-border/60 bg-muted/20 text-center">
-      <CardContent className="space-y-3 py-12">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          {isLoading ? <LoaderIndicator /> : <Icon className="h-6 w-6" />}
+      <CardContent className="space-y-2 sm:space-y-3 py-8 sm:py-12 px-4">
+        <span className="mx-auto flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          {isLoading ? <LoaderIndicator /> : <Icon className="h-5 w-5 sm:h-6 sm:w-6" />}
         </span>
-        <div className="space-y-1">
-          <h4 className="font-semibold text-foreground">{title}</h4>
-          <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="space-y-0.5 sm:space-y-1">
+          <h4 className="font-semibold text-foreground text-sm sm:text-base">{title}</h4>
+          <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
         </div>
       </CardContent>
     </Card>
@@ -1182,19 +1191,19 @@ function SupplierShipmentCard({
 
   return (
     <Card className="border-0 bg-white shadow-md transition-all hover:shadow-lg overflow-hidden">
-      <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-cyan-100 px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-700 mb-1.5">
+      <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-cyan-100 px-3 sm:px-4 py-2.5 sm:py-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-cyan-700 mb-1 sm:mb-1.5">
               📍 {endSubLabel || dropoffLabel}
             </p>
-            <p className="text-sm font-bold text-gray-900">
+            <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
               Segment #{shortShipmentId}
             </p>
           </div>
           <Badge
             className={cn(
-              "flex-shrink-0 text-xs font-semibold px-3 py-1",
+              "flex-shrink-0 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1",
               supplierStatusBadgeClass(normalized)
             )}
           >
@@ -1203,41 +1212,41 @@ function SupplierShipmentCard({
         </div>
       </div>
 
-      <CardContent className="space-y-3 p-4">
+      <CardContent className="space-y-2.5 sm:space-y-3 p-3 sm:p-4">
         {/* Route Section */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex gap-3 items-start flex-1">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                <MapPin className="h-5 w-5 text-emerald-600" />
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
+            <div className="flex gap-2 sm:gap-3 items-start flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
               </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase text-muted-foreground mb-0.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase text-muted-foreground mb-0.5">
                   From
                 </p>
-                <p className="text-sm font-bold text-gray-900">{startLabel}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">{startLabel}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                   {startSubLabel || pickupLabel}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center justify-center self-center">
-              <div className="bg-cyan-100 rounded-full p-2">
-                <ArrowRight className="h-4 w-4 text-cyan-600" />
+              <div className="bg-cyan-100 rounded-full p-1.5 sm:p-2">
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-600" />
               </div>
             </div>
 
-            <div className="flex gap-3 items-start flex-1">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <MapPin className="h-5 w-5 text-red-600" />
+            <div className="flex gap-2 sm:gap-3 items-start flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
               </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase text-muted-foreground mb-0.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase text-muted-foreground mb-0.5">
                   To
                 </p>
-                <p className="text-sm font-bold text-gray-900">{endLabel}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">{endLabel}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                   {endSubLabel || dropoffLabel}
                 </p>
               </div>
@@ -1246,34 +1255,34 @@ function SupplierShipmentCard({
         </div>
 
         {/* Timeline Section */}
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-100">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {expectedShipAbsolute && (
-              <div className="flex items-center gap-1.5 bg-blue-50 rounded-full px-3 py-2 border border-blue-200">
-                <Calendar className="h-3.5 w-3.5 text-blue-600" />
-                <span className="text-xs font-semibold text-blue-900">
-                  Avail: {expectedShipAbsolute.split(",")[0]}
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-blue-50 rounded-full px-2 sm:px-3 py-1 sm:py-2 border border-blue-200">
+                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" />
+                <span className="text-[10px] sm:text-xs font-semibold text-blue-900">
+                  {expectedShipAbsolute.split(",")[0]}
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 bg-orange-50 rounded-full px-3 py-2 border border-orange-200">
-              <Clock className="h-3.5 w-3.5 text-orange-600" />
-              <span className="text-xs font-semibold text-orange-900">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-orange-50 rounded-full px-2 sm:px-3 py-1 sm:py-2 border border-orange-200">
+              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange-600" />
+              <span className="text-[10px] sm:text-xs font-semibold text-orange-900">
                 {arrivalAbsolute?.split(",")[0] ?? arrivalText}
               </span>
             </div>
             {shipment.timeTolerance && (
-              <div className="flex items-center gap-1.5 bg-purple-50 rounded-full px-3 py-2 border border-purple-200">
-                <Hourglass className="h-3.5 w-3.5 text-purple-600" />
-                <span className="text-xs font-semibold text-purple-900">
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-purple-50 rounded-full px-2 sm:px-3 py-1 sm:py-2 border border-purple-200">
+                <Hourglass className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple-600" />
+                <span className="text-[10px] sm:text-xs font-semibold text-purple-900">
                   {shipment.timeTolerance}
                 </span>
               </div>
             )}
             {packagesCount > 0 && (
-              <div className="flex items-center gap-1.5 bg-green-50 rounded-full px-3 py-2 border border-green-200 ml-auto">
-                <Package className="h-3.5 w-3.5 text-green-600" />
-                <span className="text-xs font-semibold text-green-900">
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-green-50 rounded-full px-2 sm:px-3 py-1 sm:py-2 border border-green-200 ml-auto">
+                <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600" />
+                <span className="text-[10px] sm:text-xs font-semibold text-green-900">
                   {packagesCount} pkg
                 </span>
               </div>
@@ -1282,7 +1291,7 @@ function SupplierShipmentCard({
         </div>
 
         {/* Actions */}
-        {actions ? <div className="flex gap-2 pt-2">{actions}</div> : null}
+        {actions ? <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 sm:pt-2">{actions}</div> : null}
       </CardContent>
     </Card>
   );
@@ -1379,25 +1388,25 @@ function SupplierHandoverDialog() {
         open={supplier.handoverDialogOpen}
         onOpenChange={supplier.setHandoverDialogOpen}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Handover shipment</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Handover shipment</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Your current location will be attached to finalize this handover.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Browser location is requested automatically; the coordinates are
               sent with this handover.
             </p>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Location status</label>
-              <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
+              <label className="text-xs sm:text-sm font-medium">Location status</label>
+              <div className="rounded-md border border-border/60 bg-muted/30 px-2.5 sm:px-3 py-2 text-xs sm:text-sm">
                 {handoverLocating ? (
                   <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                     Fetching your GPS location...
                   </span>
                 ) : handoverLocationError ? (
@@ -1410,17 +1419,18 @@ function SupplierHandoverDialog() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 If permission is blocked, enable location in your browser and
                 reopen this dialog.
               </p>
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
             <Button
               variant="ghost"
               onClick={() => supplier.setHandoverDialogOpen(false)}
+              className="w-full sm:w-auto order-2 sm:order-1 h-9 sm:h-10 text-sm"
             >
               Cancel
             </Button>
@@ -1432,10 +1442,11 @@ function SupplierHandoverDialog() {
                 handoverLocationError !== null ||
                 coordsMissing
               }
+              className="w-full sm:w-auto order-1 sm:order-2 h-9 sm:h-10 text-sm"
             >
               {supplier.handoverLoading ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                   Submitting...
                 </span>
               ) : (
@@ -1450,23 +1461,23 @@ function SupplierHandoverDialog() {
         open={handoverErrorDialogOpen}
         onOpenChange={setHandoverErrorDialogOpen}
       >
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader className="gap-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
+        <AlertDialogContent className="mx-2 w-[calc(100%-1rem)] sm:w-full max-w-sm rounded-xl sm:rounded-lg p-4 sm:p-6">
+          <AlertDialogHeader className="gap-3 sm:gap-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-destructive flex-shrink-0 mt-0.5" />
               <div>
-                <AlertDialogTitle className="text-lg">
+                <AlertDialogTitle className="text-base sm:text-lg">
                   Location Verification Failed
                 </AlertDialogTitle>
               </div>
             </div>
           </AlertDialogHeader>
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-sm text-destructive">
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-destructive">
             {handoverError}
           </div>
           <AlertDialogFooter>
             <AlertDialogAction
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white h-9 sm:h-10 text-sm"
               onClick={() => setHandoverErrorDialogOpen(false)}
             >
               Close

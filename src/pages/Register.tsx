@@ -449,24 +449,24 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-3 sm:p-4 md:p-6">
       <Card className="w-full max-w-3xl shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center">
             Organization Registration
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Organization Type */}
             <div className="grid gap-2">
-              <Label htmlFor="type">Organization Type</Label>
+              <Label htmlFor="type" className="text-sm">Organization Type</Label>
               <select
                 name="type"
                 value={form.type}
                 onChange={handleChange}
-                className="border rounded-md p-2 bg-card"
+                className="border rounded-md p-2 sm:p-2.5 bg-card text-sm sm:text-base"
               >
                 <option value="MANUFACTURER">Manufacturer</option>
                 <option value="SUPPLIER">Supplier</option>
@@ -482,15 +482,16 @@ export default function Register() {
                 id="registerForOther"
                 checked={registerForOther}
                 onChange={(e) => setRegisterForOther(e.target.checked)}
+                className="h-4 w-4"
               />
-              <Label htmlFor="registerForOther">
+              <Label htmlFor="registerForOther" className="text-sm">
                 Register for another wallet
               </Label>
             </div>
 
             {registerForOther && (
               <div className="mt-2">
-                <Label htmlFor="otherPublicKey">Other Wallet Public Key</Label>
+                <Label htmlFor="otherPublicKey" className="text-sm">Other Wallet Public Key</Label>
                 <Input
                   id="otherPublicKey"
                   name="otherPublicKey"
@@ -498,14 +499,15 @@ export default function Register() {
                   onChange={(e) => setOtherPublicKey(e.target.value)}
                   placeholder="0x1234...abcd"
                   required={registerForOther}
+                  className="text-sm"
                 />
               </div>
             )}
 
             {/* Identification */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
               <div>
-                <Label htmlFor="legalName">Legal Name</Label>
+                <Label htmlFor="legalName" className="text-sm">Legal Name</Label>
                 <Input
                   id="legalName"
                   name="legalName"
@@ -513,10 +515,11 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Organization Legal Name"
                   required
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="businessRegNo">Business Reg. No</Label>
+                <Label htmlFor="businessRegNo" className="text-sm">Business Reg. No</Label>
                 <Input
                   id="businessRegNo"
                   name="businessRegNo"
@@ -524,13 +527,14 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="REG-12345"
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="countryOfIncorporation">
+                <Label htmlFor="countryOfIncorporation" className="text-sm">
                   Country of Incorporation
                 </Label>
                 <SearchableSelect
@@ -544,7 +548,7 @@ export default function Register() {
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -553,14 +557,15 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="info@organization.example"
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
 
             {/* Contact */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="personName">Contact Person</Label>
+                <Label htmlFor="personName" className="text-sm">Contact Person</Label>
                 <Input
                   id="personName"
                   name="personName"
@@ -568,10 +573,11 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Jane Doe"
                   required
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="designation">Designation</Label>
+                <Label htmlFor="designation" className="text-sm">Designation</Label>
                 <Input
                   id="designation"
                   name="designation"
@@ -579,13 +585,14 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="Operations Manager"
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone" className="text-sm">Phone</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -593,10 +600,11 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="+1-555-123-0000"
                   required
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address" className="text-sm">Address</Label>
                 <Input
                   id="address"
                   name="address"
@@ -604,26 +612,28 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="200 Logistics Way, Oakland, CA"
                   required
+                  className="text-sm"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="dateOfRegistration">Date of Registration</Label>
+              <Label htmlFor="dateOfRegistration" className="text-sm">Date of Registration</Label>
               <Input
                 id="dateOfRegistration"
                 name="dateOfRegistration"
                 type="date"
                 value={form.dateOfRegistration}
                 onChange={handleChange}
+                className="text-sm"
               />
             </div>
 
             {/* Checkpoint Details */}
             {showCheckpointSection && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="checkpointName">Checkpoint Name</Label>
+                    <Label htmlFor="checkpointName" className="text-sm">Checkpoint Name</Label>
                     <Input
                       id="checkpointName"
                       name="checkpointName"
@@ -631,10 +641,11 @@ export default function Register() {
                       onChange={handleChange}
                       placeholder="Colombo Port Warehouse"
                       required={requiresCheckpoint}
+                      className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="checkpointAddress">
+                    <Label htmlFor="checkpointAddress" className="text-sm">
                       Checkpoint Address
                     </Label>
                     <Input
@@ -644,12 +655,13 @@ export default function Register() {
                       onChange={handleChange}
                       placeholder="Dockyard Road, Colombo 01"
                       required={requiresCheckpoint}
+                      className="text-sm"
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="checkpointLatitude">Latitude</Label>
+                    <Label htmlFor="checkpointLatitude" className="text-sm">Latitude</Label>
                     <Input
                       id="checkpointLatitude"
                       name="checkpointLatitude"
@@ -657,10 +669,11 @@ export default function Register() {
                       onChange={handleChange}
                       placeholder="6.9370"
                       required={requiresCheckpoint}
+                      className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="checkpointLongitude">Longitude</Label>
+                    <Label htmlFor="checkpointLongitude" className="text-sm">Longitude</Label>
                     <Input
                       id="checkpointLongitude"
                       name="checkpointLongitude"
@@ -668,12 +681,13 @@ export default function Register() {
                       onChange={handleChange}
                       placeholder="79.8500"
                       required={requiresCheckpoint}
+                      className="text-sm"
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="checkpointCountry">Country</Label>
+                    <Label htmlFor="checkpointCountry" className="text-sm">Country</Label>
                     <SearchableSelect
                       id="checkpointCountry"
                       value={form.checkpointCountry}
@@ -686,7 +700,7 @@ export default function Register() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="checkpointState">State / Province</Label>
+                    <Label htmlFor="checkpointState" className="text-sm">State / Province</Label>
                     {form.checkpointCountry ? (
                       checkpointStateOptions.length > 0 ? (
                         <SearchableSelect
@@ -707,6 +721,7 @@ export default function Register() {
                           onChange={handleChange}
                           placeholder="Western Province"
                           required={requiresCheckpoint}
+                          className="text-sm"
                         />
                       )
                     ) : (
@@ -723,7 +738,7 @@ export default function Register() {
                     )}
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="checkpointCity">City</Label>
+                    <Label htmlFor="checkpointCity" className="text-sm">City</Label>
                     {form.checkpointCountry && form.checkpointState ? (
                       checkpointCityOptions.length > 0 ? (
                         <SearchableSelect
@@ -743,6 +758,7 @@ export default function Register() {
                           value={form.checkpointCity}
                           onChange={handleChange}
                           placeholder="Sacramento"
+                          className="text-sm"
                         />
                       )
                     ) : (
@@ -764,9 +780,9 @@ export default function Register() {
 
             {/* Manufacturer Fields */}
             {form.type === "MANUFACTURER" && (
-              <>
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <Label htmlFor="productCategoriesManufactured">
+                  <Label htmlFor="productCategoriesManufactured" className="text-sm">
                     Product Categories (comma separated)
                   </Label>
                   <Input
@@ -775,10 +791,11 @@ export default function Register() {
                     value={form.productCategoriesManufactured}
                     onChange={handleChange}
                     placeholder="Widgets, Gadgets"
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="certifications">
+                  <Label htmlFor="certifications" className="text-sm">
                     Certifications (comma separated)
                   </Label>
                   <Input
@@ -787,16 +804,17 @@ export default function Register() {
                     value={form.certifications}
                     onChange={handleChange}
                     placeholder="ISO9001"
+                    className="text-sm"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             {/* Supplier / Consumer Fields */}
             {["SUPPLIER", "CONSUMER"].includes(form.type) && (
-              <>
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <Label htmlFor="productCategoriesSupplied">
+                  <Label htmlFor="productCategoriesSupplied" className="text-sm">
                     Product Categories (comma separated)
                   </Label>
                   <Input
@@ -805,10 +823,11 @@ export default function Register() {
                     value={form.productCategoriesSupplied}
                     onChange={handleChange}
                     placeholder="Steel, Aluminum"
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sourceRegions">
+                  <Label htmlFor="sourceRegions" className="text-sm">
                     Source Regions (comma separated country codes)
                   </Label>
                   <Input
@@ -817,10 +836,11 @@ export default function Register() {
                     value={form.sourceRegions}
                     onChange={handleChange}
                     placeholder="CN, MY"
+                    className="text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes" className="text-sm">Notes</Label>
                   <Textarea
                     id="notes"
                     name="notes"
@@ -828,15 +848,16 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="Regional distribution hub onboarding"
                     rows={3}
+                    className="text-sm"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             {/* Warehouse Fields */}
             {form.type === "WAREHOUSE" && (
               <div>
-                <Label htmlFor="officeAddress">Office Address</Label>
+                <Label htmlFor="officeAddress" className="text-sm">Office Address</Label>
                 <Input
                   id="officeAddress"
                   name="officeAddress"
@@ -844,11 +865,12 @@ export default function Register() {
                   onChange={handleChange}
                   placeholder="200 Logistics Way, Oakland, CA"
                   required
+                  className="text-sm"
                 />
               </div>
             )}
 
-            <Button type="submit" className="w-full mt-4" disabled={loading}>
+            <Button type="submit" className="w-full mt-4 h-10 sm:h-11 text-sm sm:text-base" disabled={loading}>
               {loading ? "Registering..." : "Register"}
             </Button>
           </form>
