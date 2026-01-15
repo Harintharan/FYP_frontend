@@ -69,6 +69,32 @@ const shipmentDateFormatter = new Intl.DateTimeFormat(undefined, {
   minute: "2-digit",
 });
 
+const getIntegrityMeta = (value?: string | null) => {
+  const normalized = value?.toLowerCase();
+  if (normalized === "valid") {
+    return {
+      label: "Verified",
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (normalized === "tampered" || normalized === "mismatch") {
+    return {
+      label: "Tampered",
+      className: "border-rose-200 bg-rose-100 text-rose-800",
+    };
+  }
+  if (normalized === "not_on_chain") {
+    return {
+      label: "Not on chain",
+      className: "border-amber-200 bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    label: "Unknown",
+    className: "border-border bg-muted text-muted-foreground",
+  };
+};
+
 type IconType = typeof Clock;
 
 type StatusConfig = {
@@ -1130,6 +1156,7 @@ function SupplierShipmentCard({
   actions,
 }: SupplierShipmentCardProps) {
   const normalized = normalizeStatus(shipment.status);
+  const integrityMeta = getIntegrityMeta(shipment.integrity);
   const arrivalText = formatArrivalText(shipment.expectedArrival);
   const parseDateValue = (value?: string) => {
     if (!value) return null;
@@ -1201,14 +1228,22 @@ function SupplierShipmentCard({
               Segment #{shortShipmentId}
             </p>
           </div>
-          <Badge
-            className={cn(
-              "flex-shrink-0 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1",
-              supplierStatusBadgeClass(normalized)
-            )}
-          >
-            {humanizeSupplierStatus(normalized)}
-          </Badge>
+          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+            <Badge
+              variant="outline"
+              className={`text-[10px] sm:text-xs ${integrityMeta.className}`}
+            >
+              {integrityMeta.label}
+            </Badge>
+            <Badge
+              className={cn(
+                "text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1",
+                supplierStatusBadgeClass(normalized)
+              )}
+            >
+              {humanizeSupplierStatus(normalized)}
+            </Badge>
+          </div>
         </div>
       </div>
 

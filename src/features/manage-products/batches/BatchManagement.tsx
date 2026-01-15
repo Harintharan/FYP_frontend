@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -120,6 +121,32 @@ const formatFriendlyDateTime = (value?: string) => {
   return `${datePart} - ${timePart}`;
 };
 
+const getIntegrityMeta = (value?: string | null) => {
+  const normalized = value?.toLowerCase();
+  if (normalized === "valid") {
+    return {
+      label: "Verified",
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (normalized === "tampered" || normalized === "mismatch") {
+    return {
+      label: "Tampered",
+      className: "border-rose-200 bg-rose-100 text-rose-800",
+    };
+  }
+  if (normalized === "not_on_chain") {
+    return {
+      label: "Not on chain",
+      className: "border-amber-200 bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    label: "Unknown",
+    className: "border-border bg-muted text-muted-foreground",
+  };
+};
+
 export function BatchManagement() {
   const queryClient = useQueryClient();
   const { uuid } = useAppStore();
@@ -195,6 +222,7 @@ export function BatchManagement() {
         productName,
         batch.facility,
         batch.quantityProduced,
+        batch.integrity,
       ]
         .filter(Boolean)
         .map((value) => String(value).toLowerCase());
@@ -285,6 +313,7 @@ export function BatchManagement() {
                   <TableHead>Product</TableHead>
                   <TableHead>Facility</TableHead>
                   <TableHead>Quantity</TableHead>
+                  <TableHead>Integrity</TableHead>
                   <TableHead>Production window</TableHead>
                   <TableHead>Expiry</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -301,6 +330,9 @@ export function BatchManagement() {
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-20" />
@@ -363,6 +395,7 @@ export function BatchManagement() {
                   Facility
                 </TableHead>
                 <TableHead className="text-xs sm:text-sm">Quantity</TableHead>
+                <TableHead className="text-xs sm:text-sm">Integrity</TableHead>
                 <TableHead className="text-xs sm:text-sm hidden lg:table-cell">
                   Production window
                 </TableHead>
@@ -398,6 +431,7 @@ export function BatchManagement() {
                       )} - ${formatFriendlyDateTime(productionEnd)}`
                     : formatFriendlyDateTime(productionStart)
                   : "Not specified";
+                const integrityMeta = getIntegrityMeta(batch.integrity);
                 return (
                   <TableRow key={batch.id}>
                     <TableCell className="py-2 sm:py-4 text-xs sm:text-sm font-medium">
@@ -411,6 +445,14 @@ export function BatchManagement() {
                     </TableCell>
                     <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
                       {batch.quantityProduced || "N/A"}
+                    </TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] sm:text-xs ${integrityMeta.className}`}
+                      >
+                        {integrityMeta.label}
+                      </Badge>
                     </TableCell>
                     <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden lg:table-cell">
                       {productionWindow}

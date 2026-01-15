@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -65,6 +66,32 @@ const formatDetailedDateTime = (value?: string) => {
     minute: "2-digit",
   });
   return `${datePart} - ${timePart}`;
+};
+
+const getIntegrityMeta = (value?: string | null) => {
+  const normalized = value?.toLowerCase();
+  if (normalized === "valid") {
+    return {
+      label: "Verified",
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (normalized === "tampered" || normalized === "mismatch") {
+    return {
+      label: "Tampered",
+      className: "border-rose-200 bg-rose-100 text-rose-800",
+    };
+  }
+  if (normalized === "not_on_chain") {
+    return {
+      label: "Not on chain",
+      className: "border-amber-200 bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    label: "Unknown",
+    className: "border-border bg-muted text-muted-foreground",
+  };
 };
 
 export function ProductManagement() {
@@ -159,6 +186,7 @@ export function ProductManagement() {
         categoryName,
         product.requiredStartTemp,
         product.requiredEndTemp,
+        product.integrity,
       ]
         .filter(Boolean)
         .map((value) => String(value).toLowerCase());
@@ -198,6 +226,7 @@ export function ProductManagement() {
                   <TableHead>Product</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Temperature range</TableHead>
+                  <TableHead>Integrity</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -210,6 +239,9 @@ export function ProductManagement() {
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-20" />
@@ -264,6 +296,7 @@ export function ProductManagement() {
                 <TableHead className="text-xs sm:text-sm hidden sm:table-cell">
                   Temperature range
                 </TableHead>
+                <TableHead className="text-xs sm:text-sm">Integrity</TableHead>
                 <TableHead className="text-xs sm:text-sm text-right">
                   Actions
                 </TableHead>
@@ -279,6 +312,7 @@ export function ProductManagement() {
                   product.requiredStartTemp && product.requiredEndTemp
                     ? `${product.requiredStartTemp} - ${product.requiredEndTemp}`
                     : "Not specified";
+                const integrityMeta = getIntegrityMeta(product.integrity);
                 return (
                   <TableRow key={product.id}>
                     <TableCell className="py-2 sm:py-4">
@@ -294,6 +328,14 @@ export function ProductManagement() {
                     </TableCell>
                     <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
                       {tempLabel}
+                    </TableCell>
+                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] sm:text-xs ${integrityMeta.className}`}
+                      >
+                        {integrityMeta.label}
+                      </Badge>
                     </TableCell>
                     <TableCell className="py-2 sm:py-4">
                       <div className="flex justify-end gap-1 sm:gap-2">

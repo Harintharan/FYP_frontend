@@ -33,7 +33,7 @@ import {
   Lock,
   Thermometer,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useAppStore } from "@/lib/store";
 
@@ -49,6 +49,7 @@ interface AlertData {
   breachTime: string;
   shipmentId?: string;
   segmentId?: string;
+  integrity?: string;
   location: {
     latitude: number;
     longitude: number;
@@ -76,6 +77,7 @@ interface AlertTableProps {
     | "segmentId"
     | "location"
     | "breachTime"
+    | "integrity"
   >;
 }
 
@@ -95,66 +97,69 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
 
   const limit = 10;
 
-  useEffect(() => {
-    console.log("🔄 AlertTable useEffect triggered, searchTerm:", searchTerm);
-    fetchAlerts(1);
-  }, [searchTerm]);
+  const fetchAlerts = useCallback(
+    async (page: number) => {
+      console.log("📡 fetchAlerts called with page:", page);
+      console.log("🔑 Token from store:", token ? "EXISTS" : "MISSING");
+      console.log("📍 API_URL:", API_URL);
+      console.log("📍 apiEndpoint:", apiEndpoint);
 
-  const fetchAlerts = async (page: number) => {
-    console.log("📡 fetchAlerts called with page:", page);
-    console.log("🔑 Token from store:", token ? "EXISTS" : "MISSING");
-    console.log("📍 API_URL:", API_URL);
-    console.log("📍 apiEndpoint:", apiEndpoint);
-
-    setLoading(true);
-    setError("");
-    try {
-      // Check if token exists
-      if (!token) {
-        console.log("❌ No token found in store");
-        setError("Authentication required. Please log in.");
-        setAlerts([]);
-        setLoading(false);
-        return;
-      }
-
-      const fullUrl = `${API_URL}${apiEndpoint}?page=${page}&limit=${limit}&search=${encodeURIComponent(
-        searchTerm
-      )}`;
-      console.log("🌐 Fetching from:", fullUrl);
-
-      const response = await fetch(fullUrl, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log("📦 Response status:", response.status);
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setError("Session expired. Please log in again.");
+      setLoading(true);
+      setError("");
+      try {
+        // Check if token exists
+        if (!token) {
+          console.log("❌ No token found in store");
+          setError("Authentication required. Please log in.");
           setAlerts([]);
           setLoading(false);
           return;
         }
-        throw new Error("Failed to fetch alerts");
-      }
 
-      const result = await response.json();
-      console.log("✅ Response data:", result);
-      setAlerts(result.data || []);
-      setTotalPages(result.pagination?.totalPages || 0);
-      setCurrentPage(page);
-    } catch (err) {
-      console.error("❌ Fetch error:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch alerts");
-      setAlerts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const fullUrl = `${API_URL}${apiEndpoint}?page=${page}&limit=${limit}&search=${encodeURIComponent(
+          searchTerm
+        )}`;
+        console.log("🌐 Fetching from:", fullUrl);
+
+        const response = await fetch(fullUrl, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log("📦 Response status:", response.status);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            setError("Session expired. Please log in again.");
+            setAlerts([]);
+            setLoading(false);
+            return;
+          }
+          throw new Error("Failed to fetch alerts");
+        }
+
+        const result = await response.json();
+        console.log("✅ Response data:", result);
+        setAlerts(result.data || []);
+        setTotalPages(result.pagination?.totalPages || 0);
+        setCurrentPage(page);
+      } catch (err) {
+        console.error("❌ Fetch error:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch alerts");
+        setAlerts([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token, apiEndpoint, searchTerm, limit]
+  );
+
+  useEffect(() => {
+    console.log("🔄 AlertTable useEffect triggered, searchTerm:", searchTerm);
+    fetchAlerts(1);
+  }, [searchTerm, fetchAlerts]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -178,6 +183,32 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
     if (severity === "WARNING") return "bg-yellow-50 border-yellow-200";
     if (severity === "HIGH") return "bg-red-50 border-red-200";
     return "bg-blue-50 border-blue-200";
+  };
+
+  const getIntegrityMeta = (value?: string | null) => {
+    const normalized = value?.toLowerCase();
+    if (normalized === "valid") {
+      return {
+        label: "Verified",
+        className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+      };
+    }
+    if (normalized === "tampered" || normalized === "mismatch") {
+      return {
+        label: "Tampered",
+        className: "border-rose-200 bg-rose-100 text-rose-800",
+      };
+    }
+    if (normalized === "not_on_chain") {
+      return {
+        label: "Not on chain",
+        className: "border-amber-200 bg-amber-100 text-amber-800",
+      };
+    }
+    return {
+      label: "Unknown",
+      className: "border-border bg-muted text-muted-foreground",
+    };
   };
 
   const getAlertTypeIcon = (alertType: string) => {
@@ -307,6 +338,11 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                     Severity
                   </TableHead>
                 )}
+                {columns.includes("integrity") && (
+                  <TableHead className="font-semibold text-slate-700">
+                    Integrity
+                  </TableHead>
+                )}
                 {columns.includes("shipmentId") && (
                   <TableHead className="font-semibold text-slate-700">
                     Shipment ID
@@ -360,169 +396,185 @@ export function AlertTable({ apiEndpoint, columns }: AlertTableProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                alerts.map((alert) => (
-                  <TableRow
-                    key={alert.breachId}
-                    className={`hover:bg-slate-50 transition border-b ${getSeverityBgClass(
-                      alert.severity
-                    )}`}
-                  >
-                    {columns.includes("packageId") && (
-                      <TableCell className="font-mono text-xs font-semibold text-slate-700">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-slate-100 px-2 py-1 rounded">
-                            {alert.packageId}
-                          </span>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(alert.packageId, "packageId")
+                alerts.map((alert) => {
+                  const integrityMeta = getIntegrityMeta(alert.integrity);
+                  return (
+                    <TableRow
+                      key={alert.breachId}
+                      className={`hover:bg-slate-50 transition border-b ${getSeverityBgClass(
+                        alert.severity
+                      )}`}
+                    >
+                      {columns.includes("packageId") && (
+                        <TableCell className="font-mono text-xs font-semibold text-slate-700">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-slate-100 px-2 py-1 rounded">
+                              {alert.packageId}
+                            </span>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(alert.packageId, "packageId")
+                              }
+                              className="text-slate-400 hover:text-slate-600"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                          {copied === "packageId" && (
+                            <span className="text-xs text-green-600">
+                              Copied!
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.includes("alertType") && (
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-600 flex-shrink-0">
+                              {getAlertTypeIcon(alert.alertType)}
+                            </span>
+                            <span className="text-sm font-medium text-slate-700">
+                              {alert.alertType}
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {columns.includes("severity") && (
+                        <TableCell>
+                          <Badge
+                            variant={getSeverityColor(alert.severity)}
+                            className={
+                              alert.severity === "WARNING"
+                                ? "bg-yellow-200 text-yellow-800 hover:bg-yellow-300"
+                                : ""
                             }
-                            className="text-slate-400 hover:text-slate-600"
                           >
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        </div>
-                        {copied === "packageId" && (
-                          <span className="text-xs text-green-600">
-                            Copied!
-                          </span>
-                        )}
-                      </TableCell>
-                    )}
-                    {columns.includes("alertType") && (
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-600 flex-shrink-0">
-                            {getAlertTypeIcon(alert.alertType)}
-                          </span>
-                          <span className="text-sm font-medium text-slate-700">
-                            {alert.alertType}
-                          </span>
-                        </div>
-                      </TableCell>
-                    )}
-                    {columns.includes("severity") && (
-                      <TableCell>
-                        <Badge
-                          variant={getSeverityColor(alert.severity)}
-                          className={
-                            alert.severity === "WARNING"
-                              ? "bg-yellow-200 text-yellow-800 hover:bg-yellow-300"
-                              : ""
-                          }
-                        >
-                          {alert.severity}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    {columns.includes("shipmentId") && (
-                      <TableCell className="font-mono text-xs font-semibold text-slate-700">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-slate-100 px-2 py-1 rounded max-w-xs overflow-hidden text-ellipsis">
-                            {alert.shipmentId ? alert.shipmentId : "N/A"}
-                          </span>
-                          {alert.shipmentId && (
-                            <button
-                              onClick={() =>
-                                copyToClipboard(alert.shipmentId!, "shipmentId")
-                              }
-                              className="text-slate-400 hover:text-slate-600 flex-shrink-0"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </button>
+                            {alert.severity}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.includes("integrity") && (
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${integrityMeta.className}`}
+                          >
+                            {integrityMeta.label}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.includes("shipmentId") && (
+                        <TableCell className="font-mono text-xs font-semibold text-slate-700">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-slate-100 px-2 py-1 rounded max-w-xs overflow-hidden text-ellipsis">
+                              {alert.shipmentId ? alert.shipmentId : "N/A"}
+                            </span>
+                            {alert.shipmentId && (
+                              <button
+                                onClick={() =>
+                                  copyToClipboard(
+                                    alert.shipmentId!,
+                                    "shipmentId"
+                                  )
+                                }
+                                className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          {copied === "shipmentId" && (
+                            <span className="text-xs text-green-600">
+                              Copied!
+                            </span>
                           )}
-                        </div>
-                        {copied === "shipmentId" && (
-                          <span className="text-xs text-green-600">
-                            Copied!
-                          </span>
-                        )}
-                      </TableCell>
-                    )}
-                    {columns.includes("segmentId") && (
-                      <TableCell className="font-mono text-xs font-semibold text-slate-700">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-slate-100 px-2 py-1 rounded max-w-xs overflow-hidden text-ellipsis">
-                            {alert.segmentId ? alert.segmentId : "N/A"}
-                          </span>
-                          {alert.segmentId && (
-                            <button
-                              onClick={() =>
-                                copyToClipboard(alert.segmentId!, "segmentId")
-                              }
-                              className="text-slate-400 hover:text-slate-600 flex-shrink-0"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </button>
+                        </TableCell>
+                      )}
+                      {columns.includes("segmentId") && (
+                        <TableCell className="font-mono text-xs font-semibold text-slate-700">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-slate-100 px-2 py-1 rounded max-w-xs overflow-hidden text-ellipsis">
+                              {alert.segmentId ? alert.segmentId : "N/A"}
+                            </span>
+                            {alert.segmentId && (
+                              <button
+                                onClick={() =>
+                                  copyToClipboard(alert.segmentId!, "segmentId")
+                                }
+                                className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          {copied === "segmentId" && (
+                            <span className="text-xs text-green-600">
+                              Copied!
+                            </span>
                           )}
-                        </div>
-                        {copied === "segmentId" && (
-                          <span className="text-xs text-green-600">
-                            Copied!
-                          </span>
-                        )}
-                      </TableCell>
-                    )}
-                    {columns.includes("location") && (
-                      <TableCell>
+                        </TableCell>
+                      )}
+                      {columns.includes("location") && (
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="gap-1 text-xs h-7"
+                          >
+                            <a
+                              href={`https://www.google.com/maps?q=${alert.location.latitude},${alert.location.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <MapPin className="h-3 w-3" />
+                              Map
+                            </a>
+                          </Button>
+                        </TableCell>
+                      )}
+                      {columns.includes("breachTime") && (
+                        <TableCell className="text-xs text-slate-700">
+                          <div className="space-y-1 font-medium">
+                            <div>
+                              {new Date(alert.breachTime).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {new Date(alert.breachTime).toLocaleTimeString(
+                                "en-US",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
                         <Button
                           variant="outline"
                           size="sm"
-                          asChild
-                          className="gap-1 text-xs h-7"
+                          onClick={() => handleOpenAlert(alert)}
+                          className="gap-2 text-xs h-7 hover:bg-slate-100"
+                          title="View Details"
+                          disabled={enrichingAlert}
                         >
-                          <a
-                            href={`https://www.google.com/maps?q=${alert.location.latitude},${alert.location.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <MapPin className="h-3 w-3" />
-                            Map
-                          </a>
+                          <Eye className="h-3 w-3 text-slate-600" />
+                          <span>{enrichingAlert ? "Loading..." : "View"}</span>
                         </Button>
                       </TableCell>
-                    )}
-                    {columns.includes("breachTime") && (
-                      <TableCell className="text-xs text-slate-700">
-                        <div className="space-y-1 font-medium">
-                          <div>
-                            {new Date(alert.breachTime).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {new Date(alert.breachTime).toLocaleTimeString(
-                              "en-US",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              }
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                    )}
-                    <TableCell className="text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenAlert(alert)}
-                        className="gap-2 text-xs h-7 hover:bg-slate-100"
-                        title="View Details"
-                        disabled={enrichingAlert}
-                      >
-                        <Eye className="h-3 w-3 text-slate-600" />
-                        <span>{enrichingAlert ? "Loading..." : "View"}</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

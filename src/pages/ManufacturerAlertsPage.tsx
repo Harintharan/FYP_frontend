@@ -25,6 +25,7 @@ export default function ManufacturerAlertsPage() {
               "packageId",
               "alertType",
               "severity",
+              "integrity",
               "shipmentId",
               "location",
               "breachTime",

@@ -47,6 +47,32 @@ function getStatusVariant(
   }
 }
 
+function getIntegrityMeta(value?: string | null) {
+  const normalized = value?.toLowerCase();
+  if (normalized === "valid") {
+    return {
+      label: "Verified",
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (normalized === "tampered" || normalized === "mismatch") {
+    return {
+      label: "Tampered",
+      className: "border-rose-200 bg-rose-100 text-rose-800",
+    };
+  }
+  if (normalized === "not_on_chain") {
+    return {
+      label: "Not on chain",
+      className: "border-amber-200 bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    label: "Unknown",
+    className: "border-border bg-muted text-muted-foreground",
+  };
+}
+
 function formatCheckpointLocation(checkpoint?: {
   name?: string;
   state?: string;
@@ -190,6 +216,9 @@ export function ManufacturerShipmentsSection() {
                           const lastSegment = hasSegments
                             ? shipment.segments![shipment.segments!.length - 1]
                             : null;
+                          const integrityMeta = getIntegrityMeta(
+                            shipment.integrity
+                          );
 
                           return (
                             <Card
@@ -231,6 +260,12 @@ export function ManufacturerShipmentsSection() {
                                     )}
                                   </div>
                                   <div className="flex gap-2">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[10px] sm:text-xs ${integrityMeta.className}`}
+                                    >
+                                      {integrityMeta.label}
+                                    </Badge>
                                     <ViewShipmentButton
                                       shipmentId={String(shipment.id)}
                                     />

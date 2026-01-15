@@ -21,6 +21,7 @@ export interface PackageResponse {
   quantityAvailable?: number;
   unit?: string;
   status?: string;
+  integrity?: string;
   notes?: string;
   manufacturerUUID?: string;
   microprocessorMac?: string;

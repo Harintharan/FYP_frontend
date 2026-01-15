@@ -12,6 +12,7 @@ export type ShipmentLegInput = {
 export type SupplierShipmentRecord = {
   id: string;
   segmentId?: string;
+  integrity?: string;
   manufacturerName?: string;
   consumerName?: string;
   destinationPartyName?: string;
@@ -102,6 +103,7 @@ export type ManufacturerShipmentRecord = {
   createdAt?: string;
   totalPackages?: number;
   totalSegments?: number;
+  integrity?: string;
   segments?: Array<{
     id?: string;
     segmentOrder?: number;

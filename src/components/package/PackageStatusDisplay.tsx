@@ -16,6 +16,8 @@ import {
   AlertCircle,
   Shield,
   ExternalLink,
+  Lock,
+  AlertOctagon,
 } from "lucide-react";
 
 type PackageStatusResponse = {
@@ -58,6 +60,14 @@ type PackageStatusResponse = {
       total?: number;
       resolved?: number;
       active?: number;
+      tampered?: number;
+      hasTamperedBreaches?: boolean;
+      tamperedBreachesList?: Array<{
+        breachId?: string;
+        breachType?: string;
+        severity?: string;
+        tamperingType?: string;
+      }>;
       byType?: Record<string, number>;
       bySeverity?: Record<string, number>;
     };
@@ -242,6 +252,37 @@ export function PackageStatusDisplay({ data }: PackageStatusDisplayProps) {
             {data.package?.package_accepted || "N/A"}
           </Badge>
         </div>
+
+      {/* TAMPERING INTEGRITY ALERT - Red Alert */}
+      {breachStats?.hasTamperedBreaches && (
+        <Card className="border-red-400 bg-red-50 shadow-lg shadow-red-200/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <AlertOctagon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-lg text-red-900">
+                  INTEGRITY ALERT - Tampered Breaches Detected
+                </CardTitle>
+                <CardDescription className="text-red-700 mt-2">
+                  Breach record of Sensor Data have been detected as tampered and may have been modified.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+              <p className="text-sm font-semibold text-red-900 mb-3">Action Required:</p>
+              <ul className="text-sm text-red-800 space-y-2 list-disc list-inside">
+                <li>Verify the integrity of the shipment immediately</li>
+                <li>Do not accept this shipment without proper verification</li>
+                <li>Contact your supply chain administrator</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
         {locationCheck ? (
           <div
             className={`rounded-lg border p-4 ${

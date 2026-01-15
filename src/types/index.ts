@@ -50,6 +50,7 @@ export interface Product {
   updatedAt?: string;
   productHash?: string | null;
   txHash?: string | null;
+  integrity?: string;
   createdBy?: string | null;
   updatedBy?: string | null;
   pinataCid?: string | null;
@@ -100,6 +101,7 @@ export interface ProductBatchSummary {
   requiredEndTemp?: string;
   createdAt?: string;
   updatedAt?: string;
+  integrity?: string;
   product?: {
     id: string;
     name?: string;

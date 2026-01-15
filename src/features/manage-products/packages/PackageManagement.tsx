@@ -121,6 +121,32 @@ const formatHash = (value?: string | null) => {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 };
 
+const getIntegrityMeta = (value?: string | null) => {
+  const normalized = value?.toLowerCase();
+  if (normalized === "valid") {
+    return {
+      label: "Verified",
+      className: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    };
+  }
+  if (normalized === "tampered" || normalized === "mismatch") {
+    return {
+      label: "Tampered",
+      className: "border-rose-200 bg-rose-100 text-rose-800",
+    };
+  }
+  if (normalized === "not_on_chain") {
+    return {
+      label: "Not on chain",
+      className: "border-amber-200 bg-amber-100 text-amber-800",
+    };
+  }
+  return {
+    label: "Unknown",
+    className: "border-border bg-muted text-muted-foreground",
+  };
+};
+
 const getMockQrPayload = (pkg: PackageResponse) => {
   return String(pkg.packageCode ?? pkg.package_uuid ?? pkg.id ?? "");
 };
@@ -427,6 +453,7 @@ export function PackageManagement() {
         pkg.packageCode,
         pkg.id,
         pkg.status,
+        pkg.integrity,
         pkg.microprocessorMac,
         productLabel,
         batchReference?.batchCode,
@@ -532,9 +559,9 @@ export function PackageManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Package</TableHead>
-                  <TableHead>Batch</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Integrity</TableHead>
                   <TableHead>Sensors</TableHead>
                   <TableHead>QR</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -548,13 +575,13 @@ export function PackageManagement() {
                       <Skeleton className="mt-2 h-4 w-32" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
                       <Skeleton className="h-4 w-12" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-36" />
@@ -611,6 +638,7 @@ export function PackageManagement() {
                 <TableHead className="text-xs sm:text-sm">Package</TableHead>
                 <TableHead className="text-xs sm:text-sm">Quantity</TableHead>
                 <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                <TableHead className="text-xs sm:text-sm">Integrity</TableHead>
                 <TableHead className="text-xs sm:text-sm hidden sm:table-cell">
                   Sensors
                 </TableHead>
@@ -630,14 +658,15 @@ export function PackageManagement() {
                 const batchLabel =
                   batchReference?.batchCode ??
                   (pkg.batchId ? `Batch ${pkg.batchId}` : "No batch linked");
-                const productLabel =
-                  batchReference?.product?.name ??
-                  batchReference?.product?.productName ??
-                  "Product not linked";
-                const qrPayload = getMockQrPayload(pkg);
-                return (
-                  <TableRow key={pkg.id}>
-                    <TableCell className="py-2 sm:py-4">
+                  const productLabel =
+                    batchReference?.product?.name ??
+                    batchReference?.product?.productName ??
+                    "Product not linked";
+                  const qrPayload = getMockQrPayload(pkg);
+                  const integrityMeta = getIntegrityMeta(pkg.integrity);
+                  return (
+                    <TableRow key={pkg.id}>
+                      <TableCell className="py-2 sm:py-4">
                       <div className="font-medium text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
                         {pkg.packageCode || `Package ${pkg.id}`}
                       </div>
@@ -650,12 +679,20 @@ export function PackageManagement() {
                         {pkg.quantity ?? "N/A"}
                       </div>
                     </TableCell>
-                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
-                      {pkg.status ?? "Not specified"}
-                    </TableCell>
-                    <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
-                      {sensorsToLabel(pkg.sensorTypes)}
-                    </TableCell>
+                      <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
+                        {pkg.status ?? "Not specified"}
+                      </TableCell>
+                      <TableCell className="py-2 sm:py-4 text-xs sm:text-sm">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] sm:text-xs ${integrityMeta.className}`}
+                        >
+                          {integrityMeta.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-2 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
+                        {sensorsToLabel(pkg.sensorTypes)}
+                      </TableCell>
                     <TableCell className="py-2 sm:py-4">
                       <Button
                         size="sm"

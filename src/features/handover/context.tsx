@@ -314,6 +314,7 @@ const formatCheckpointLabel = (
 type ShipmentSegmentResponse = {
   id?: string;
   segmentHash?: string;
+  integrity?: string;
   shipmentId?: string;
   segmentId?: string;
   manufacturerUuid?: string;
@@ -470,6 +471,7 @@ const segmentToSupplierShipment = (
   return {
     id: String(idCandidate),
     segmentId: segment.segmentId ?? undefined,
+    integrity: segment.integrity ?? undefined,
     status: mapSegmentStatusToSupplierStatus(segment.status),
     expectedArrival,
     acceptedAt,
